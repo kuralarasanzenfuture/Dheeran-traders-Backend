@@ -32,6 +32,16 @@ export const initDatabase = async () => {
     //     last_login_at TIMESTAMP NULL
     //   )
 
+    await db.query(`
+  INSERT INTO users (username, email, password, role)
+  SELECT 'admin', 'admin@gmail.com',
+         'admin',
+         'admin'
+  WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE email = 'admin@gmail.com'
+  )
+`);
+
     // 4️⃣ PRODUCTS TABLE
     await db.query(`
       CREATE TABLE IF NOT EXISTS products (

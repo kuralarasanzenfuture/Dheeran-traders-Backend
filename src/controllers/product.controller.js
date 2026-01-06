@@ -34,11 +34,34 @@ export const createProduct = async (req, res, next) => {
       return res.status(400).json({ message: "Required fields missing" });
     }
 
+    // 🔹 1. Get last product_code
+    const [lastRow] = await db.query(`
+      SELECT product_code
+      FROM products
+      ORDER BY id DESC
+      LIMIT 1
+    `);
+
+    let nextNumber = 1;
+
+    if (lastRow.length && lastRow[0].product_code) {
+      const lastNumber = parseInt(
+        lastRow[0].product_code.split("-").pop(),
+        10
+      );
+      nextNumber = lastNumber + 1;
+    }
+
+    // 🔹 2. Generate new product_code
+    const product_code = `DTT-PDT-${String(nextNumber).padStart(3, "0")}`;
+
+    // 🔹 3. Insert product
     const [result] = await db.query(
       `INSERT INTO products
-       (product_name, quantity, price, stock, category, brand, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       (product_code, product_name, quantity, price, stock, category, brand, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
+        product_code,
         product_name,
         quantity,
         price,
@@ -49,6 +72,7 @@ export const createProduct = async (req, res, next) => {
       ]
     );
 
+    // 🔹 4. Fetch inserted product
     const [rows] = await db.query(
       "SELECT * FROM products WHERE id = ?",
       [result.insertId]
@@ -62,6 +86,7 @@ export const createProduct = async (req, res, next) => {
     next(err);
   }
 };
+
 
 /**
  * GET ALL PRODUCTS

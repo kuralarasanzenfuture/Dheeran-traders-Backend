@@ -36,6 +36,7 @@ export const initDatabase = async () => {
     await db.query(`
       CREATE TABLE IF NOT EXISTS products (
         id INT AUTO_INCREMENT PRIMARY KEY,
+        product_code VARCHAR(20) UNIQUE,
         product_name VARCHAR(150),
         quantity VARCHAR(50),
         price DECIMAL(10,2),

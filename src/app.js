@@ -8,6 +8,7 @@ import categoryRoutes from "./routes/category.routes.js";
 import brandRoutes from "./routes/brand.routes.js";
 import customerRoutes from "./routes/customer.routes.js";
 import vendorRoutes from "./routes/vendor.routes.js";
+import quantityRoutes from "./routes/quantityRoutes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
@@ -25,6 +26,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/brands", brandRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/vendors", vendorRoutes);
+app.use("/api/quantities", quantityRoutes);
 
 
 app.use(errorHandler);

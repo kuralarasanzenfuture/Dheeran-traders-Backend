@@ -1,30 +1,5 @@
 import db from "../config/db.js";
 
-// CREATE TABLE vendors (
-//   id INT AUTO_INCREMENT PRIMARY KEY,
-
-//   vendor_name VARCHAR(150) NOT NULL,
-
-//   brand_id INT NOT NULL,
-//   brand_name VARCHAR(150) NOT NULL,
-//   brand_category VARCHAR(100),
-//   brand_quantity VARCHAR(50),
-
-//   phone VARCHAR(20) NOT NULL,
-//   email VARCHAR(150),
-//   address TEXT,
-
-//   payment_mode ENUM('cash', 'upi') NOT NULL,
-//   advance_pay DECIMAL(10,2) DEFAULT 0,
-//   pending_pay DECIMAL(10,2) DEFAULT 0,
-
-//   stock INT NOT NULL,
-
-//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-// );
-
-
 /**
  * CREATE VENDOR
  */

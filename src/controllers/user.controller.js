@@ -2,27 +2,6 @@ import bcrypt from "bcryptjs";
 import db from "../config/db.js";
 import { generateToken } from "../utils/jwt.js";
 
-// CREATE DATABASE deeran_traders;
-
-// USE deeran_traders;
-// SELECT DATABASE();
-
-// SHOW TABLES;
-
-// DESCRIBE users;
-
-// CREATE TABLE users (
-//   id INT AUTO_INCREMENT PRIMARY KEY,
-//   username VARCHAR(100) NOT NULL,
-//   email VARCHAR(150) NOT NULL UNIQUE,
-//   password VARCHAR(255) NOT NULL,
-//   role ENUM('admin', 'user') DEFAULT 'user',
-
-//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-//   last_login_at TIMESTAMP NULL
-// );
-
 /**
  * REGISTER
  */

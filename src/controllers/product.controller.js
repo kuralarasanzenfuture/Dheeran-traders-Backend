@@ -1,20 +1,5 @@
 import db from "../config/db.js";
 
-// CREATE TABLE products (
-//   id INT AUTO_INCREMENT PRIMARY KEY,
-
-//   product_name VARCHAR(150) NOT NULL,
-//   quantity VARCHAR(50) NOT NULL,          -- 25kg, 50kg
-//   price DECIMAL(10,2) NOT NULL,
-//   stock INT NOT NULL,                      -- 100, 50
-//   category VARCHAR(100),                  -- half boil, full boil
-//   brand VARCHAR(100),                     -- surya, bullet
-//   status ENUM('in_stock', 'low_stock', 'out_of_stock') DEFAULT 'in_stock',
-
-//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-// );
-
 /**
  * CREATE PRODUCT
  */

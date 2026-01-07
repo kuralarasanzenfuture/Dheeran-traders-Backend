@@ -1,30 +1,5 @@
 import db from "../config/db.js";
 
-// CREATE TABLE customers (
-//   id INT AUTO_INCREMENT PRIMARY KEY,
-
-//   customer_name VARCHAR(150) NOT NULL,
-
-//   product_id INT NOT NULL,
-//   product_name VARCHAR(150) NOT NULL,
-//   product_brand VARCHAR(100),
-//   product_quantity INT NOT NULL,
-
-//   phone VARCHAR(20) NOT NULL,
-//   email VARCHAR(150),
-//   address TEXT,
-
-//   payment_mode ENUM('cash', 'upi') NOT NULL,
-//   advance_pay DECIMAL(10,2) DEFAULT 0,
-//   pending_pay DECIMAL(10,2) DEFAULT 0,
-
-//   stock INT NOT NULL,
-
-//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-// );
-
-
 /**
  * CREATE CUSTOMER
  */

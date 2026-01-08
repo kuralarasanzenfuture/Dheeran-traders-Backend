@@ -5,34 +5,79 @@ import db from "../config/db.js";
  */
 export const createQuantity = async (req, res) => {
   try {
-    const { name, status } = req.body;
+    const { brand_id, category_id, name, status } = req.body;
 
-    if (!name) {
-      return res.status(400).json({ message: "Quantity name is required" });
+    if (!brand_id || !category_id || !name) {
+      return res.status(400).json({
+        message: "Brand, category and quantity name are required",
+      });
     }
 
+    // 🔍 Validate brand
+    const [[brand]] = await db.query(
+      "SELECT id FROM brands WHERE id = ?",
+      [brand_id]
+    );
+    if (!brand) {
+      return res.status(400).json({ message: "Invalid brand" });
+    }
+
+    // 🔍 Validate category belongs to brand
+    const [[category]] = await db.query(
+      "SELECT id FROM categories WHERE id = ? AND brand_id = ?",
+      [category_id, brand_id]
+    );
+    if (!category) {
+      return res.status(400).json({
+        message: "Invalid category for selected brand",
+      });
+    }
+
+    // 🔍 Duplicate check (brand + category + name)
     const [exists] = await db.query(
-      "SELECT id FROM quantities WHERE name = ?",
-      [name]
+      `
+      SELECT id FROM quantities
+      WHERE brand_id = ? AND category_id = ? AND name = ?
+      `,
+      [brand_id, category_id, name]
     );
 
     if (exists.length) {
-      return res.status(409).json({ message: "Quantity already exists" });
+      return res.status(409).json({
+        message: "Quantity already exists for this category",
+      });
     }
 
     const [result] = await db.query(
-      "INSERT INTO quantities (name, status) VALUES (?, ?)",
-      [name, status || "active"]
+      `
+      INSERT INTO quantities (brand_id, category_id, name, status)
+      VALUES (?, ?, ?, ?)
+      `,
+      [brand_id, category_id, name, status || "active"]
     );
 
-    const [rows] = await db.query(
-      "SELECT * FROM quantities WHERE id = ?",
+    const [[quantity]] = await db.query(
+      `
+      SELECT 
+        q.id,
+        q.name,
+        q.status,
+        q.created_at,
+        b.id AS brand_id,
+        b.name AS brand_name,
+        c.id AS category_id,
+        c.name AS category_name
+      FROM quantities q
+      JOIN brands b ON q.brand_id = b.id
+      JOIN categories c ON q.category_id = c.id
+      WHERE q.id = ?
+      `,
       [result.insertId]
     );
 
     res.status(201).json({
       message: "Quantity created successfully",
-      quantity: rows[0],
+      quantity,
     });
   } catch (error) {
     console.error("Create quantity error:", error);
@@ -45,12 +90,49 @@ export const createQuantity = async (req, res) => {
  */
 export const getAllQuantities = async (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT * FROM quantities ORDER BY created_at DESC"
-    );
+    const [rows] = await db.query(`
+      SELECT 
+        q.id,
+        q.name,
+        q.status,
+        q.created_at,
+        b.id AS brand_id,
+        b.name AS brand_name,
+        c.id AS category_id,
+        c.name AS category_name
+      FROM quantities q
+      JOIN brands b ON q.brand_id = b.id
+      JOIN categories c ON q.category_id = c.id
+      ORDER BY q.created_at DESC
+    `);
+
     res.json(rows);
   } catch (error) {
     console.error("Get quantities error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * GET QUANTITIES BY BRAND & CATEGORY (🔥 IMPORTANT)
+ */
+export const getQuantitiesByCategory = async (req, res) => {
+  try {
+    const { brand_id, category_id } = req.params;
+
+    const [rows] = await db.query(
+      `
+      SELECT id, name, status
+      FROM quantities
+      WHERE brand_id = ? AND category_id = ? AND status = 'active'
+      ORDER BY name ASC
+      `,
+      [brand_id, category_id]
+    );
+
+    res.json(rows);
+  } catch (error) {
+    console.error("Get quantities by category error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -60,18 +142,25 @@ export const getAllQuantities = async (req, res) => {
  */
 export const getQuantityById = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const [rows] = await db.query(
-      "SELECT * FROM quantities WHERE id = ?",
-      [id]
+    const [[quantity]] = await db.query(
+      `
+      SELECT 
+        q.*,
+        b.name AS brand_name,
+        c.name AS category_name
+      FROM quantities q
+      JOIN brands b ON q.brand_id = b.id
+      JOIN categories c ON q.category_id = c.id
+      WHERE q.id = ?
+      `,
+      [req.params.id]
     );
 
-    if (!rows.length) {
+    if (!quantity) {
       return res.status(404).json({ message: "Quantity not found" });
     }
 
-    res.json(rows[0]);
+    res.json(quantity);
   } catch (error) {
     console.error("Get quantity error:", error);
     res.status(500).json({ message: "Server error" });
@@ -84,25 +173,66 @@ export const getQuantityById = async (req, res) => {
 export const updateQuantity = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, status } = req.body;
+    const { brand_id, category_id, name, status } = req.body;
+
+    // Validate brand if provided
+    if (brand_id) {
+      const [[brand]] = await db.query(
+        "SELECT id FROM brands WHERE id = ?",
+        [brand_id]
+      );
+      if (!brand) {
+        return res.status(400).json({ message: "Invalid brand" });
+      }
+    }
+
+    // Validate category belongs to brand
+    if (category_id && brand_id) {
+      const [[category]] = await db.query(
+        "SELECT id FROM categories WHERE id = ? AND brand_id = ?",
+        [category_id, brand_id]
+      );
+      if (!category) {
+        return res.status(400).json({
+          message: "Invalid category for selected brand",
+        });
+      }
+    }
 
     const [result] = await db.query(
-      "UPDATE quantities SET name = ?, status = ? WHERE id = ?",
-      [name, status, id]
+      `
+      UPDATE quantities
+      SET
+        brand_id = COALESCE(?, brand_id),
+        category_id = COALESCE(?, category_id),
+        name = COALESCE(?, name),
+        status = COALESCE(?, status)
+      WHERE id = ?
+      `,
+      [brand_id, category_id, name, status, id]
     );
 
-    if (result.affectedRows === 0) {
+    if (!result.affectedRows) {
       return res.status(404).json({ message: "Quantity not found" });
     }
 
-    const [rows] = await db.query(
-      "SELECT * FROM quantities WHERE id = ?",
+    const [[quantity]] = await db.query(
+      `
+      SELECT 
+        q.*,
+        b.name AS brand_name,
+        c.name AS category_name
+      FROM quantities q
+      JOIN brands b ON q.brand_id = b.id
+      JOIN categories c ON q.category_id = c.id
+      WHERE q.id = ?
+      `,
       [id]
     );
 
     res.json({
       message: "Quantity updated successfully",
-      quantity: rows[0],
+      quantity,
     });
   } catch (error) {
     console.error("Update quantity error:", error);
@@ -115,14 +245,12 @@ export const updateQuantity = async (req, res) => {
  */
 export const deleteQuantity = async (req, res) => {
   try {
-    const { id } = req.params;
-
     const [result] = await db.query(
       "DELETE FROM quantities WHERE id = ?",
-      [id]
+      [req.params.id]
     );
 
-    if (result.affectedRows === 0) {
+    if (!result.affectedRows) {
       return res.status(404).json({ message: "Quantity not found" });
     }
 

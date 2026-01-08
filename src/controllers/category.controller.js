@@ -5,34 +5,55 @@ import db from "../config/db.js";
  */
 export const createCategory = async (req, res, next) => {
   try {
-    const { name, status } = req.body;
+    const { brand_id, name, status } = req.body;
 
-    if (!name) {
-      return res.status(400).json({ message: "Category name is required" });
+    if (!brand_id || !name) {
+      return res.status(400).json({
+        message: "Brand and category name are required",
+      });
     }
 
+    // 🔍 Validate brand exists
+    const [[brand]] = await db.query(
+      "SELECT id FROM brands WHERE id = ?",
+      [brand_id]
+    );
+
+    if (!brand) {
+      return res.status(400).json({ message: "Invalid brand" });
+    }
+
+    // 🔍 Prevent duplicate category under same brand
     const [exists] = await db.query(
-      "SELECT id FROM categories WHERE name = ?",
-      [name]
+      "SELECT id FROM categories WHERE brand_id = ? AND name = ?",
+      [brand_id, name]
     );
 
     if (exists.length) {
-      return res.status(400).json({ message: "Category already exists" });
+      return res.status(400).json({
+        message: "Category already exists for this brand",
+      });
     }
 
     const [result] = await db.query(
-      "INSERT INTO categories (name, status) VALUES (?, ?)",
-      [name, status || "active"]
+      `INSERT INTO categories (brand_id, name, status)
+       VALUES (?, ?, ?)`,
+      [brand_id, name, status || "active"]
     );
 
-    const [rows] = await db.query(
-      "SELECT * FROM categories WHERE id = ?",
+    const [[category]] = await db.query(
+      `
+      SELECT c.*, b.name AS brand_name
+      FROM categories c
+      JOIN brands b ON c.brand_id = b.id
+      WHERE c.id = ?
+      `,
       [result.insertId]
     );
 
     res.status(201).json({
       message: "Category created successfully",
-      category: rows[0],
+      category,
     });
   } catch (err) {
     next(err);
@@ -44,9 +65,42 @@ export const createCategory = async (req, res, next) => {
  */
 export const getCategories = async (req, res, next) => {
   try {
+    const [rows] = await db.query(`
+      SELECT 
+        c.id,
+        c.name,
+        c.status,
+        c.created_at,
+        b.id AS brand_id,
+        b.name AS brand_name
+      FROM categories c
+      JOIN brands b ON c.brand_id = b.id
+      ORDER BY c.created_at DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET CATEGORIES BY BRAND (VERY IMPORTANT)
+ */
+export const getCategoriesByBrand = async (req, res, next) => {
+  try {
+    const { brand_id } = req.params;
+
     const [rows] = await db.query(
-      "SELECT * FROM categories ORDER BY created_at DESC"
+      `
+      SELECT id, name, status
+      FROM categories
+      WHERE brand_id = ? AND status = 'active'
+      ORDER BY name ASC
+      `,
+      [brand_id]
     );
+
     res.json(rows);
   } catch (err) {
     next(err);
@@ -58,16 +112,23 @@ export const getCategories = async (req, res, next) => {
  */
 export const getCategoryById = async (req, res, next) => {
   try {
-    const [rows] = await db.query(
-      "SELECT * FROM categories WHERE id = ?",
+    const [[category]] = await db.query(
+      `
+      SELECT 
+        c.*,
+        b.name AS brand_name
+      FROM categories c
+      JOIN brands b ON c.brand_id = b.id
+      WHERE c.id = ?
+      `,
       [req.params.id]
     );
 
-    if (!rows.length) {
+    if (!category) {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    res.json(rows[0]);
+    res.json(category);
   } catch (err) {
     next(err);
   }
@@ -79,24 +140,47 @@ export const getCategoryById = async (req, res, next) => {
 export const updateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const { brand_id, name, status } = req.body;
+
+    // Validate brand if provided
+    if (brand_id) {
+      const [[brand]] = await db.query(
+        "SELECT id FROM brands WHERE id = ?",
+        [brand_id]
+      );
+      if (!brand) {
+        return res.status(400).json({ message: "Invalid brand" });
+      }
+    }
 
     const [result] = await db.query(
-      "UPDATE categories SET ? WHERE id = ?",
-      [req.body, id]
+      `
+      UPDATE categories
+      SET brand_id = COALESCE(?, brand_id),
+          name = COALESCE(?, name),
+          status = COALESCE(?, status)
+      WHERE id = ?
+      `,
+      [brand_id, name, status, id]
     );
 
     if (!result.affectedRows) {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    const [rows] = await db.query(
-      "SELECT * FROM categories WHERE id = ?",
+    const [[category]] = await db.query(
+      `
+      SELECT c.*, b.name AS brand_name
+      FROM categories c
+      JOIN brands b ON c.brand_id = b.id
+      WHERE c.id = ?
+      `,
       [id]
     );
 
     res.json({
       message: "Category updated successfully",
-      category: rows[0],
+      category,
     });
   } catch (err) {
     next(err);

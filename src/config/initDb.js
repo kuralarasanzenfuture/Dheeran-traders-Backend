@@ -124,35 +124,61 @@ export const initDatabase = async () => {
 
     // 7️⃣ BRANDS TABLE
     await db.query(`
-      CREATE TABLE IF NOT EXISTS brands (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(100),
-        status ENUM('active','inactive') DEFAULT 'active',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
+  CREATE TABLE IF NOT EXISTS brands (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    status ENUM('active','inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB
+`);
 
     // 8️⃣ CATEGORIES TABLE
     await db.query(`
-      CREATE TABLE IF NOT EXISTS categories (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(100),
-        status ENUM('active','inactive') DEFAULT 'active',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
+  CREATE TABLE IF NOT EXISTS categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    brand_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    status ENUM('active','inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_categories_brand
+      FOREIGN KEY (brand_id)
+      REFERENCES brands(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE
+  ) ENGINE=InnoDB
+`);
 
     // QUANTITY TABLE
     await db.query(`
   CREATE TABLE IF NOT EXISTS quantities (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL UNIQUE,   -- 25kg, 50kg, 1kg
+
+    brand_id INT NOT NULL,
+    category_id INT NOT NULL,
+
+    name VARCHAR(50) NOT NULL,  -- 25kg, 50kg, 1kg
     status ENUM('active','inactive') DEFAULT 'active',
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-  )
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_quantities_brand
+      FOREIGN KEY (brand_id)
+      REFERENCES brands(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE,
+
+    CONSTRAINT fk_quantities_category
+      FOREIGN KEY (category_id)
+      REFERENCES categories(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE,
+
+    UNIQUE (brand_id, category_id, name)
+  ) ENGINE=InnoDB
 `);
 
     console.log("✅ Database & tables initialized successfully");

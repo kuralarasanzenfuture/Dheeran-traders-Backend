@@ -6,13 +6,14 @@ import {
   updateQuantity,
   deleteQuantity,
 } from "../controllers/quantityController.js";
+import { protect } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/", createQuantity);
-router.get("/", getAllQuantities);
-router.get("/:id", getQuantityById);
-router.put("/:id", updateQuantity);
-router.delete("/:id", deleteQuantity);
+router.post("/",protect, createQuantity);
+router.get("/",protect, getAllQuantities);
+router.get("/:id",protect, getQuantityById);
+router.put("/:id",protect, updateQuantity);
+router.delete("/:id",protect, deleteQuantity);
 
 export default router;

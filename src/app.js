@@ -9,6 +9,7 @@ import brandRoutes from "./routes/brand.routes.js";
 import customerRoutes from "./routes/customer.routes.js";
 import vendorRoutes from "./routes/vendor.routes.js";
 import quantityRoutes from "./routes/quantityRoutes.js";
+import employeeRoutes from "./routes/employeeRoutes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
@@ -21,6 +22,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/employees", employeeRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/brands", brandRoutes);

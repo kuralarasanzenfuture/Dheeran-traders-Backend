@@ -193,6 +193,7 @@ export const initDatabase = async () => {
         address TEXT,
         aadhar_number VARCHAR(20),
         pan_number VARCHAR(20),
+        bank_name VARCHAR(100),
         bank_account_number VARCHAR(30),
         ifsc_code VARCHAR(20),
         emergency_contact_name VARCHAR(150),

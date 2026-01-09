@@ -32,6 +32,7 @@ export const createEmployee = async (req, res) => {
       address,
       aadhar_number,
       pan_number,
+      bank_name,
       bank_account_number,
       ifsc_code,
       emergency_contact_name,
@@ -74,13 +75,14 @@ export const createEmployee = async (req, res) => {
         address,
         aadhar_number,
         pan_number,
+        bank_name,
         bank_account_number,
         ifsc_code,
         emergency_contact_name,
         emergency_contact_phone,
         emergency_contact_relation,
         status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         employee_code,
@@ -92,6 +94,7 @@ export const createEmployee = async (req, res) => {
         address || null,
         aadhar_number || null,
         pan_number || null,
+        bank_name || null,
         bank_account_number || null,
         ifsc_code || null,
         emergency_contact_name || null,

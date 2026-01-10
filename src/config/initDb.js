@@ -45,7 +45,7 @@ export const initDatabase = async () => {
   )
 `);
 
-    await db.query(`
+await db.query(`
   INSERT INTO users (username, email, password, role)
   SELECT 'admin', 'admin@gmail.com',
          'admin',
@@ -127,9 +127,7 @@ export const initDatabase = async () => {
   CREATE TABLE IF NOT EXISTS brands (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
-    status ENUM('active','inactive') DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    status ENUM('active','inactive') DEFAULT 'active'
   ) ENGINE=InnoDB
 `);
 
@@ -140,8 +138,7 @@ export const initDatabase = async () => {
     brand_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
     status ENUM('active','inactive') DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
 
     CONSTRAINT fk_categories_brand
       FOREIGN KEY (brand_id)
@@ -161,9 +158,6 @@ export const initDatabase = async () => {
 
     name VARCHAR(50) NOT NULL,  -- 25kg, 50kg, 1kg
     status ENUM('active','inactive') DEFAULT 'active',
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_quantities_brand
       FOREIGN KEY (brand_id)
@@ -204,6 +198,26 @@ export const initDatabase = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS company_bank_details (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  bank_name VARCHAR(150) NOT NULL,
+  account_name VARCHAR(150) NOT NULL,
+  account_number VARCHAR(50) NOT NULL,
+  ifsc_code VARCHAR(20) NOT NULL,
+  branch VARCHAR(150) NOT NULL,
+
+  qr_code_image VARCHAR(255) NOT NULL,
+
+  status ENUM('active','inactive') DEFAULT 'active',
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+      `);
 
     console.log("✅ Database & tables initialized successfully");
   } catch (error) {

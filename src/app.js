@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
 
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/user.routes.js";
@@ -10,6 +11,7 @@ import customerRoutes from "./routes/customer.routes.js";
 import vendorRoutes from "./routes/vendor.routes.js";
 import quantityRoutes from "./routes/quantityRoutes.js";
 import employeeRoutes from "./routes/employeeRoutes.js";
+import companyBankRoutes from "./routes/companyBankRoutes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
@@ -20,6 +22,8 @@ app.use(cors({
 }));
 app.use(express.json());
 
+app.use("/uploads", express.static("src/uploads"));
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/employees", employeeRoutes);
@@ -29,6 +33,7 @@ app.use("/api/brands", brandRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/vendors", vendorRoutes);
 app.use("/api/quantities", quantityRoutes);
+app.use("/api/company-bank", companyBankRoutes);
 
 
 app.use(errorHandler);

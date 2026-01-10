@@ -126,8 +126,8 @@ await db.query(`
     await db.query(`
   CREATE TABLE IF NOT EXISTS brands (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
-    status ENUM('active','inactive') DEFAULT 'active'
+    name VARCHAR(100) NOT NULL UNIQUE
+
   ) ENGINE=InnoDB
 `);
 
@@ -137,8 +137,6 @@ await db.query(`
     id INT AUTO_INCREMENT PRIMARY KEY,
     brand_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
-    status ENUM('active','inactive') DEFAULT 'active',
-
 
     CONSTRAINT fk_categories_brand
       FOREIGN KEY (brand_id)
@@ -156,8 +154,7 @@ await db.query(`
     brand_id INT NOT NULL,
     category_id INT NOT NULL,
 
-    name VARCHAR(50) NOT NULL,  -- 25kg, 50kg, 1kg
-    status ENUM('active','inactive') DEFAULT 'active',
+    name VARCHAR(50) NOT NULL,
 
     CONSTRAINT fk_quantities_brand
       FOREIGN KEY (brand_id)

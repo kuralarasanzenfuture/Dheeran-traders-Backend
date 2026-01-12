@@ -7,19 +7,19 @@ export const createProduct = async (req, res, next) => {
   try {
     const {
       product_name,
+      brand,
+      category,
       quantity,
       price,
-      stock,
-      category,
-      brand,
-      status,
     } = req.body;
 
-    if (!product_name || !quantity || !price || stock == null) {
-      return res.status(400).json({ message: "Required fields missing" });
+    if (!product_name || !brand || !category || !quantity || price == null) {
+      return res.status(400).json({
+        message: "All fields are required",
+      });
     }
 
-    // 🔹 1. Get last product_code
+    // 🔹 Generate product_code
     const [lastRow] = await db.query(`
       SELECT product_code
       FROM products
@@ -37,41 +37,39 @@ export const createProduct = async (req, res, next) => {
       nextNumber = lastNumber + 1;
     }
 
-    // 🔹 2. Generate new product_code
     const product_code = `DTT-PDT-${String(nextNumber).padStart(3, "0")}`;
 
-    // 🔹 3. Insert product
+    // 🔹 Insert product
     const [result] = await db.query(
-      `INSERT INTO products
-       (product_code, product_name, quantity, price, stock, category, brand, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `
+      INSERT INTO products
+      (product_code, product_name, brand, category, quantity, price)
+      VALUES (?, ?, ?, ?, ?, ?)
+      `,
       [
         product_code,
         product_name,
+        brand,
+        category,
         quantity,
         price,
-        stock,
-        category,
-        brand,
-        status || "in_stock",
       ]
     );
 
-    // 🔹 4. Fetch inserted product
-    const [rows] = await db.query(
+    // 🔹 Fetch inserted product
+    const [[product]] = await db.query(
       "SELECT * FROM products WHERE id = ?",
       [result.insertId]
     );
 
     res.status(201).json({
       message: "Product created successfully",
-      product: rows[0],
+      product,
     });
   } catch (err) {
     next(err);
   }
 };
-
 
 /**
  * GET ALL PRODUCTS
@@ -88,20 +86,20 @@ export const getProducts = async (req, res, next) => {
 };
 
 /**
- * GET SINGLE PRODUCT
+ * GET PRODUCT BY ID
  */
 export const getProductById = async (req, res, next) => {
   try {
-    const [rows] = await db.query(
+    const [[product]] = await db.query(
       "SELECT * FROM products WHERE id = ?",
       [req.params.id]
     );
 
-    if (!rows.length) {
+    if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    res.json(rows[0]);
+    res.json(product);
   } catch (err) {
     next(err);
   }
@@ -119,18 +117,18 @@ export const updateProduct = async (req, res, next) => {
       [req.body, id]
     );
 
-    if (result.affectedRows === 0) {
+    if (!result.affectedRows) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    const [rows] = await db.query(
+    const [[product]] = await db.query(
       "SELECT * FROM products WHERE id = ?",
       [id]
     );
 
     res.json({
       message: "Product updated successfully",
-      product: rows[0],
+      product,
     });
   } catch (err) {
     next(err);
@@ -147,7 +145,7 @@ export const deleteProduct = async (req, res, next) => {
       [req.params.id]
     );
 
-    if (result.affectedRows === 0) {
+    if (!result.affectedRows) {
       return res.status(404).json({ message: "Product not found" });
     }
 

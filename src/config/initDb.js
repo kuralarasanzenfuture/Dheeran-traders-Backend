@@ -60,21 +60,53 @@ await db.query(`
       CREATE TABLE IF NOT EXISTS products (
         id INT AUTO_INCREMENT PRIMARY KEY,
         product_code VARCHAR(20) UNIQUE,
-        product_name VARCHAR(150),
-        quantity VARCHAR(50),
-        price DECIMAL(10,2),
-        stock INT,
-        category VARCHAR(100),
+        product_name VARCHAR(150) NOT NULL,
         brand VARCHAR(100),
-        status ENUM('in_stock','low_stock','out_of_stock') DEFAULT 'in_stock',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
+        category VARCHAR(100),
+        quantity VARCHAR(50),
+        price DECIMAL(10,2)  
+      ) ENGINE=InnoDB
     `);
 
-    // 5️⃣ CUSTOMERS TABLE
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS vendors (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+
+  phone VARCHAR(20) NOT NULL UNIQUE,
+  email VARCHAR(150) UNIQUE,
+
+  address TEXT,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+    `);
+
     await db.query(`
       CREATE TABLE IF NOT EXISTS customers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+
+  phone VARCHAR(20) NOT NULL UNIQUE,
+  email VARCHAR(150) UNIQUE,
+
+  address TEXT,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+    `);
+
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS customersbill (
         id INT AUTO_INCREMENT PRIMARY KEY,
         customer_name VARCHAR(150),
 
@@ -97,9 +129,8 @@ await db.query(`
       )
     `);
 
-    // 6️⃣ VENDORS TABLE
     await db.query(`
-      CREATE TABLE IF NOT EXISTS vendors (
+      CREATE TABLE IF NOT EXISTS vendorsbill (
         id INT AUTO_INCREMENT PRIMARY KEY,
         vendor_name VARCHAR(150),
 
@@ -135,14 +166,16 @@ await db.query(`
     await db.query(`
   CREATE TABLE IF NOT EXISTS categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    brand_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,
+  brand_id INT NOT NULL,
+  name VARCHAR(100) NOT NULL,
 
-    CONSTRAINT fk_categories_brand
-      FOREIGN KEY (brand_id)
-      REFERENCES brands(id)
-      ON DELETE CASCADE
-      ON UPDATE CASCADE
+  CONSTRAINT fk_categories_brand
+    FOREIGN KEY (brand_id)
+    REFERENCES brands(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+
+  UNIQUE KEY uq_brand_category (brand_id, name)
   ) ENGINE=InnoDB
 `);
 
@@ -150,25 +183,23 @@ await db.query(`
     await db.query(`
   CREATE TABLE IF NOT EXISTS quantities (
     id INT AUTO_INCREMENT PRIMARY KEY,
+  brand_id INT NOT NULL,
+  category_id INT NOT NULL,
+  name VARCHAR(50) NOT NULL,
 
-    brand_id INT NOT NULL,
-    category_id INT NOT NULL,
+  CONSTRAINT fk_quantities_brand
+    FOREIGN KEY (brand_id)
+    REFERENCES brands(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
 
-    name VARCHAR(50) NOT NULL,
+  CONSTRAINT fk_quantities_category
+    FOREIGN KEY (category_id)
+    REFERENCES categories(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
 
-    CONSTRAINT fk_quantities_brand
-      FOREIGN KEY (brand_id)
-      REFERENCES brands(id)
-      ON DELETE CASCADE
-      ON UPDATE CASCADE,
-
-    CONSTRAINT fk_quantities_category
-      FOREIGN KEY (category_id)
-      REFERENCES categories(id)
-      ON DELETE CASCADE
-      ON UPDATE CASCADE,
-
-    UNIQUE (brand_id, category_id, name)
+  UNIQUE (brand_id, category_id, name)
   ) ENGINE=InnoDB
 `);
 

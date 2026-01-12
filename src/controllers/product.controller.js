@@ -49,11 +49,27 @@ export const createProduct = async (req, res, next) => {
 /**
  * GET ALL PRODUCTS
  */
+/**
+ * GET ALL PRODUCTS (WITH BRAND, CATEGORY, QUANTITY NAMES)
+ */
 export const getProducts = async (req, res, next) => {
   try {
-    const [rows] = await db.query(
-      "SELECT * FROM products ORDER BY id DESC"
-    );
+    const [rows] = await db.query(`
+      SELECT
+        p.id,
+        p.product_code,
+        p.product_name,
+        b.name AS brand_name,
+        c.name AS category_name,
+        q.name AS quantity_name,
+        p.price
+      FROM products p
+      LEFT JOIN brands b ON p.brand = b.id
+      LEFT JOIN categories c ON p.category = c.id
+      LEFT JOIN quantities q ON p.quantity = q.id
+      ORDER BY p.id DESC
+    `);
+
     res.json(rows);
   } catch (err) {
     next(err);

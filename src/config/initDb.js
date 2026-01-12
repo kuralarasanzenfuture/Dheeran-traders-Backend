@@ -80,6 +80,11 @@ await db.query(`
 
   address TEXT,
 
+  bank_name VARCHAR(150),
+  bank_account_number VARCHAR(30),
+  bank_ifsc_code VARCHAR(20),
+  bank_branch_name VARCHAR(150),
+
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ON UPDATE CURRENT_TIMESTAMP

@@ -5,58 +5,33 @@ import db from "../config/db.js";
  */
 export const createProduct = async (req, res, next) => {
   try {
-    const {
-      product_name,
-      brand,
-      category,
-      quantity,
-      price,
-    } = req.body;
+    const { product_name, brand, category, quantity, price } = req.body;
 
     if (!product_name || !brand || !category || !quantity || price == null) {
-      return res.status(400).json({
-        message: "All fields are required",
-      });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    // 🔹 Generate product_code
     const [lastRow] = await db.query(`
-      SELECT product_code
-      FROM products
-      ORDER BY id DESC
-      LIMIT 1
+      SELECT product_code FROM products ORDER BY id DESC LIMIT 1
     `);
 
     let nextNumber = 1;
-
     if (lastRow.length && lastRow[0].product_code) {
-      const lastNumber = parseInt(
-        lastRow[0].product_code.split("-").pop(),
-        10
-      );
-      nextNumber = lastNumber + 1;
+      nextNumber =
+        parseInt(lastRow[0].product_code.split("-").pop(), 10) + 1;
     }
 
     const product_code = `DTT-PDT-${String(nextNumber).padStart(3, "0")}`;
 
-    // 🔹 Insert product
     const [result] = await db.query(
       `
       INSERT INTO products
       (product_code, product_name, brand, category, quantity, price)
       VALUES (?, ?, ?, ?, ?, ?)
       `,
-      [
-        product_code,
-        product_name,
-        brand,
-        category,
-        quantity,
-        price,
-      ]
+      [product_code, product_name, brand, category, quantity, price]
     );
 
-    // 🔹 Fetch inserted product
     const [[product]] = await db.query(
       "SELECT * FROM products WHERE id = ?",
       [result.insertId]
@@ -77,7 +52,7 @@ export const createProduct = async (req, res, next) => {
 export const getProducts = async (req, res, next) => {
   try {
     const [rows] = await db.query(
-      "SELECT * FROM products ORDER BY created_at DESC"
+      "SELECT * FROM products ORDER BY id DESC"
     );
     res.json(rows);
   } catch (err) {

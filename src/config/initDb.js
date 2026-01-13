@@ -45,7 +45,7 @@ export const initDatabase = async () => {
   )
 `);
 
-await db.query(`
+    await db.query(`
   INSERT INTO users (username, email, password, role)
   SELECT 'admin', 'admin@gmail.com',
          'admin',
@@ -54,109 +54,6 @@ await db.query(`
     SELECT 1 FROM users WHERE email = 'admin@gmail.com'
   )
 `);
-
-    // 4️⃣ PRODUCTS TABLE
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS products (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        product_code VARCHAR(20) UNIQUE,
-        product_name VARCHAR(150) NOT NULL,
-        brand VARCHAR(100),
-        category VARCHAR(100),
-        quantity VARCHAR(50),
-        price DECIMAL(10,2)  
-      ) ENGINE=InnoDB
-    `);
-
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS vendors (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-
-  first_name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100) NOT NULL,
-
-  phone VARCHAR(20) NOT NULL UNIQUE,
-  email VARCHAR(150) UNIQUE,
-
-  address TEXT,
-
-  bank_name VARCHAR(150),
-  bank_account_number VARCHAR(30),
-  bank_ifsc_code VARCHAR(20),
-  bank_branch_name VARCHAR(150),
-
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
-    `);
-
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS customers (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-
-  first_name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100) NOT NULL,
-
-  phone VARCHAR(20) NOT NULL UNIQUE,
-  email VARCHAR(150) UNIQUE,
-
-  address TEXT,
-
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
-    `);
-
-
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS customersbill (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        customer_name VARCHAR(150),
-
-        product_id INT,
-        product_name VARCHAR(150),
-        product_brand VARCHAR(100),
-        product_quantity INT,
-
-        phone VARCHAR(20),
-        email VARCHAR(150),
-        address TEXT,
-
-        payment_mode ENUM('cash','upi'),
-        advance_pay DECIMAL(10,2),
-        pending_pay DECIMAL(10,2),
-        stock INT,
-
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS vendorsbill (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        vendor_name VARCHAR(150),
-
-        brand_id INT,
-        brand_name VARCHAR(150),
-        brand_category VARCHAR(100),
-        brand_quantity VARCHAR(50),
-
-        phone VARCHAR(20),
-        email VARCHAR(150),
-        address TEXT,
-
-        payment_mode ENUM('cash','upi'),
-        advance_pay DECIMAL(10,2),
-        pending_pay DECIMAL(10,2),
-        stock INT,
-
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
 
     // 7️⃣ BRANDS TABLE
     await db.query(`
@@ -207,6 +104,113 @@ await db.query(`
   UNIQUE (brand_id, category_id, name)
   ) ENGINE=InnoDB
 `);
+
+
+    // 4️⃣ PRODUCTS TABLE
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        product_code VARCHAR(20) UNIQUE,
+        product_name VARCHAR(150) NOT NULL,
+        brand VARCHAR(100),
+        category VARCHAR(100),
+        quantity VARCHAR(50),
+        price DECIMAL(10,2),
+
+        UNIQUE KEY uniq_product (product_name, brand, category, quantity)
+      ) ENGINE=InnoDB
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS vendors (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+
+  phone VARCHAR(20) NOT NULL UNIQUE,
+  email VARCHAR(150) UNIQUE,
+
+  address TEXT,
+
+  bank_name VARCHAR(150),
+  bank_account_number VARCHAR(30),
+  bank_ifsc_code VARCHAR(20),
+  bank_branch_name VARCHAR(150),
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS customers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+
+  phone VARCHAR(20) NOT NULL UNIQUE,
+  email VARCHAR(150) UNIQUE,
+
+  address TEXT,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS customersbill (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        customer_name VARCHAR(150),
+
+        product_id INT,
+        product_name VARCHAR(150),
+        product_brand VARCHAR(100),
+        product_quantity INT,
+
+        phone VARCHAR(20),
+        email VARCHAR(150),
+        address TEXT,
+
+        payment_mode ENUM('cash','upi'),
+        advance_pay DECIMAL(10,2),
+        pending_pay DECIMAL(10,2),
+        stock INT,
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS vendorsbill (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        vendor_name VARCHAR(150),
+
+        brand_id INT,
+        brand_name VARCHAR(150),
+        brand_category VARCHAR(100),
+        brand_quantity VARCHAR(50),
+
+        phone VARCHAR(20),
+        email VARCHAR(150),
+        address TEXT,
+
+        payment_mode ENUM('cash','upi'),
+        advance_pay DECIMAL(10,2),
+        pending_pay DECIMAL(10,2),
+        stock INT,
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+
 
     await db.query(`
       CREATE TABLE IF NOT EXISTS employees (

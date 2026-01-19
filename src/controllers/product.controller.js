@@ -22,10 +22,15 @@ export const createProduct = async (req, res, next) => {
       });
     }
 
-    product_name = product_name.trim();
-    brand = brand.trim();
-    category = category.trim();
-    quantity = quantity.trim();
+    // product_name = product_name.trim();
+    // brand = brand.trim();
+    // category = category.trim();
+    // quantity = quantity.trim();
+
+    product_name = String(product_name).trim();
+    brand = String(brand).trim();
+    category = String(category).trim();
+    quantity = String(quantity).trim();
 
     if (!product_name || !brand || !category || !quantity) {
       return res.status(400).json({
@@ -65,7 +70,7 @@ export const createProduct = async (req, res, next) => {
       (product_code, product_name, brand, category, quantity, price)
       VALUES (?, ?, ?, ?, ?, ?)
       `,
-      [product_code, product_name, brand, category, quantity, price]
+      [product_code, product_name, brand, category, quantity, price],
     );
 
     /* ===============================
@@ -102,34 +107,34 @@ export const createProduct = async (req, res, next) => {
  */
 export const getProducts = async (req, res, next) => {
   try {
-    const [rows] = await db.query(`
-      SELECT
-        p.id,
-        p.product_code,
-        p.product_name,
-        b.name AS brand_name,
-        c.name AS category_name,
-        q.name AS quantity_name,
-        p.price
-      FROM products p
-      LEFT JOIN brands b ON p.brand = b.id
-      LEFT JOIN categories c ON p.category = c.id
-      LEFT JOIN quantities q ON p.quantity = q.id
-      ORDER BY p.id DESC
-    `);
+    // const [rows] = await db.query(`
+    //   SELECT
+    //     p.id,
+    //     p.product_code,
+    //     p.product_name,
+    //     b.name AS brand_name,
+    //     c.name AS category_name,
+    //     q.name AS quantity_name,
+    //     p.price
+    //   FROM products p
+    //   LEFT JOIN brands b ON p.brand = b.id
+    //   LEFT JOIN categories c ON p.category = c.id
+    //   LEFT JOIN quantities q ON p.quantity = q.id
+    //   ORDER BY p.id DESC
+    // `);
 
-    //     const [rows] = await db.query(`
-    //       SELECT
-    //   id,
-    //   product_code,
-    //   product_name,
-    //   brand AS brand_name,
-    //   category AS category_name,
-    //   quantity AS quantity_name,
-    //   price
-    // FROM products
-    // ORDER BY id DESC;
-    //     `);
+    const [rows] = await db.query(`
+          SELECT
+      id,
+      product_code,
+      product_name,
+      brand AS brand_name,
+      category AS category_name,
+      quantity AS quantity_name,
+      price
+    FROM products
+    ORDER BY id DESC;
+        `);
 
     res.json(rows);
   } catch (err) {

@@ -10,23 +10,25 @@ import {
 
 const router = express.Router();
 
-// CREATE with QR upload
+/* CREATE */
 router.post(
   "/",
-  uploadBankQR.single("qr_code"),
+  uploadBankQR.single("qr_code_image"),
   createCompanyBank
 );
 
+/* READ */
 router.get("/", getCompanyBanks);
 router.get("/:id", getCompanyBankById);
 
-// UPDATE with optional QR upload
+/* UPDATE */
 router.put(
   "/:id",
-  uploadBankQR.single("qr_code"),
+  uploadBankQR.single("qr_code_image"),
   updateCompanyBank
 );
 
+/* DELETE */
 router.delete("/:id", deleteCompanyBank);
 
 export default router;

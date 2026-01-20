@@ -13,6 +13,7 @@ import quantityRoutes from "./routes/quantityRoutes.js";
 import employeeRoutes from "./routes/employeeRoutes.js";
 import companyBankRoutes from "./routes/companyBankRoutes.js";
 import vendorStock from "./routes/vendorStock.routes.js";
+import customerBillingRoutes from "./routes/customerBilling.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
@@ -36,6 +37,8 @@ app.use("/api/vendors", vendorRoutes);
 app.use("/api/quantities", quantityRoutes);
 app.use("/api/company-bank", companyBankRoutes);
 app.use("/api/vendor-stocks", vendorStock)
+
+app.use("/api/customer-billing", customerBillingRoutes);
 
 
 app.use(errorHandler);

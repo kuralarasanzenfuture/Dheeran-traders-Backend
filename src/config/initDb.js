@@ -105,7 +105,6 @@ export const initDatabase = async () => {
   ) ENGINE=InnoDB
 `);
 
-
     // 4️⃣ PRODUCTS TABLE
     await db.query(`
       CREATE TABLE IF NOT EXISTS products (
@@ -126,7 +125,7 @@ export const initDatabase = async () => {
   id INT AUTO_INCREMENT PRIMARY KEY,
 
   first_name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100),
 
   phone VARCHAR(20) NOT NULL UNIQUE,
   email VARCHAR(150) UNIQUE,
@@ -254,31 +253,31 @@ export const initDatabase = async () => {
 ) ENGINE=InnoDB;
       `);
 
-//       await db.query(`
-//   CREATE TABLE IF NOT EXISTS vendor_stocks (
-//     id INT AUTO_INCREMENT PRIMARY KEY,
+    //       await db.query(`
+    //   CREATE TABLE IF NOT EXISTS vendor_stocks (
+    //     id INT AUTO_INCREMENT PRIMARY KEY,
 
-//     vendor_name VARCHAR(150) NOT NULL,
-//     vendor_phone VARCHAR(20) NOT NULL,
+    //     vendor_name VARCHAR(150) NOT NULL,
+    //     vendor_phone VARCHAR(20) NOT NULL,
 
-//     product_id varchar(50) NOT NULL,
-//     product_name VARCHAR(150) NOT NULL,
-//     product_brand VARCHAR(100) NOT NULL,
-//     product_category VARCHAR(100) NOT NULL,
-//     product_quantity VARCHAR(50) NOT NULL,
+    //     product_id varchar(50) NOT NULL,
+    //     product_name VARCHAR(150) NOT NULL,
+    //     product_brand VARCHAR(100) NOT NULL,
+    //     product_category VARCHAR(100) NOT NULL,
+    //     product_quantity VARCHAR(50) NOT NULL,
 
-//     total_stock INT NOT NULL,
+    //     total_stock INT NOT NULL,
 
-//     entry_date DATE DEFAULT (CURRENT_DATE),
-//     entry_time TIME DEFAULT (CURRENT_TIME),
+    //     entry_date DATE DEFAULT (CURRENT_DATE),
+    //     entry_time TIME DEFAULT (CURRENT_TIME),
 
-//     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-//       ON UPDATE CURRENT_TIMESTAMP
-//   ) ENGINE=InnoDB;
-// `);
+    //     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    //     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    //       ON UPDATE CURRENT_TIMESTAMP
+    //   ) ENGINE=InnoDB;
+    // `);
 
-await db.query(`
+    await db.query(`
   CREATE TABLE IF NOT EXISTS vendor_stocks (
     id INT AUTO_INCREMENT PRIMARY KEY,
 
@@ -302,6 +301,56 @@ await db.query(`
   ) ENGINE=InnoDB;
 `);
 
+    await db.query(`
+  CREATE TABLE IF NOT EXISTS customerBilling(
+  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  invoice_number VARCHAR(30) UNIQUE NOT NULL,
+  invoice_date DATE NOT NULL,
+
+  customer_id INT NOT NULL,
+  customer_name VARCHAR(150) NOT NULL,
+  phone_number VARCHAR(20),
+  gst_number VARCHAR(30),
+
+  subtotal DECIMAL(10,2) NOT NULL,
+  tax_gst_percent DECIMAL(5,2) NOT NULL,
+  tax_gst_amount DECIMAL(10,2) NOT NULL,
+
+  grand_total DECIMAL(10,2) NOT NULL,
+
+  advance_paid DECIMAL(10,2) DEFAULT 0,
+  balance_due DECIMAL(10,2) NOT NULL,
+
+  cash_amount DECIMAL(10,2) DEFAULT 0,
+  upi_amount DECIMAL(10,2) DEFAULT 0,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (customer_id) REFERENCES customers(id)
+);
+`);
+
+
+await db.query(`
+  CREATE TABLE IF NOT EXISTS customerBillingProducts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  billing_id INT NOT NULL,
+
+  product_id INT NOT NULL,
+  product_name VARCHAR(150) NOT NULL,
+  product_brand VARCHAR(100),
+  product_category VARCHAR(100),
+
+  quantity INT NOT NULL,
+  rate DECIMAL(10,2) NOT NULL,
+  total DECIMAL(10,2) NOT NULL,
+
+  FOREIGN KEY (billing_id) REFERENCES customerBilling(id) ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products(id)
+);
+  `);
 
     console.log("✅ Database & tables initialized successfully");
   } catch (error) {

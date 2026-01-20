@@ -1,7 +1,7 @@
 import db from "../config/db.js";
 
 /**
- * CREATE / ADD VENDOR STOCK (NEW VISIT)
+ * CREATE VENDOR STOCK
  */
 // export const createVendorStock = async (req, res) => {
 //   try {

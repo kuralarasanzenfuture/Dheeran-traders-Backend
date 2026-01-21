@@ -161,90 +161,303 @@ import db from "../config/db.js";
 //   }
 // };
 
+// ✅ Insert (each visit = new row at a time)
+// export const createVendorStock = async (req, res) => {
+//   const conn = await db.getConnection();
+//   try {
+//     const {
+//       vendor_name,
+//       vendor_phone,
+//       product_id,
+//       product_name,
+//       product_brand,
+//       product_category,
+//       product_quantity,
+//       total_stock,
+//       entry_date,
+//       entry_time,
+//     } = req.body;
+
+//     if (
+//       !vendor_name ||
+//       !vendor_phone ||
+//       !product_id ||
+//       !product_name ||
+//       !product_brand ||
+//       !product_category ||
+//       !product_quantity ||
+//       total_stock == null ||
+//       !entry_date ||
+//       !entry_time
+//     ) {
+//       return res.status(400).json({ message: "All fields required" });
+//     }
+
+//     if (!/^\d{10}$/.test(vendor_phone)) {
+//       return res.status(400).json({ message: "Invalid phone number" });
+//     }
+
+//     if (isNaN(total_stock) || total_stock <= 0) {
+//       return res.status(400).json({ message: "Stock must be > 0" });
+//     }
+
+//     await conn.beginTransaction();
+
+//     // insert vendor stock snapshot
+//     const [result] = await conn.query(
+//       `
+//       INSERT INTO vendor_stocks
+//       (vendor_name, vendor_phone, product_id, product_name,
+//        product_brand, product_category, product_quantity,
+//        total_stock, entry_date, entry_time)
+//       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+//       `,
+//       [
+//         vendor_name,
+//         vendor_phone,
+//         product_id,
+//         product_name,
+//         product_brand,
+//         product_category,
+//         product_quantity,
+//         total_stock,
+//         entry_date,
+//         entry_time,
+//       ]
+//     );
+
+//     // update product stock
+//     await conn.query(
+//       `UPDATE products SET stock = stock + ? WHERE id = ?`,
+//       [total_stock, product_id]
+//     );
+
+//     await conn.commit();
+
+//     res.status(201).json({
+//       message: "Vendor stock added & product stock updated",
+//       id: result.insertId,
+//     });
+//   } catch (err) {
+//     await conn.rollback();
+//     console.error(err);
+//     res.status(500).json({ message: "Server error" });
+//   } finally {
+//     conn.release();
+//   }
+// };
+
+// insert more data at a time
+// export const createVendorStock = async (req, res) => {
+//   const conn = await db.getConnection();
+//   try {
+//     const {
+//       vendor_name,
+//       vendor_phone,
+//       entry_date,
+//       entry_time,
+//       products
+//     } = req.body;
+
+//     if (
+//       !vendor_name ||
+//       !vendor_phone ||
+//       !entry_date ||
+//       !entry_time ||
+//       !Array.isArray(products) ||
+//       products.length === 0
+//     ) {
+//       return res.status(400).json({ message: "Invalid vendor stock data" });
+//     }
+
+//     if (!/^\d{10}$/.test(vendor_phone)) {
+//       return res.status(400).json({ message: "Invalid phone number" });
+//     }
+
+//     await conn.beginTransaction();
+
+//     for (const item of products) {
+//       const { product_id, product_quantity, total_stock } = item;
+
+//       if (!product_id || !product_quantity || total_stock <= 0) {
+//         throw new Error("Invalid product entry");
+//       }
+
+//       /* 🔒 LOCK PRODUCT */
+//       const [[product]] = await conn.query(
+//         `SELECT product_name, brand, category FROM products WHERE id = ? FOR UPDATE`,
+//         [product_id]
+//       );
+
+//       if (!product) throw new Error("Product not found");
+
+//       /* 📦 SNAPSHOT ENTRY */
+//       await conn.query(
+//         `
+//         INSERT INTO vendor_stocks
+//         (vendor_name, vendor_phone, product_id, product_name,
+//          product_brand, product_category, product_quantity,
+//          total_stock, entry_date, entry_time)
+//         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+//         `,
+//         [
+//           vendor_name,
+//           vendor_phone,
+//           product_id,
+//           product.product_name,
+//           product.brand,
+//           product.category,
+//           product_quantity,
+//           total_stock,
+//           entry_date,
+//           entry_time,
+//         ]
+//       );
+
+//       /* ➕ UPDATE PRODUCT STOCK */
+//       await conn.query(
+//         `UPDATE products SET stock = stock + ? WHERE id = ?`,
+//         [total_stock, product_id]
+//       );
+//     }
+
+//     await conn.commit();
+
+//     res.status(201).json({
+//       message: "Vendor stock added for multiple products",
+//       total_products: products.length,
+
+//     });
+//   } catch (err) {
+//     await conn.rollback();
+//     console.error("Vendor stock error:", err.message);
+//     res.status(400).json({ message: err.message });
+//   } finally {
+//     conn.release();
+//   }
+// };
+
 export const createVendorStock = async (req, res) => {
   const conn = await db.getConnection();
   try {
     const {
       vendor_name,
       vendor_phone,
-      product_id,
-      product_name,
-      product_brand,
-      product_category,
-      product_quantity,
-      total_stock,
       entry_date,
       entry_time,
+      products
     } = req.body;
 
     if (
       !vendor_name ||
       !vendor_phone ||
-      !product_id ||
-      !product_name ||
-      !product_brand ||
-      !product_category ||
-      !product_quantity ||
-      total_stock == null ||
       !entry_date ||
-      !entry_time
+      !entry_time ||
+      !Array.isArray(products) ||
+      products.length === 0
     ) {
-      return res.status(400).json({ message: "All fields required" });
+      return res.status(400).json({ message: "Invalid vendor stock data" });
     }
 
     if (!/^\d{10}$/.test(vendor_phone)) {
       return res.status(400).json({ message: "Invalid phone number" });
     }
 
-    if (isNaN(total_stock) || total_stock <= 0) {
-      return res.status(400).json({ message: "Stock must be > 0" });
-    }
-
     await conn.beginTransaction();
 
-    // insert vendor stock snapshot
-    const [result] = await conn.query(
+    for (const item of products) {
+      const { product_id, product_quantity, total_stock } = item;
+
+      if (!product_id || !product_quantity || total_stock <= 0) {
+        throw new Error("Invalid product entry");
+      }
+
+      /* 🔒 LOCK PRODUCT */
+      const [[product]] = await conn.query(
+        `SELECT product_name, brand, category FROM products WHERE id = ? FOR UPDATE`,
+        [product_id]
+      );
+
+      if (!product) throw new Error("Product not found");
+
+      /* 📦 INSERT SNAPSHOT */
+      await conn.query(
+        `
+        INSERT INTO vendor_stocks
+        (vendor_name, vendor_phone, product_id, product_name,
+         product_brand, product_category, product_quantity,
+         total_stock, entry_date, entry_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          vendor_name,
+          vendor_phone,
+          product_id,
+          product.product_name,
+          product.brand,
+          product.category,
+          product_quantity,
+          total_stock,
+          entry_date,
+          entry_time,
+        ]
+      );
+
+      /* ➕ UPDATE STOCK */
+      await conn.query(
+        `UPDATE products SET stock = stock + ? WHERE id = ?`,
+        [total_stock, product_id]
+      );
+    }
+
+    /* 🔁 FETCH INSERTED SNAPSHOTS */
+    const [vendorStocks] = await conn.query(
       `
-      INSERT INTO vendor_stocks
-      (vendor_name, vendor_phone, product_id, product_name,
-       product_brand, product_category, product_quantity,
-       total_stock, entry_date, entry_time)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      SELECT *
+      FROM vendor_stocks
+      WHERE vendor_name = ?
+        AND vendor_phone = ?
+        AND entry_date = ?
+        AND entry_time = ?
+      ORDER BY id DESC
       `,
-      [
-        vendor_name,
-        vendor_phone,
-        product_id,
-        product_name,
-        product_brand,
-        product_category,
-        product_quantity,
-        total_stock,
-        entry_date,
-        entry_time,
-      ]
+      [vendor_name, vendor_phone, entry_date, entry_time]
     );
 
-    // update product stock
-    await conn.query(
-      `UPDATE products SET stock = stock + ? WHERE id = ?`,
-      [total_stock, product_id]
+    /* 🔁 FETCH UPDATED PRODUCT STOCK */
+    const productIds = products.map(p => p.product_id);
+
+    const [updatedProducts] = await conn.query(
+      `
+      SELECT id, product_name, stock
+      FROM products
+      WHERE id IN (?)
+      `,
+      [productIds]
     );
 
     await conn.commit();
 
     res.status(201).json({
-      message: "Vendor stock added & product stock updated",
-      id: result.insertId,
+      message: "Vendor stock added successfully",
+      vendor: {
+        name: vendor_name,
+        phone: vendor_phone,
+        entry_date,
+        entry_time
+      },
+      items: vendorStocks,
+      updated_products: updatedProducts
     });
   } catch (err) {
     await conn.rollback();
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Vendor stock error:", err.message);
+    res.status(400).json({ message: err.message });
   } finally {
     conn.release();
   }
 };
+
 
 
 /**
@@ -287,7 +500,7 @@ export const getVendorStockById = async (req, res) => {
 };
 
 /**
- * UPDATE VENDOR STOCK (CORRECTION ONLY)
+ * UPDATE VENDOR STOCK
  */
 // export const updateVendorStock = async (req, res) => {
 //   try {

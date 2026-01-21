@@ -9,7 +9,7 @@ const generateInvoiceNumber = async () => {
      FROM customerBilling 
      WHERE invoice_number LIKE ? 
      ORDER BY id DESC LIMIT 1`,
-    [`INV-${year}-%`]
+    [`INV-${year}-%`],
   );
 
   let next = 1;
@@ -38,53 +38,74 @@ export const createCustomerBilling = async (req, res) => {
       products,
     } = req.body;
 
-    /* 🔴 BASIC VALIDATIONS */
-    if (!customer_id || !customer_name || !Array.isArray(products) || !products.length) {
+    /* 🔴 VALIDATION */
+    if (
+      !customer_id ||
+      !customer_name ||
+      !Array.isArray(products) ||
+      products.length === 0
+    ) {
       return res.status(400).json({ message: "Invalid billing data" });
     }
 
-    /* 🔢 Generate Invoice */
-    const invoice_number = await generateInvoiceNumber();
+    if (isNaN(tax_gst_percent)) {
+      return res.status(400).json({ message: "Invalid GST percent" });
+    }
+
+    /* 🔢 Invoice */
+    const invoice_number = await generateInvoiceNumber(connection);
     const invoice_date = new Date();
 
     let subtotal = 0;
 
-    /* 🔍 PRODUCT VALIDATION + STOCK CHECK */
+    /* 🔒 VALIDATE + LOCK PRODUCTS */
     for (const item of products) {
       const { product_id, quantity, rate } = item;
 
-      if (!product_id || !quantity || !rate) {
-        throw new Error("Invalid product details");
+      if (!product_id || quantity <= 0 || rate <= 0) {
+        throw new Error("Invalid product line");
       }
 
-      const [productRows] = await connection.query(
-        "SELECT stock, product_name, brand, category FROM products WHERE id = ?",
-        [product_id]
+      const [[product]] = await connection.query(
+        `
+        SELECT stock, product_name, brand, category
+        FROM products
+        WHERE id = ?
+        FOR UPDATE
+        `,
+        [product_id],
       );
 
-      if (!productRows.length) throw new Error("Product not found");
+      if (!product) throw new Error("Product not found");
 
-      if (productRows[0].stock < quantity) {
-        throw new Error(`Insufficient stock for ${productRows[0].product_name}`);
+      if (product.stock < quantity) {
+        throw new Error(`Insufficient stock for ${product.product_name}`);
       }
 
       subtotal += quantity * rate;
     }
 
-    /* 🧮 GST + TOTAL */
+    /* 🧮 CALCULATIONS */
     const tax_gst_amount = (subtotal * tax_gst_percent) / 100;
     const grand_total = subtotal + tax_gst_amount;
     const balance_due = grand_total - advance_paid;
 
-    /* 🧾 INSERT BILL HEADER */
-    const [billingResult] = await connection.query(
-      `INSERT INTO customerBilling (
+    if (balance_due < 0) {
+      throw new Error("Advance exceeds bill amount");
+    }
+
+    /* 🧾 INSERT BILL */
+    const [billResult] = await connection.query(
+      `
+      INSERT INTO customerBilling (
         invoice_number, invoice_date,
         customer_id, customer_name, phone_number, gst_number,
         subtotal, tax_gst_percent, tax_gst_amount,
         grand_total, advance_paid, balance_due,
         cash_amount, upi_amount
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
       [
         invoice_number,
         invoice_date,
@@ -100,57 +121,73 @@ export const createCustomerBilling = async (req, res) => {
         balance_due,
         cash_amount,
         upi_amount,
-      ]
+      ],
     );
 
-    const billing_id = billingResult.insertId;
+    const billing_id = billResult.insertId;
 
-    /* 📦 INSERT PRODUCTS + UPDATE STOCK */
+    /* 📦 INSERT ITEMS + DEDUCT STOCK */
     for (const item of products) {
       const { product_id, quantity, rate } = item;
 
-      const [productRows] = await connection.query(
+      const [[product]] = await connection.query(
         "SELECT product_name, brand, category FROM products WHERE id = ?",
-        [product_id]
+        [product_id],
       );
 
       const total = quantity * rate;
 
       await connection.query(
-        `INSERT INTO customerBillingProducts (
+        `
+        INSERT INTO customerBillingProducts (
           billing_id, product_id,
           product_name, product_brand, product_category,
           quantity, rate, total
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `,
         [
           billing_id,
           product_id,
-          productRows[0].product_name,
-          productRows[0].brand,
-          productRows[0].category,
+          product.product_name,
+          product.brand,
+          product.category,
           quantity,
           rate,
           total,
-        ]
+        ],
       );
 
       await connection.query(
-        "UPDATE products SET stock = stock - ? WHERE id = ?",
-        [quantity, product_id]
+        `UPDATE products SET stock = stock - ? WHERE id = ?`,
+        [quantity, product_id],
       );
     }
 
     await connection.commit();
 
-    res.status(201).json({
-      message: "Invoice created successfully",
-      invoice_number,
-    });
+    /* 🔁 FETCH FULL BILLING DATA */
+    const [[billing]] = await connection.query(
+      "SELECT * FROM customerBilling WHERE id = ?",
+      [billing_id],
+    );
 
+    const [billingProducts] = await connection.query(
+      "SELECT * FROM customerBillingProducts WHERE billing_id = ?",
+      [billing_id],
+    );
+
+    res.status(201).json({
+      message: "customer billing Invoice created successfully",
+      invoice_number,
+      billing_id,
+      billing,
+      products: billingProducts,
+    });
   } catch (err) {
     await connection.rollback();
     console.error("Billing error:", err.message);
-    res.status(500).json({ message: err.message });
+    res.status(400).json({ message: err.message });
   } finally {
     connection.release();
   }
@@ -159,7 +196,7 @@ export const createCustomerBilling = async (req, res) => {
 /* 📄 GET ALL INVOICES */
 export const getAllCustomerBillings = async (req, res) => {
   const [rows] = await db.query(
-    "SELECT * FROM customerBilling ORDER BY created_at DESC"
+    "SELECT * FROM customerBilling ORDER BY created_at DESC",
   );
   res.json(rows);
 };
@@ -170,14 +207,14 @@ export const getCustomerBillingById = async (req, res) => {
 
   const [[billing]] = await db.query(
     "SELECT * FROM customerBilling WHERE id = ?",
-    [id]
+    [id],
   );
 
   if (!billing) return res.status(404).json({ message: "Invoice not found" });
 
   const [products] = await db.query(
     "SELECT * FROM customerBillingProducts WHERE billing_id = ?",
-    [id]
+    [id],
   );
 
   res.json({ billing, products });

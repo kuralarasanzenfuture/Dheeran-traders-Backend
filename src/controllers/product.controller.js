@@ -131,7 +131,8 @@ export const getProducts = async (req, res, next) => {
       brand AS brand_name,
       category AS category_name,
       quantity AS quantity_name,
-      price
+      price,
+      stock
     FROM products
     ORDER BY id DESC;
         `);

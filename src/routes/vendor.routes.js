@@ -7,7 +7,6 @@ import {
   deleteVendor,
 } from "../controllers/vendor.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
-import { deleteVendorEntry } from "../controllers/vendorStock.controller.js";
 
 const router = express.Router();
 
@@ -16,6 +15,5 @@ router.get("/", protect, getVendors);
 router.get("/:id", protect, getVendorById);
 router.put("/:id", protect, updateVendor);
 router.delete("/:id", protect, deleteVendor);
-router.delete("/entry/:entry_id", protect, deleteVendorEntry);
 
 export default router;

@@ -73,7 +73,96 @@ import db from "../config/db.js";
 //   }
 // };
 
+// export const createVendorStock = async (req, res) => {
+//   try {
+//     const {
+//       vendor_name,
+//       vendor_phone,
+//       product_id,
+//       product_name,
+//       product_brand,
+//       product_category,
+//       product_quantity,
+//       total_stock,
+//       entry_date,
+//       entry_time,
+//     } = req.body;
+
+//     // ✅ Required validation
+//     if (
+//       !vendor_name ||
+//       !vendor_phone ||
+//       !product_id ||
+//       !product_name ||
+//       !product_brand ||
+//       !product_category ||
+//       !product_quantity ||
+//       total_stock == null ||
+//       !entry_date ||
+//       !entry_time
+//     ) {
+//       return res.status(400).json({
+//         message: "All fields including entry_date and entry_time are required",
+//       });
+//     }
+
+//     // ✅ Phone validation
+//     if (!/^\d{10}$/.test(vendor_phone)) {
+//       return res.status(400).json({ message: "Invalid phone number" });
+//     }
+
+//     // ✅ Stock validation
+//     if (isNaN(total_stock) || total_stock <= 0) {
+//       return res.status(400).json({
+//         message: "Stock must be greater than 0",
+//       });
+//     }
+
+//     // ✅ Date format validation
+//     if (isNaN(Date.parse(entry_date))) {
+//       return res.status(400).json({ message: "Invalid entry_date format" });
+//     }
+
+//     // ✅ Insert (each visit = new row)
+//     const [result] = await db.query(
+//       `
+//       INSERT INTO vendor_stocks
+//       (vendor_name, vendor_phone, product_id, product_name,
+//        product_brand, product_category, product_quantity,
+//        total_stock, entry_date, entry_time)
+//       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+//       `,
+//       [
+//         vendor_name,
+//         vendor_phone,
+//         product_id,
+//         product_name,
+//         product_brand,
+//         product_category,
+//         product_quantity,
+//         total_stock,
+//         entry_date,
+//         entry_time,
+//       ],
+//     );
+
+//     const [[stock]] = await db.query(
+//       "SELECT * FROM vendor_stocks WHERE id = ?",
+//       [result.insertId],
+//     );
+
+//     res.status(201).json({
+//       message: "Vendor stock added successfully",
+//       stock,
+//     });
+//   } catch (error) {
+//     console.error("Create vendor stock error:", error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 export const createVendorStock = async (req, res) => {
+  const conn = await db.getConnection();
   try {
     const {
       vendor_name,
@@ -88,7 +177,6 @@ export const createVendorStock = async (req, res) => {
       entry_time,
     } = req.body;
 
-    // ✅ Required validation
     if (
       !vendor_name ||
       !vendor_phone ||
@@ -101,30 +189,21 @@ export const createVendorStock = async (req, res) => {
       !entry_date ||
       !entry_time
     ) {
-      return res.status(400).json({
-        message: "All fields including entry_date and entry_time are required",
-      });
+      return res.status(400).json({ message: "All fields required" });
     }
 
-    // ✅ Phone validation
     if (!/^\d{10}$/.test(vendor_phone)) {
       return res.status(400).json({ message: "Invalid phone number" });
     }
 
-    // ✅ Stock validation
     if (isNaN(total_stock) || total_stock <= 0) {
-      return res.status(400).json({
-        message: "Stock must be greater than 0",
-      });
+      return res.status(400).json({ message: "Stock must be > 0" });
     }
 
-    // ✅ Date format validation
-    if (isNaN(Date.parse(entry_date))) {
-      return res.status(400).json({ message: "Invalid entry_date format" });
-    }
+    await conn.beginTransaction();
 
-    // ✅ Insert (each visit = new row)
-    const [result] = await db.query(
+    // insert vendor stock snapshot
+    const [result] = await conn.query(
       `
       INSERT INTO vendor_stocks
       (vendor_name, vendor_phone, product_id, product_name,
@@ -143,23 +222,30 @@ export const createVendorStock = async (req, res) => {
         total_stock,
         entry_date,
         entry_time,
-      ],
+      ]
     );
 
-    const [[stock]] = await db.query(
-      "SELECT * FROM vendor_stocks WHERE id = ?",
-      [result.insertId],
+    // update product stock
+    await conn.query(
+      `UPDATE products SET stock = stock + ? WHERE id = ?`,
+      [total_stock, product_id]
     );
+
+    await conn.commit();
 
     res.status(201).json({
-      message: "Vendor stock added successfully",
-      stock,
+      message: "Vendor stock added & product stock updated",
+      id: result.insertId,
     });
-  } catch (error) {
-    console.error("Create vendor stock error:", error);
+  } catch (err) {
+    await conn.rollback();
+    console.error(err);
     res.status(500).json({ message: "Server error" });
+  } finally {
+    conn.release();
   }
 };
+
 
 /**
  * GET ALL VENDOR STOCK ENTRIES
@@ -284,10 +370,120 @@ export const getVendorStockById = async (req, res) => {
 //   }
 // };
 
+// export const updateVendorStock = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const {
+//       vendor_name,
+//       vendor_phone,
+//       product_name,
+//       product_brand,
+//       product_category,
+//       product_quantity,
+//       total_stock,
+//       entry_date,
+//       entry_time,
+//     } = req.body;
+
+//     // ✅ Required fields validation
+//     if (
+//       !vendor_name ||
+//       !vendor_phone ||
+//       !product_name ||
+//       !product_brand ||
+//       !product_category ||
+//       !product_quantity ||
+//       total_stock == null ||
+//       !entry_date ||
+//       !entry_time
+//     ) {
+//       return res.status(400).json({
+//         message: "All fields including entry_date and entry_time are required",
+//       });
+//     }
+
+//     // ✅ Phone validation
+//     if (!/^\d{10}$/.test(vendor_phone)) {
+//       return res.status(400).json({ message: "Invalid phone number" });
+//     }
+
+//     // ✅ Stock validation
+//     if (isNaN(total_stock) || total_stock < 0) {
+//       return res.status(400).json({
+//         message: "Total stock must be a valid number",
+//       });
+//     }
+
+//     // ✅ Date validation
+//     if (isNaN(Date.parse(entry_date))) {
+//       return res.status(400).json({ message: "Invalid entry_date format" });
+//     }
+
+//     // ✅ Time validation (HH:MM or HH:MM:SS)
+//     if (!/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/.test(entry_time)) {
+//       return res.status(400).json({ message: "Invalid entry_time format" });
+//     }
+
+//     // ✅ Check existence
+//     const [[exists]] = await db.query(
+//       "SELECT id FROM vendor_stocks WHERE id = ?",
+//       [id],
+//     );
+
+//     if (!exists) {
+//       return res.status(404).json({ message: "Stock not found" });
+//     }
+
+//     // ✅ Update
+//     await db.query(
+//       `
+//       UPDATE vendor_stocks
+//       SET
+//         vendor_name = ?,
+//         vendor_phone = ?,
+//         product_name = ?,
+//         product_brand = ?,
+//         product_category = ?,
+//         product_quantity = ?,
+//         total_stock = ?,
+//         entry_date = ?,
+//         entry_time = ?
+//       WHERE id = ?
+//       `,
+//       [
+//         vendor_name,
+//         vendor_phone,
+//         product_name,
+//         product_brand,
+//         product_category,
+//         product_quantity,
+//         total_stock,
+//         entry_date,
+//         entry_time,
+//         id,
+//       ],
+//     );
+
+//     const [[stock]] = await db.query(
+//       "SELECT * FROM vendor_stocks WHERE id = ?",
+//       [id],
+//     );
+
+//     res.json({
+//       message: "Vendor stock updated successfully",
+//       stock,
+//     });
+//   } catch (error) {
+//     console.error("Update vendor stock error:", error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 export const updateVendorStock = async (req, res) => {
+  const conn = await db.getConnection();
   try {
     const { id } = req.params;
-
     const {
       vendor_name,
       vendor_phone,
@@ -300,7 +496,6 @@ export const updateVendorStock = async (req, res) => {
       entry_time,
     } = req.body;
 
-    // ✅ Required fields validation
     if (
       !vendor_name ||
       !vendor_phone ||
@@ -312,58 +507,41 @@ export const updateVendorStock = async (req, res) => {
       !entry_date ||
       !entry_time
     ) {
-      return res.status(400).json({
-        message: "All fields including entry_date and entry_time are required",
-      });
+      return res.status(400).json({ message: "All fields required" });
     }
 
-    // ✅ Phone validation
-    if (!/^\d{10}$/.test(vendor_phone)) {
-      return res.status(400).json({ message: "Invalid phone number" });
-    }
-
-    // ✅ Stock validation
     if (isNaN(total_stock) || total_stock < 0) {
-      return res.status(400).json({
-        message: "Total stock must be a valid number",
-      });
+      return res.status(400).json({ message: "Invalid stock" });
     }
 
-    // ✅ Date validation
-    if (isNaN(Date.parse(entry_date))) {
-      return res.status(400).json({ message: "Invalid entry_date format" });
-    }
+    await conn.beginTransaction();
 
-    // ✅ Time validation (HH:MM or HH:MM:SS)
-    if (!/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/.test(entry_time)) {
-      return res.status(400).json({ message: "Invalid entry_time format" });
-    }
-
-    // ✅ Check existence
-    const [[exists]] = await db.query(
-      "SELECT id FROM vendor_stocks WHERE id = ?",
-      [id],
+    const [[oldRow]] = await conn.query(
+      `SELECT product_id, total_stock FROM vendor_stocks WHERE id = ?`,
+      [id]
     );
 
-    if (!exists) {
+    if (!oldRow) {
+      await conn.rollback();
       return res.status(404).json({ message: "Stock not found" });
     }
 
-    // ✅ Update
-    await db.query(
+    const diff = total_stock - oldRow.total_stock;
+
+    await conn.query(
       `
       UPDATE vendor_stocks
       SET
-        vendor_name = ?,
-        vendor_phone = ?,
-        product_name = ?,
-        product_brand = ?,
-        product_category = ?,
-        product_quantity = ?,
-        total_stock = ?,
-        entry_date = ?,
-        entry_time = ?
-      WHERE id = ?
+        vendor_name=?,
+        vendor_phone=?,
+        product_name=?,
+        product_brand=?,
+        product_category=?,
+        product_quantity=?,
+        total_stock=?,
+        entry_date=?,
+        entry_time=?
+      WHERE id=?
       `,
       [
         vendor_name,
@@ -376,23 +554,26 @@ export const updateVendorStock = async (req, res) => {
         entry_date,
         entry_time,
         id,
-      ],
+      ]
     );
 
-    const [[stock]] = await db.query(
-      "SELECT * FROM vendor_stocks WHERE id = ?",
-      [id],
+    await conn.query(
+      `UPDATE products SET stock = stock + ? WHERE id = ?`,
+      [diff, oldRow.product_id]
     );
 
-    res.json({
-      message: "Vendor stock updated successfully",
-      stock,
-    });
-  } catch (error) {
-    console.error("Update vendor stock error:", error);
+    await conn.commit();
+
+    res.json({ message: "Vendor stock updated & product stock adjusted" });
+  } catch (err) {
+    await conn.rollback();
+    console.error(err);
     res.status(500).json({ message: "Server error" });
+  } finally {
+    conn.release();
   }
 };
+
 
 /**
  * ADD STOCK (INCREMENT LOGIC)
@@ -437,19 +618,55 @@ export const addVendorStock = async (req, res) => {
 /**
  * DELETE VENDOR STOCK
  */
-export const deleteVendorStock = async (req, res) => {
-  try {
-    const [result] = await db.query("DELETE FROM vendor_stocks WHERE id = ?", [
-      req.params.id,
-    ]);
+// export const deleteVendorStock = async (req, res) => {
+//   try {
+//     const [result] = await db.query("DELETE FROM vendor_stocks WHERE id = ?", [
+//       req.params.id,
+//     ]);
 
-    if (!result.affectedRows) {
+//     if (!result.affectedRows) {
+//       return res.status(404).json({ message: "Stock not found" });
+//     }
+
+//     res.json({ message: "Vendor stock deleted successfully" });
+//   } catch (error) {
+//     console.error("Delete vendor stock error:", error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
+export const deleteVendorStock = async (req, res) => {
+  const conn = await db.getConnection();
+  try {
+    const { id } = req.params;
+
+    await conn.beginTransaction();
+
+    const [[row]] = await conn.query(
+      `SELECT product_id, total_stock FROM vendor_stocks WHERE id = ?`,
+      [id]
+    );
+
+    if (!row) {
+      await conn.rollback();
       return res.status(404).json({ message: "Stock not found" });
     }
 
-    res.json({ message: "Vendor stock deleted successfully" });
-  } catch (error) {
-    console.error("Delete vendor stock error:", error);
+    await conn.query(`DELETE FROM vendor_stocks WHERE id = ?`, [id]);
+
+    await conn.query(
+      `UPDATE products SET stock = stock - ? WHERE id = ?`,
+      [row.total_stock, row.product_id]
+    );
+
+    await conn.commit();
+
+    res.json({ message: "Vendor stock deleted & product stock reduced" });
+  } catch (err) {
+    await conn.rollback();
+    console.error(err);
     res.status(500).json({ message: "Server error" });
+  } finally {
+    conn.release();
   }
 };

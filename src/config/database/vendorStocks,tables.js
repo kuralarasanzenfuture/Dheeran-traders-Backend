@@ -51,6 +51,8 @@ export const createVendorStocksTables = async (db) => {
   CREATE TABLE IF NOT EXISTS vendor_stocks (
   id INT AUTO_INCREMENT PRIMARY KEY,
 
+  entry_id INT NOT NULL,   -- 👈 GROUPING ID (IMPORTANT)
+
   vendor_name VARCHAR(150) NOT NULL,
   vendor_phone VARCHAR(20) NOT NULL,
 

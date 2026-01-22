@@ -4,15 +4,16 @@ import {
   getEmployees,
   getEmployeeById,
   updateEmployee,
-  deleteEmployee
+  deleteEmployee,
 } from "../controllers/employeeController.js";
+import { protect } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/", createEmployee);
+router.post("/", protect, createEmployee);
 router.get("/", getEmployees);
 router.get("/:id", getEmployeeById);
-router.put("/:id", updateEmployee);
-router.delete("/:id", deleteEmployee);
+router.put("/:id", protect, updateEmployee);
+router.delete("/:id", protect, deleteEmployee);
 
 export default router;

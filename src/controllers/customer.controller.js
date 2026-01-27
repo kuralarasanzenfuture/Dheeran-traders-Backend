@@ -8,9 +8,9 @@ export const createCustomer = async (req, res) => {
     const { first_name, last_name, phone, email, address } = req.body;
 
     // ✅ Required fields validation
-    if (!first_name || !last_name || !phone) {
+    if (!first_name || !phone) {
       return res.status(400).json({
-        message: "First name, last name and phone are required",
+        message: "First name and phone are required",
       });
     }
 

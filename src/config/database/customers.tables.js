@@ -4,7 +4,7 @@ export const createCustomerTables = async (db) => {
   id INT AUTO_INCREMENT PRIMARY KEY,
 
   first_name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100),
 
   phone VARCHAR(20) NOT NULL UNIQUE,
   email VARCHAR(150) UNIQUE,

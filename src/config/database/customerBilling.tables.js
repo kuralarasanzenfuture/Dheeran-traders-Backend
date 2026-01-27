@@ -94,6 +94,11 @@ await db.query(`
   subtotal DECIMAL(10,2) NOT NULL,
   tax_gst_percent DECIMAL(5,2) NOT NULL,
   tax_gst_amount DECIMAL(10,2) NOT NULL,
+  tax_cgst_percent DECIMAL(5,2) NOT NULL,
+  tax_cgst_amount DECIMAL(10,2) NOT NULL,
+  tax_sgst_percent DECIMAL(5,2) NOT NULL,
+  tax_sgst_amount DECIMAL(10,2) NOT NULL,
+
   grand_total DECIMAL(10,2) NOT NULL,
 
   advance_paid DECIMAL(10,2) DEFAULT 0,

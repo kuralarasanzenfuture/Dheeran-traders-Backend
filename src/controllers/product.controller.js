@@ -209,3 +209,32 @@ export const deleteProduct = async (req, res, next) => {
     next(err);
   }
 };
+
+export const updateProductStock = async (req, res) => {
+try {
+const { stock } = req.body;
+const { id } = req.params;
+
+
+if (stock === undefined || isNaN(stock)) {
+return res.status(400).json({ message: "Valid stock is required" });
+}
+
+
+const [result] = await db.query(
+`UPDATE products SET stock = ? WHERE id = ?`,
+[stock, id]
+);
+
+
+if (result.affectedRows === 0) {
+return res.status(404).json({ message: "Product not found" });
+}
+
+
+res.json({ message: "Stock updated successfully" });
+} catch (err) {
+console.error("Stock update error:", err);
+res.status(500).json({ message: "Server error" });
+}
+};

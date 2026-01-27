@@ -1,8 +1,13 @@
 import express from "express";
 import {
+  brandWiseReport,
   createCustomerBilling,
+  customerWiseReport,
   getAllCustomerBillings,
   getCustomerBillingById,
+  getCustomerProductFullData,
+  getHighestSellingBrand,
+  productWiseReport,
 } from "../controllers/customerBilling.controller.js";
 
 const router = express.Router();
@@ -10,10 +15,19 @@ const router = express.Router();
 /* CREATE INVOICE */
 router.post("/", createCustomerBilling);
 
-/* GET ALL */
 router.get("/", getAllCustomerBillings);
 
-/* GET BY ID */
+/* 📊 HIGHEST SELLING BRAND */
+router.get("/stats/highest-selling-brand", getHighestSellingBrand);
+
+router.get("/customer-products", getCustomerProductFullData);
+
+router.get("/products", productWiseReport);
+router.get("/brands", brandWiseReport);
+router.get("/customers", customerWiseReport);
+
 router.get("/:id", getCustomerBillingById);
+
+
 
 export default router;

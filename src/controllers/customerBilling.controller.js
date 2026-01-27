@@ -912,20 +912,202 @@ export const getAllCustomerBillings = async (req, res) => {
 
 
 /* 🔍 GET INVOICE DETAILS */
+// export const getCustomerBillingById = async (req, res) => {
+//   const { id } = req.params;
+
+//   const [[billing]] = await db.query(
+//     "SELECT * FROM customerBilling WHERE id = ?",
+//     [id],
+//   );
+
+//   if (!billing) return res.status(404).json({ message: "Invoice not found" });
+
+//   const [products] = await db.query(
+//     "SELECT * FROM customerBillingProducts WHERE billing_id = ?",
+//     [id],
+//   );
+
+//   res.json({ billing, products });
+// };
+
 export const getCustomerBillingById = async (req, res) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-  const [[billing]] = await db.query(
-    "SELECT * FROM customerBilling WHERE id = ?",
-    [id],
-  );
+    /* 🧾 BILL + BANK DETAILS */
+    const [[billing]] = await db.query(
+      `
+      SELECT
+        cb.*,
 
-  if (!billing) return res.status(404).json({ message: "Invoice not found" });
+        cbd.bank_name,
+        cbd.account_name,
+        cbd.account_number,
+        cbd.ifsc_code,
+        cbd.branch,
+        cbd.qr_code_image
 
-  const [products] = await db.query(
-    "SELECT * FROM customerBillingProducts WHERE billing_id = ?",
-    [id],
-  );
+      FROM customerBilling cb
+      LEFT JOIN company_bank_details cbd
+        ON cbd.id = cb.bank_id
 
-  res.json({ billing, products });
+      WHERE cb.id = ?
+      `,
+      [id]
+    );
+
+    if (!billing) {
+      return res.status(404).json({ message: "Invoice not found" });
+    }
+
+    /* 📦 PRODUCTS */
+    const [products] = await db.query(
+      `
+      SELECT
+        billing_id,
+        product_id,
+        product_name,
+        product_brand,
+        product_category,
+        quantity,
+        rate,
+        total
+      FROM customerBillingProducts
+      WHERE billing_id = ?
+      `,
+      [id]
+    );
+
+    res.json({ billing, products });
+
+  } catch (err) {
+    console.error("Invoice fetch error:", err);
+    res.status(500).json({ message: "Failed to fetch invoice" });
+  }
+};
+
+export const getHighestSellingBrand = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        product_brand,
+        SUM(quantity) AS total_quantity_sold
+      FROM customerBillingProducts
+      GROUP BY product_brand
+      ORDER BY total_quantity_sold DESC
+      LIMIT 1
+    `);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "No sales data found" });
+    }
+
+    res.json({
+      highest_selling_brand: rows[0].product_brand,
+      total_quantity_sold: rows[0].total_quantity_sold,
+    });
+  } catch (err) {
+    console.error("Highest selling brand error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getCustomerProductFullData = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        cbp.id AS billing_product_id,
+
+        cb.id AS billing_id,
+        cb.invoice_number,
+        cb.invoice_date,
+
+        cb.customer_id,
+        cb.customer_name,
+        cb.phone_number,
+        cb.gst_number,
+
+        cb.staff_name,
+        cb.staff_phone,
+
+        cb.subtotal,
+        cb.tax_gst_percent,
+        cb.tax_gst_amount,
+        cb.tax_cgst_percent,
+        cb.tax_cgst_amount,
+        cb.tax_sgst_percent,
+        cb.tax_sgst_amount,
+        cb.grand_total,
+        cb.advance_paid,
+        cb.balance_due,
+        cb.cash_amount,
+        cb.upi_amount,
+
+        cbp.product_id,
+        cbp.product_name,
+        cbp.product_brand,
+        cbp.product_category,
+        cbp.quantity,
+        cbp.rate,
+        cbp.total
+
+      FROM customerBillingProducts cbp
+      JOIN customerBilling cb 
+        ON cbp.billing_id = cb.id
+      ORDER BY cb.id DESC
+    `);
+
+    res.json(rows);
+  } catch (error) {
+    console.error("Fetch error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+/* PRODUCT WISE */
+export const productWiseReport = async (req, res) => {
+  const [rows] = await db.query(`
+    SELECT 
+      cbp.product_id,
+      cbp.product_name,
+      cbp.product_brand,
+      cbp.product_category,
+      SUM(cbp.quantity) AS total_quantity_sold,
+      SUM(cbp.total) AS total_sales_amount
+    FROM customerBillingProducts cbp
+    GROUP BY cbp.product_id, cbp.product_name, cbp.product_brand, cbp.product_category
+    ORDER BY total_sales_amount DESC
+  `);
+  res.json(rows);
+};
+
+/* BRAND WISE */
+export const brandWiseReport = async (req, res) => {
+  const [rows] = await db.query(`
+    SELECT 
+      cbp.product_brand,
+      SUM(cbp.quantity) AS total_quantity_sold,
+      SUM(cbp.total) AS total_sales_amount
+    FROM customerBillingProducts cbp
+    WHERE cbp.product_brand IS NOT NULL
+    GROUP BY cbp.product_brand
+    ORDER BY total_sales_amount DESC
+  `);
+  res.json(rows);
+};
+
+/* CUSTOMER WISE */
+export const customerWiseReport = async (req, res) => {
+  const [rows] = await db.query(`
+    SELECT
+      cb.customer_id,
+      cb.customer_name,
+      SUM(cbp.quantity) AS total_items,
+      SUM(cbp.total) AS total_spent
+    FROM customerBilling cb
+    JOIN customerBillingProducts cbp ON cb.id = cbp.billing_id
+    GROUP BY cb.customer_id, cb.customer_name
+    ORDER BY total_spent DESC
+  `);
+  res.json(rows);
 };

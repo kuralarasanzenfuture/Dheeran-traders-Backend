@@ -63,8 +63,8 @@ export const getPaymentsByBillingId = async (req, res) => {
     const { billing_id } = req.params;
 
     const [rows] = await db.query(
-      `SELECT id, payment_date, cash_amount, upi_amount, bank_amount, reference_no, remarks
-       FROM customerPayments
+      `SELECT id, payment_date, cash_amount, upi_amount, reference_no, remarks
+       FROM customerBillingPayment
        WHERE billing_id = ?
        ORDER BY payment_date`,
       [billing_id]
@@ -90,9 +90,9 @@ export const getInvoiceWithPayments = async (req, res) => {
         cb.phone_number,
         cb.grand_total,
         cb.balance_due,
-        IFNULL(SUM(cp.cash_amount + cp.upi_amount + cp.bank_amount),0) AS total_paid
+        IFNULL(SUM(cp.cash_amount + cp.upi_amount),0) AS total_paid
       FROM customerBilling cb
-      LEFT JOIN customerPayments cp ON cb.id = cp.billing_id
+      LEFT JOIN customerBillingPayment cp ON cb.id = cp.billing_id
       WHERE cb.id = ?
       GROUP BY cb.id`,
       [billing_id]

@@ -134,6 +134,7 @@ export const createCustomerBillingTables = async (db) => {
   product_name VARCHAR(150) NOT NULL,
   product_brand VARCHAR(100),
   product_category VARCHAR(100),
+  product_quantity VARCHAR(50),
 
   quantity INT NOT NULL,
   rate DECIMAL(10,2) NOT NULL,

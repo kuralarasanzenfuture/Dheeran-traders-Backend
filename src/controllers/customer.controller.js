@@ -57,14 +57,43 @@ export const createCustomer = async (req, res) => {
 /**
  * GET ALL CUSTOMERS
  */
+// export const getCustomers = async (req, res) => {
+//   try {
+//     const [rows] = await db.query(
+//       "SELECT * FROM customers ORDER BY created_at DESC"
+//     );
+//     res.json(rows);
+//   } catch (error) {
+//     console.error("Get customers error:", error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 export const getCustomers = async (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT * FROM customers ORDER BY created_at DESC"
-    );
+    const [rows] = await db.query(`
+      SELECT
+        c.id,
+        c.first_name,
+        c.last_name,
+        c.email,
+        c.phone,
+        c.address,
+
+        COALESCE(SUM(cb.grand_total), 0) AS total,
+        COALESCE(SUM(cb.balance_due), 0) AS pending_amount
+
+      FROM customers c
+      LEFT JOIN customerBilling cb
+        ON c.id = cb.customer_id
+
+      GROUP BY c.id
+      ORDER BY c.id DESC
+    `);
+
     res.json(rows);
   } catch (error) {
-    console.error("Get customers error:", error);
+    console.error("Fetch customers failed:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

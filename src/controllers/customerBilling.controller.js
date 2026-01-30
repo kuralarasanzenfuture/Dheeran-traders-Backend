@@ -1408,3 +1408,151 @@ export const getPendingBills = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch pending bills" });
   }
 };
+
+
+export const deleteCustomerBilling = async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const { id } = req.params;
+
+    // 1️⃣ Get products of this bill
+    const [products] = await connection.query(
+      `SELECT product_id, quantity FROM customerBillingProducts WHERE billing_id = ?`,
+      [id]
+    );
+
+    if (products.length === 0) {
+      return res.status(404).json({ message: "Invoice not found" });
+    }
+
+    // 2️⃣ Restore stock
+    for (const item of products) {
+      await connection.query(
+        `UPDATE products SET stock = stock + ? WHERE id = ?`,
+        [item.quantity, item.product_id]
+      );
+    }
+
+    // 3️⃣ Delete products
+    await connection.query(
+      `DELETE FROM customerBillingProducts WHERE billing_id = ?`,
+      [id]
+    );
+
+    // 4️⃣ Delete bill
+    await connection.query(
+      `DELETE FROM customerBilling WHERE id = ?`,
+      [id]
+    );
+
+    await connection.commit();
+    res.json({ message: "Invoice deleted successfully" });
+
+  } catch (err) {
+    await connection.rollback();
+    console.error("Delete error:", err);
+    res.status(500).json({ message: "Delete failed" });
+  } finally {
+    connection.release();
+  }
+};
+
+
+export const updateCustomerBilling = async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    const { id } = req.params;
+    const { products, tax_gst_percent, advance_paid } = req.body;
+
+    // 1️⃣ Get old products
+    const [oldProducts] = await connection.query(
+      `SELECT product_id, quantity FROM customerBillingProducts WHERE billing_id = ?`,
+      [id]
+    );
+
+    if (!oldProducts.length) {
+      return res.status(404).json({ message: "Invoice not found" });
+    }
+
+    // 2️⃣ Restore old stock
+    for (const item of oldProducts) {
+      await connection.query(
+        `UPDATE products SET stock = stock + ? WHERE id = ?`,
+        [item.quantity, item.product_id]
+      );
+    }
+
+    // 3️⃣ Delete old products
+    await connection.query(
+      `DELETE FROM customerBillingProducts WHERE billing_id = ?`,
+      [id]
+    );
+
+    // 4️⃣ Insert new products & deduct stock
+    let subtotal = 0;
+
+    for (const item of products) {
+      const { product_id, quantity, rate, product_quantity } = item;
+
+      const [[product]] = await connection.query(
+        `SELECT stock, product_name, brand, category FROM products WHERE id = ? FOR UPDATE`,
+        [product_id]
+      );
+
+      if (!product || product.stock < quantity) {
+        throw new Error(`Stock issue for ${product?.product_name}`);
+      }
+
+      const total = quantity * rate;
+      subtotal += total;
+
+      await connection.query(
+        `INSERT INTO customerBillingProducts
+         (billing_id, product_id, product_name, product_brand, product_category,
+          product_quantity, quantity, rate, total)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          product_id,
+          product.product_name,
+          product.brand,
+          product.category,
+          product_quantity,
+          quantity,
+          rate,
+          total
+        ]
+      );
+
+      await connection.query(
+        `UPDATE products SET stock = stock - ? WHERE id = ?`,
+        [quantity, product_id]
+      );
+    }
+
+    const tax = (subtotal * tax_gst_percent) / 100;
+    const grand_total = subtotal + tax;
+    const balance_due = grand_total - advance_paid;
+
+    // 5️⃣ Update bill
+    await connection.query(
+      `UPDATE customerBilling 
+       SET subtotal=?, tax_gst_amount=?, grand_total=?, balance_due=?
+       WHERE id=?`,
+      [subtotal, tax, grand_total, balance_due, id]
+    );
+
+    await connection.commit();
+    res.json({ message: "Invoice updated successfully" });
+
+  } catch (err) {
+    await connection.rollback();
+    console.error("Update error:", err);
+    res.status(400).json({ message: err.message });
+  } finally {
+    connection.release();
+  }
+};

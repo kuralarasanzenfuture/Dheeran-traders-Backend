@@ -3,12 +3,14 @@ import {
   brandWiseReport,
   createCustomerBilling,
   customerWiseReport,
+  deleteCustomerBilling,
   getAllCustomerBillings,
   getCustomerBillingById,
   getCustomerProductFullData,
   getHighestSellingBrand,
   getPendingBills,
   productWiseReport,
+  updateCustomerBilling,
 } from "../controllers/customerBilling.controller.js";
 
 const router = express.Router();
@@ -29,5 +31,8 @@ router.get("/customers", customerWiseReport);
 router.get("/pending", getPendingBills);
 
 router.get("/:id", getCustomerBillingById);
+
+router.put("/:id", updateCustomerBilling);
+router.delete("/:id", deleteCustomerBilling);
 
 export default router;

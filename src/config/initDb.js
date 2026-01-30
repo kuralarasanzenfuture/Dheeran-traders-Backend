@@ -1,5 +1,6 @@
 import { createAdminTables } from "./database/admin.tables.js";
 import { createCompanyBankDetailsTables } from "./database/companyBankDetails.tables.js";
+import { createCompanyDetailsTables } from "./database/companydetails.tables.js";
 import { createCustomerBillingTables } from "./database/customerBilling.tables.js";
 import { createCustomerTables } from "./database/customers.tables.js";
 import { createEmployeeTables } from "./database/employee.tables.js";
@@ -19,7 +20,7 @@ export const initDatabase = async () => {
     await db.query(`USE \`${process.env.DB_NAME}\``);
 
     //adminLogin
-    await createAdminTables(db);
+    // await createAdminTables(db); 
 
     // 3️⃣ USERS TABLE
     await createUserTables(db);
@@ -40,6 +41,8 @@ export const initDatabase = async () => {
     await createVendorStocksTables(db);
 
     await createCustomerBillingTables(db);
+
+    await createCompanyDetailsTables(db);
 
     // await db.query(`
     //   CREATE TABLE IF NOT EXISTS customersbill (

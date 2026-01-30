@@ -9,24 +9,38 @@ export const register = async (req, res, next) => {
   try {
     const { username, email, password } = req.body;
 
+    // Required checks
     if (!username || !password) {
-      return res.status(400).json({ message: "All fields required" });
+      return res.status(400).json({ message: "Username and password required" });
     }
 
-    const [exists] = await db.query(
-      "SELECT id FROM users WHERE email = ?",
-      [email]
+    // Check username duplicate (always)
+    const [userExists] = await db.query(
+      "SELECT id FROM users WHERE username = ?",
+      [username]
     );
 
-    if (exists.length) {
-      return res.status(400).json({ message: "User already exists" });
+    if (userExists.length) {
+      return res.status(400).json({ message: "Username already exists" });
+    }
+
+    // Check email duplicate ONLY if email provided
+    if (email) {
+      const [emailExists] = await db.query(
+        "SELECT id FROM users WHERE email = ?",
+        [email]
+      );
+
+      if (emailExists.length) {
+        return res.status(400).json({ message: "Email already exists" });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await db.query(
       "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
-      [username, email, hashedPassword]
+      [username, email || null, hashedPassword]
     );
 
     res.status(201).json({
@@ -34,7 +48,7 @@ export const register = async (req, res, next) => {
       user: {
         id: result.insertId,
         username,
-        email,
+        email: email || null,
         role: "user",
       },
     });
@@ -82,7 +96,6 @@ export const register = async (req, res, next) => {
 //   }
 // };
 
-
 export const login = async (req, res, next) => {
   try {
     const { identifier, password } = req.body;
@@ -96,7 +109,7 @@ export const login = async (req, res, next) => {
 
     const [users] = await db.query(
       "SELECT * FROM users WHERE email = ? OR username = ?",
-      [identifier, identifier]
+      [identifier, identifier],
     );
 
     if (!users.length) {
@@ -110,10 +123,9 @@ export const login = async (req, res, next) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    await db.query(
-      "UPDATE users SET last_login_at = NOW() WHERE id = ?",
-      [user.id]
-    );
+    await db.query("UPDATE users SET last_login_at = NOW() WHERE id = ?", [
+      user.id,
+    ]);
 
     delete user.password;
 
@@ -132,7 +144,7 @@ export const login = async (req, res, next) => {
 export const getUsers = async (req, res, next) => {
   try {
     const [rows] = await db.query(
-      "SELECT id, username, email, role, created_at FROM users"
+      "SELECT id, username, email, role, created_at FROM users",
     );
     res.json(rows);
   } catch (err) {
@@ -192,10 +204,10 @@ export const updateUserRole = async (req, res, next) => {
     }
 
     // update role
-    const [result] = await db.query(
-      "UPDATE users SET role = ? WHERE id = ?",
-      [role, id]
-    );
+    const [result] = await db.query("UPDATE users SET role = ? WHERE id = ?", [
+      role,
+      id,
+    ]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "User not found" });
@@ -205,7 +217,7 @@ export const updateUserRole = async (req, res, next) => {
     const [rows] = await db.query(
       `SELECT id, username, email, role, created_at, updated_at
        FROM users WHERE id = ?`,
-      [id]
+      [id],
     );
 
     res.json({
@@ -217,3 +229,55 @@ export const updateUserRole = async (req, res, next) => {
   }
 };
 
+
+export const updateUser = async (req, res, next) => {
+  try {
+    const { username, email, password } = req.body;
+    const { id } = req.params;
+
+    if (!username) {
+      return res.status(400).json({ message: "Username required" });
+    }
+
+    // Check username duplicate (exclude self)
+    const [usernameExists] = await db.query(
+      "SELECT id FROM users WHERE username = ? AND id != ?",
+      [username, id]
+    );
+
+    if (usernameExists.length) {
+      return res.status(400).json({ message: "Username already exists" });
+    }
+
+    // Check email duplicate (if provided)
+    if (email) {
+      const [emailExists] = await db.query(
+        "SELECT id FROM users WHERE email = ? AND id != ?",
+        [email, id]
+      );
+
+      if (emailExists.length) {
+        return res.status(400).json({ message: "Email already exists" });
+      }
+    }
+
+    let query = "UPDATE users SET username = ?, email = ?";
+    let values = [username, email || null];
+
+    // Update password only if provided
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      query += ", password = ?";
+      values.push(hashedPassword);
+    }
+
+    query += " WHERE id = ?";
+    values.push(id);
+
+    await db.query(query, values);
+
+    res.json({ message: "User updated successfully" });
+  } catch (err) {
+    next(err);
+  }
+};

@@ -15,6 +15,7 @@ import companyBankRoutes from "./routes/companyBank.routes.js";
 import vendorStock from "./routes/vendorStock.routes.js";
 import customerBillingRoutes from "./routes/customerBilling.routes.js";
 import customerPaymentRoutes from "./routes/customerPayment.routes.js";
+import companyDetailsRoutes from "./routes/companyDetails.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
@@ -43,6 +44,8 @@ app.use("/api/vendor-stocks", vendorStock);
 
 app.use("/api/customer-billing", customerBillingRoutes);
 app.use("/api/customer-payments", customerPaymentRoutes);
+
+app.use("/api/company-details", companyDetailsRoutes);
 
 app.use(errorHandler);
 

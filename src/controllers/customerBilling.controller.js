@@ -976,7 +976,7 @@ export const createCustomerBilling = async (req, res) => {
           product.product_name,
           product.brand,
           product.category,
-          product_quantity,   // 👈 NEW FIELD
+          product_quantity,
           quantity,
           rate,
           total,
@@ -1355,4 +1355,31 @@ export const customerWiseReport = async (req, res) => {
     ORDER BY total_spent DESC
   `);
   res.json(rows);
+};
+
+export const getPendingBills = async (req, res) => {
+  try {
+    const [billings] = await db.query(`
+      SELECT
+        cb.id,
+        cb.invoice_number,
+        cb.invoice_date,
+
+        CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')) AS customer_name,
+        c.phone AS phone_number,
+
+        cb.grand_total,
+        cb.advance_paid,
+        cb.balance_due
+      FROM customerBilling cb
+      JOIN customers c ON c.id = cb.customer_id
+      WHERE cb.balance_due > 0
+      ORDER BY cb.created_at DESC
+    `);
+
+    res.json(billings);
+  } catch (err) {
+    console.error("Pending billing fetch error:", err);
+    res.status(500).json({ message: "Failed to fetch pending bills" });
+  }
 };

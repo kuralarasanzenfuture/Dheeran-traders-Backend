@@ -7,6 +7,7 @@ import {
   getCustomerBillingById,
   getCustomerProductFullData,
   getHighestSellingBrand,
+  getPendingBills,
   productWiseReport,
 } from "../controllers/customerBilling.controller.js";
 
@@ -25,9 +26,8 @@ router.get("/customer-products", getCustomerProductFullData);
 router.get("/products", productWiseReport);
 router.get("/brands", brandWiseReport);
 router.get("/customers", customerWiseReport);
+router.get("/pending", getPendingBills);
 
 router.get("/:id", getCustomerBillingById);
-
-
 
 export default router;

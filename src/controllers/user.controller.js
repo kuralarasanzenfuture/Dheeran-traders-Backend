@@ -162,8 +162,25 @@ export const getProfile = async (req, res) => {
 /**
  * DELETE USER (ADMIN)
  */
+// export const deleteUser = async (req, res, next) => {
+//   try {
+//     await db.query("DELETE FROM users WHERE id = ?", [req.params.id]);
+//     res.json({ message: "User deleted successfully" });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
+
 export const deleteUser = async (req, res, next) => {
   try {
+    const [user] = await db.query("SELECT role FROM users WHERE id = ?", [req.params.id]);
+
+    if (!user.length) return res.status(404).json({ message: "User not found" });
+
+    if (user[0].role === "admin") {
+      return res.status(403).json({ message: "Admin user cannot be deleted" });
+    }
+
     await db.query("DELETE FROM users WHERE id = ?", [req.params.id]);
     res.json({ message: "User deleted successfully" });
   } catch (err) {

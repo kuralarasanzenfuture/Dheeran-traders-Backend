@@ -9,6 +9,7 @@ import {
 } from "../controllers/product.controller.js";
 
 import { protect, adminOnly } from "../middlewares/auth.middleware.js";
+import { verifyAdminPassword } from "../middlewares/verifyAdminPassword.js";
 
 const router = express.Router();
 
@@ -18,6 +19,6 @@ router.get("/:id", protect, getProductById);
 router.put("/:id", protect, updateProduct);
 router.delete("/:id", protect, deleteProduct);
 /* 🔥 ONLY STOCK UPDATE */
-router.patch("/update-stock/:id", protect, updateProductStock);
+router.patch("/update-stock/:id", protect, verifyAdminPassword, updateProductStock);
 
 export default router;

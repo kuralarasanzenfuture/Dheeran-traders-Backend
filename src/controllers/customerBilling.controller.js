@@ -844,11 +844,13 @@ export const createCustomerBilling = async (req, res) => {
     /* 🏦 VALIDATE BANK */
     const [[bank]] = await connection.query(
       `SELECT * FROM company_bank_details WHERE id = ? AND status = 'active'`,
-      [bank_id]
+      [bank_id],
     );
 
     if (!bank) {
-      return res.status(400).json({ message: "Invalid or inactive bank selected" });
+      return res
+        .status(400)
+        .json({ message: "Invalid or inactive bank selected" });
     }
 
     const invoice_number = await generateInvoiceNumber(connection);
@@ -870,7 +872,7 @@ export const createCustomerBilling = async (req, res) => {
 
       const [[product]] = await connection.query(
         `SELECT stock, product_name FROM products WHERE id = ? FOR UPDATE`,
-        [product_id]
+        [product_id],
       );
 
       if (!product) throw new Error("Product not found");
@@ -900,7 +902,8 @@ export const createCustomerBilling = async (req, res) => {
       throw new Error("Advance exceeds bill amount");
     }
 
-    const totalPaid = Number(advance_paid) + Number(cash_amount) + Number(upi_amount);
+    const totalPaid =
+      Number(advance_paid) + Number(cash_amount) + Number(upi_amount);
     if (totalPaid > grand_total) {
       throw new Error("Payment exceeds bill amount");
     }
@@ -944,7 +947,7 @@ export const createCustomerBilling = async (req, res) => {
         balance_due,
         cash_amount,
         upi_amount,
-      ]
+      ],
     );
 
     const billing_id = billResult.insertId;
@@ -955,7 +958,7 @@ export const createCustomerBilling = async (req, res) => {
 
       const [[product]] = await connection.query(
         `SELECT product_name, brand, category FROM products WHERE id = ?`,
-        [product_id]
+        [product_id],
       );
 
       const total = quantity * rate;
@@ -980,12 +983,12 @@ export const createCustomerBilling = async (req, res) => {
           quantity,
           rate,
           total,
-        ]
+        ],
       );
 
       await connection.query(
         `UPDATE products SET stock = stock - ? WHERE id = ?`,
-        [quantity, product_id]
+        [quantity, product_id],
       );
     }
 
@@ -994,12 +997,12 @@ export const createCustomerBilling = async (req, res) => {
     /* 🔁 FETCH FULL DATA */
     const [[billing]] = await connection.query(
       "SELECT * FROM customerBilling WHERE id = ?",
-      [billing_id]
+      [billing_id],
     );
 
     const [billingProducts] = await connection.query(
       "SELECT * FROM customerBillingProducts WHERE billing_id = ?",
-      [billing_id]
+      [billing_id],
     );
 
     res.status(201).json({
@@ -1010,7 +1013,6 @@ export const createCustomerBilling = async (req, res) => {
       products: billingProducts,
       bank,
     });
-
   } catch (err) {
     await connection.rollback();
     console.error("Billing error:", err.message);
@@ -1019,8 +1021,6 @@ export const createCustomerBilling = async (req, res) => {
     connection.release();
   }
 };
-
-
 
 /* 📄 GET ALL INVOICES */
 // export const getAllCustomerBillings = async (req, res) => {
@@ -1100,9 +1100,10 @@ export const getAllCustomerBillings = async (req, res) => {
     }
 
     /* 2️⃣ Get all products for those billings */
-    const billingIds = billings.map(b => b.id);
+    const billingIds = billings.map((b) => b.id);
 
-    const [products] = await db.query(`
+    const [products] = await db.query(
+      `
       SELECT
         cbp.billing_id,
 
@@ -1117,24 +1118,22 @@ export const getAllCustomerBillings = async (req, res) => {
         cbp.total
       FROM customerBillingProducts cbp
       WHERE cbp.billing_id IN (?)
-    `, [billingIds]);
+    `,
+      [billingIds],
+    );
 
     /* 3️⃣ Attach products to each billing */
-    const result = billings.map(billing => ({
+    const result = billings.map((billing) => ({
       ...billing,
-      products: products.filter(p => p.billing_id === billing.id)
+      products: products.filter((p) => p.billing_id === billing.id),
     }));
 
     res.json(result);
-
   } catch (err) {
     console.error("Billing fetch error:", err);
     res.status(500).json({ message: "Failed to fetch billing data" });
   }
 };
-
-
-
 
 /* 🔍 GET INVOICE DETAILS */
 // export const getCustomerBillingById = async (req, res) => {
@@ -1178,7 +1177,7 @@ export const getCustomerBillingById = async (req, res) => {
 
       WHERE cb.id = ?
       `,
-      [id]
+      [id],
     );
 
     if (!billing) {
@@ -1201,11 +1200,10 @@ export const getCustomerBillingById = async (req, res) => {
       FROM customerBillingProducts
       WHERE billing_id = ?
       `,
-      [id]
+      [id],
     );
 
     res.json({ billing, products });
-
   } catch (err) {
     console.error("Invoice fetch error:", err);
     res.status(500).json({ message: "Failed to fetch invoice" });
@@ -1292,27 +1290,54 @@ export const getCustomerProductFullData = async (req, res) => {
 };
 
 /* PRODUCT WISE */
+// export const productWiseReport = async (req, res) => {
+//   const [rows] = await db.query(`
+//     SELECT
+//       cbp.product_id,
+//       cbp.product_name,
+//       cbp.product_brand,
+//       cbp.product_category,
+
+//       SUM(cbp.quantity) AS total_quantity_sold,
+//       SUM(cbp.total) AS total_sales_amount
+//     FROM customerBillingProducts cbp
+//     GROUP BY cbp.product_id, cbp.product_name, cbp.product_brand, cbp.product_category
+//     ORDER BY total_sales_amount DESC
+//   `);
+//   res.json(rows);
+// };
+
 export const productWiseReport = async (req, res) => {
-  const [rows] = await db.query(`
-    SELECT 
-      cbp.product_id,
-      cbp.product_name,
-      cbp.product_brand,
-      cbp.product_category,
-      cbp.product_quantity,
-      SUM(cbp.quantity) AS total_quantity_sold,
-      SUM(cbp.total) AS total_sales_amount
-    FROM customerBillingProducts cbp
-    GROUP BY cbp.product_id, cbp.product_name, cbp.product_brand, cbp.product_category
-    ORDER BY total_sales_amount DESC
-  `);
-  res.json(rows);
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        cbp.product_id,
+        cbp.product_name,
+        cbp.product_brand,
+        cbp.product_category,
+        cbp.product_quantity,
+        SUM(cbp.quantity) AS total_quantity_sold
+      FROM customerBillingProducts cbp
+      GROUP BY
+        cbp.product_id,
+        cbp.product_name,
+        cbp.product_brand,
+        cbp.product_category,
+        cbp.product_quantity
+      ORDER BY total_quantity_sold DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Product wise report error:", err);
+    res.status(500).json({ message: "Failed to fetch product wise report" });
+  }
 };
 
 /* BRAND WISE */
 // export const brandWiseReport = async (req, res) => {
 //   const [rows] = await db.query(`
-//     SELECT 
+//     SELECT
 //       cbp.product_brand,
 //       SUM(cbp.quantity) AS total_quantity_sold,
 //       SUM(cbp.total) AS total_sales_amount

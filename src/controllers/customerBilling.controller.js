@@ -1083,6 +1083,10 @@ export const getAllCustomerBillings = async (req, res) => {
         cb.subtotal,
         cb.tax_gst_percent,
         cb.tax_gst_amount,
+        cb.tax_cgst_percent,
+        cb.tax_cgst_amount,
+        cb.tax_sgst_percent,
+        cb.tax_sgst_amount,
         cb.grand_total,
         cb.advance_paid,
         cb.balance_due,
@@ -1409,7 +1413,6 @@ export const getPendingBills = async (req, res) => {
   }
 };
 
-
 export const deleteCustomerBilling = async (req, res) => {
   const connection = await db.getConnection();
   try {
@@ -1420,7 +1423,7 @@ export const deleteCustomerBilling = async (req, res) => {
     // 1️⃣ Get products of this bill
     const [products] = await connection.query(
       `SELECT product_id, quantity FROM customerBillingProducts WHERE billing_id = ?`,
-      [id]
+      [id],
     );
 
     if (products.length === 0) {
@@ -1431,25 +1434,21 @@ export const deleteCustomerBilling = async (req, res) => {
     for (const item of products) {
       await connection.query(
         `UPDATE products SET stock = stock + ? WHERE id = ?`,
-        [item.quantity, item.product_id]
+        [item.quantity, item.product_id],
       );
     }
 
     // 3️⃣ Delete products
     await connection.query(
       `DELETE FROM customerBillingProducts WHERE billing_id = ?`,
-      [id]
+      [id],
     );
 
     // 4️⃣ Delete bill
-    await connection.query(
-      `DELETE FROM customerBilling WHERE id = ?`,
-      [id]
-    );
+    await connection.query(`DELETE FROM customerBilling WHERE id = ?`, [id]);
 
     await connection.commit();
     res.json({ message: "Invoice deleted successfully" });
-
   } catch (err) {
     await connection.rollback();
     console.error("Delete error:", err);
@@ -1458,7 +1457,6 @@ export const deleteCustomerBilling = async (req, res) => {
     connection.release();
   }
 };
-
 
 export const updateCustomerBilling = async (req, res) => {
   const connection = await db.getConnection();
@@ -1470,7 +1468,7 @@ export const updateCustomerBilling = async (req, res) => {
     // 1️⃣ Get old products
     const [oldProducts] = await connection.query(
       `SELECT product_id, quantity FROM customerBillingProducts WHERE billing_id = ?`,
-      [id]
+      [id],
     );
 
     if (!oldProducts.length) {
@@ -1481,14 +1479,14 @@ export const updateCustomerBilling = async (req, res) => {
     for (const item of oldProducts) {
       await connection.query(
         `UPDATE products SET stock = stock + ? WHERE id = ?`,
-        [item.quantity, item.product_id]
+        [item.quantity, item.product_id],
       );
     }
 
     // 3️⃣ Delete old products
     await connection.query(
       `DELETE FROM customerBillingProducts WHERE billing_id = ?`,
-      [id]
+      [id],
     );
 
     // 4️⃣ Insert new products & deduct stock
@@ -1499,7 +1497,7 @@ export const updateCustomerBilling = async (req, res) => {
 
       const [[product]] = await connection.query(
         `SELECT stock, product_name, brand, category FROM products WHERE id = ? FOR UPDATE`,
-        [product_id]
+        [product_id],
       );
 
       if (!product || product.stock < quantity) {
@@ -1523,13 +1521,13 @@ export const updateCustomerBilling = async (req, res) => {
           product_quantity,
           quantity,
           rate,
-          total
-        ]
+          total,
+        ],
       );
 
       await connection.query(
         `UPDATE products SET stock = stock - ? WHERE id = ?`,
-        [quantity, product_id]
+        [quantity, product_id],
       );
     }
 
@@ -1542,12 +1540,11 @@ export const updateCustomerBilling = async (req, res) => {
       `UPDATE customerBilling 
        SET subtotal=?, tax_gst_amount=?, grand_total=?, balance_due=?
        WHERE id=?`,
-      [subtotal, tax, grand_total, balance_due, id]
+      [subtotal, tax, grand_total, balance_due, id],
     );
 
     await connection.commit();
     res.json({ message: "Invoice updated successfully" });
-
   } catch (err) {
     await connection.rollback();
     console.error("Update error:", err);

@@ -12,6 +12,7 @@ import {
   productWiseReport,
   updateCustomerBilling,
 } from "../controllers/customerBilling.controller.js";
+import { verifyAdminPassword } from "../middlewares/verifyAdminPassword.js";
 
 const router = express.Router();
 
@@ -32,7 +33,7 @@ router.get("/pending", getPendingBills);
 
 router.get("/:id", getCustomerBillingById);
 
-router.put("/:id", updateCustomerBilling);
-router.delete("/:id", deleteCustomerBilling);
+router.put("/:id", verifyAdminPassword, updateCustomerBilling);
+router.delete("/:id", verifyAdminPassword, deleteCustomerBilling);
 
 export default router;

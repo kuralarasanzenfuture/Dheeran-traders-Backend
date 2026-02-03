@@ -20,7 +20,7 @@ export const createVendor = async (req, res) => {
     /* ===========================
        REQUIRED VALIDATION
     ============================ */
-    if (!first_name || !last_name || !phone) {
+    if (!first_name || !phone) {
       return res.status(400).json({
         message: "First name, last name and phone are required",
       });

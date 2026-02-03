@@ -69,6 +69,61 @@ export const createCustomerBillingTables = async (db) => {
   // ) ENGINE=InnoDB;
   //   `)
 
+  //   await db.query(`
+  //   CREATE TABLE IF NOT EXISTS customerBilling (
+  //   id INT AUTO_INCREMENT PRIMARY KEY,
+
+  //   /* 📄 INVOICE */
+  //   invoice_number VARCHAR(30) UNIQUE NOT NULL,
+  //   invoice_date DATE NOT NULL,
+
+  //   /* 👤 CUSTOMER */
+  //   customer_id INT NOT NULL,
+  //   customer_name VARCHAR(150) NOT NULL,
+  //   phone_number VARCHAR(20),
+  //   gst_number VARCHAR(30),
+
+  //   /* 👤 STAFF */
+  //   staff_name VARCHAR(150) NOT NULL,
+  //   staff_phone VARCHAR(20) NOT NULL,
+
+  //   /* 🏦 BANK (CRITICAL) */
+  //   bank_id INT NOT NULL,
+
+  //   /* 💰 BILL AMOUNTS */
+  //   subtotal DECIMAL(10,2) NOT NULL,
+  //   tax_gst_percent DECIMAL(5,2) NOT NULL,
+  //   tax_gst_amount DECIMAL(10,2) NOT NULL,
+  //   tax_cgst_percent DECIMAL(5,2) NOT NULL,
+  //   tax_cgst_amount DECIMAL(10,2) NOT NULL,
+  //   tax_sgst_percent DECIMAL(5,2) NOT NULL,
+  //   tax_sgst_amount DECIMAL(10,2) NOT NULL,
+
+  //   grand_total DECIMAL(10,2) NOT NULL,
+
+  //   advance_paid DECIMAL(10,2) DEFAULT 0,
+  //   balance_due DECIMAL(10,2) NOT NULL,
+
+  //   /* 💳 PAYMENT SPLIT */
+  //   cash_amount DECIMAL(10,2) DEFAULT 0,
+  //   upi_amount DECIMAL(10,2) DEFAULT 0,
+
+  //   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  //   /* 🔗 FOREIGN KEYS */
+  //   CONSTRAINT fk_billing_customer
+  //     FOREIGN KEY (customer_id)
+  //     REFERENCES customers(id)
+  //     ON DELETE RESTRICT,
+
+  //   CONSTRAINT fk_billing_bank
+  //     FOREIGN KEY (bank_id)
+  //     REFERENCES company_bank_details(id)
+  //     ON DELETE RESTRICT
+
+  // ) ENGINE=InnoDB;
+  //   `);
+
   await db.query(`
   CREATE TABLE IF NOT EXISTS customerBilling (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -81,32 +136,40 @@ export const createCustomerBillingTables = async (db) => {
   customer_id INT NOT NULL,
   customer_name VARCHAR(150) NOT NULL,
   phone_number VARCHAR(20),
-  gst_number VARCHAR(30),
+  customer_gst_number VARCHAR(30),
+
+  /* 🚚 TRANSPORT */
+  vehicle_number VARCHAR(20),
+  eway_bill_number VARCHAR(50),
 
   /* 👤 STAFF */
   staff_name VARCHAR(150) NOT NULL,
   staff_phone VARCHAR(20) NOT NULL,
 
-  /* 🏦 BANK (CRITICAL) */
+  /* 🏦 BANK */
   bank_id INT NOT NULL,
 
   /* 💰 BILL AMOUNTS */
   subtotal DECIMAL(10,2) NOT NULL,
+
   tax_gst_percent DECIMAL(5,2) NOT NULL,
   tax_gst_amount DECIMAL(10,2) NOT NULL,
+
   tax_cgst_percent DECIMAL(5,2) NOT NULL,
   tax_cgst_amount DECIMAL(10,2) NOT NULL,
+
   tax_sgst_percent DECIMAL(5,2) NOT NULL,
   tax_sgst_amount DECIMAL(10,2) NOT NULL,
 
   grand_total DECIMAL(10,2) NOT NULL,
-
   advance_paid DECIMAL(10,2) DEFAULT 0,
   balance_due DECIMAL(10,2) NOT NULL,
 
   /* 💳 PAYMENT SPLIT */
   cash_amount DECIMAL(10,2) DEFAULT 0,
   upi_amount DECIMAL(10,2) DEFAULT 0,
+  cheque_amount DECIMAL(10,2) DEFAULT 0,
+  upi_reference VARCHAR(100) UNIQUE,
 
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 

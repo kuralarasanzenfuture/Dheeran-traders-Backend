@@ -797,6 +797,470 @@ const generateInvoiceNumber = async () => {
 //   }
 // };
 
+// export const createCustomerBilling = async (req, res) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const {
+//       customer_id,
+//       customer_name,
+//       phone_number,
+//       gst_number,
+
+//       staff_name,
+//       staff_phone,
+
+//       bank_id,
+
+//       tax_gst_percent,
+//       advance_paid = 0,
+//       cash_amount = 0,
+//       upi_amount = 0,
+//       products,
+//     } = req.body;
+
+//     if (
+//       !customer_id ||
+//       !customer_name ||
+//       !staff_name ||
+//       !staff_phone ||
+//       !bank_id ||
+//       !Array.isArray(products) ||
+//       products.length === 0
+//     ) {
+//       return res.status(400).json({ message: "Invalid billing data" });
+//     }
+
+//     if (!/^\d{10}$/.test(staff_phone)) {
+//       return res.status(400).json({ message: "Invalid staff phone number" });
+//     }
+
+//     if (isNaN(tax_gst_percent)) {
+//       return res.status(400).json({ message: "Invalid GST percent" });
+//     }
+
+//     /* 🏦 VALIDATE BANK */
+//     const [[bank]] = await connection.query(
+//       `SELECT * FROM company_bank_details WHERE id = ? AND status = 'active'`,
+//       [bank_id],
+//     );
+
+//     if (!bank) {
+//       return res
+//         .status(400)
+//         .json({ message: "Invalid or inactive bank selected" });
+//     }
+
+//     const invoice_number = await generateInvoiceNumber(connection);
+//     const invoice_date = new Date();
+
+//     let subtotal = 0;
+
+//     /* 🔒 STOCK CHECK */
+//     for (const item of products) {
+//       const { product_id, quantity, rate, product_quantity } = item;
+
+//       if (!product_id || quantity <= 0 || rate <= 0) {
+//         throw new Error("Invalid product line");
+//       }
+
+//       if (!product_quantity || typeof product_quantity !== "string") {
+//         throw new Error("product_quantity (unit) is required");
+//       }
+
+//       const [[product]] = await connection.query(
+//         `SELECT stock, product_name FROM products WHERE id = ? FOR UPDATE`,
+//         [product_id],
+//       );
+
+//       if (!product) throw new Error("Product not found");
+
+//       if (product.stock < quantity) {
+//         throw new Error(`Insufficient stock for ${product.product_name}`);
+//       }
+
+//       subtotal += quantity * rate;
+//     }
+
+//     /* 🧮 GST SPLIT */
+//     const gstPercent = Number(tax_gst_percent);
+
+//     const tax_cgst_percent = gstPercent / 2;
+//     const tax_sgst_percent = gstPercent / 2;
+
+//     const tax_cgst_amount = (subtotal * tax_cgst_percent) / 100;
+//     const tax_sgst_amount = (subtotal * tax_sgst_percent) / 100;
+
+//     const tax_gst_amount = tax_cgst_amount + tax_sgst_amount;
+
+//     const grand_total = subtotal + tax_gst_amount;
+//     const balance_due = grand_total - advance_paid;
+
+//     if (balance_due < 0) {
+//       throw new Error("Advance exceeds bill amount");
+//     }
+
+//     const totalPaid =
+//       Number(advance_paid) + Number(cash_amount) + Number(upi_amount);
+//     if (totalPaid > grand_total) {
+//       throw new Error("Payment exceeds bill amount");
+//     }
+
+//     /* 🧾 INSERT BILL */
+//     const [billResult] = await connection.query(
+//       `
+//       INSERT INTO customerBilling (
+//         invoice_number, invoice_date,
+//         customer_id, customer_name, phone_number, gst_number,
+//         staff_name, staff_phone,
+//         bank_id,
+//         subtotal,
+//         tax_gst_percent, tax_gst_amount,
+//         tax_cgst_percent, tax_cgst_amount,
+//         tax_sgst_percent, tax_sgst_amount,
+//         grand_total, advance_paid, balance_due,
+//         cash_amount, upi_amount
+//       )
+//       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+//       `,
+//       [
+//         invoice_number,
+//         invoice_date,
+//         customer_id,
+//         customer_name,
+//         phone_number,
+//         gst_number,
+//         staff_name,
+//         staff_phone,
+//         bank_id,
+//         subtotal,
+//         gstPercent,
+//         tax_gst_amount,
+//         tax_cgst_percent,
+//         tax_cgst_amount,
+//         tax_sgst_percent,
+//         tax_sgst_amount,
+//         grand_total,
+//         advance_paid,
+//         balance_due,
+//         cash_amount,
+//         upi_amount,
+//       ],
+//     );
+
+//     const billing_id = billResult.insertId;
+
+//     /* 📦 PRODUCTS */
+//     for (const item of products) {
+//       const { product_id, quantity, rate, product_quantity } = item;
+
+//       const [[product]] = await connection.query(
+//         `SELECT product_name, brand, category FROM products WHERE id = ?`,
+//         [product_id],
+//       );
+
+//       const total = quantity * rate;
+
+//       await connection.query(
+//         `
+//         INSERT INTO customerBillingProducts (
+//           billing_id, product_id,
+//           product_name, product_brand, product_category,
+//           product_quantity,
+//           quantity, rate, total
+//         )
+//         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+//         `,
+//         [
+//           billing_id,
+//           product_id,
+//           product.product_name,
+//           product.brand,
+//           product.category,
+//           product_quantity,
+//           quantity,
+//           rate,
+//           total,
+//         ],
+//       );
+
+//       await connection.query(
+//         `UPDATE products SET stock = stock - ? WHERE id = ?`,
+//         [quantity, product_id],
+//       );
+//     }
+
+//     await connection.commit();
+
+//     /* 🔁 FETCH FULL DATA */
+//     const [[billing]] = await connection.query(
+//       "SELECT * FROM customerBilling WHERE id = ?",
+//       [billing_id],
+//     );
+
+//     const [billingProducts] = await connection.query(
+//       "SELECT * FROM customerBillingProducts WHERE billing_id = ?",
+//       [billing_id],
+//     );
+
+//     res.status(201).json({
+//       message: "Customer billing invoice created successfully",
+//       invoice_number,
+//       billing_id,
+//       billing,
+//       products: billingProducts,
+//       bank,
+//     });
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error("Billing error:", err.message);
+//     res.status(400).json({ message: err.message });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+// export const createCustomerBilling = async (req, res) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const {
+//       customer_id,
+//       customer_name,
+//       phone_number,
+//       customer_gst_number,
+
+//       vehicle_number,
+//       eway_bill_number,
+
+//       staff_name,
+//       staff_phone,
+
+//       bank_id,
+
+//       tax_gst_percent,
+//       advance_paid = 0,
+//       cash_amount = 0,
+//       upi_amount = 0,
+//       cheque_amount = 0,
+//       upi_reference,
+
+//       products,
+//     } = req.body;
+
+//     if (
+//       !customer_id ||
+//       !customer_name ||
+//       !staff_name ||
+//       !staff_phone ||
+//       !bank_id ||
+//       !Array.isArray(products) ||
+//       products.length === 0
+//     ) {
+//       return res.status(400).json({ message: "Invalid billing data" });
+//     }
+
+//     if (!/^\d{10}$/.test(staff_phone)) {
+//       return res.status(400).json({ message: "Invalid staff phone number" });
+//     }
+
+//     if (isNaN(tax_gst_percent)) {
+//       return res.status(400).json({ message: "Invalid GST percent" });
+//     }
+
+//     /* 🏦 VALIDATE BANK */
+//     const [[bank]] = await connection.query(
+//       `SELECT * FROM company_bank_details WHERE id = ? AND status = 'active'`,
+//       [bank_id],
+//     );
+
+//     if (!bank) {
+//       return res
+//         .status(400)
+//         .json({ message: "Invalid or inactive bank selected" });
+//     }
+
+//     const invoice_number = await generateInvoiceNumber(connection);
+//     const invoice_date = new Date();
+
+//     let subtotal = 0;
+
+//     /* 🔒 STOCK CHECK */
+//     for (const item of products) {
+//       const { product_id, quantity, rate, product_quantity } = item;
+
+//       if (!product_id || quantity <= 0 || rate <= 0) {
+//         throw new Error("Invalid product line");
+//       }
+
+//       if (!product_quantity || typeof product_quantity !== "string") {
+//         throw new Error("product_quantity (unit) is required");
+//       }
+
+//       const [[product]] = await connection.query(
+//         `SELECT stock, product_name FROM products WHERE id = ? FOR UPDATE`,
+//         [product_id],
+//       );
+
+//       if (!product) throw new Error("Product not found");
+
+//       if (product.stock < quantity) {
+//         throw new Error(`Insufficient stock for ${product.product_name}`);
+//       }
+
+//       subtotal += quantity * rate;
+//     }
+
+//     /* 🧮 GST SPLIT */
+//     const gstPercent = Number(tax_gst_percent);
+
+//     const tax_cgst_percent = gstPercent / 2;
+//     const tax_sgst_percent = gstPercent / 2;
+
+//     const tax_cgst_amount = (subtotal * tax_cgst_percent) / 100;
+//     const tax_sgst_amount = (subtotal * tax_sgst_percent) / 100;
+
+//     const tax_gst_amount = tax_cgst_amount + tax_sgst_amount;
+
+//     const grand_total = subtotal + tax_gst_amount;
+//     const balance_due = grand_total - advance_paid;
+
+//     if (balance_due < 0) {
+//       throw new Error("Advance exceeds bill amount");
+//     }
+
+//     const totalPaid =
+//       Number(advance_paid) +
+//       Number(cash_amount) +
+//       Number(upi_amount) +
+//       Number(cheque_amount);
+
+//     if (totalPaid > grand_total) {
+//       throw new Error("Payment exceeds bill amount");
+//     }
+
+//     /* 🧾 INSERT BILL */
+//     const [billResult] = await connection.query(
+//       `
+//       INSERT INTO customerBilling (
+//         invoice_number, invoice_date,
+//         customer_id, customer_name, phone_number, customer_gst_number,
+//         vehicle_number, eway_bill_number,
+//         staff_name, staff_phone,
+//         bank_id,
+//         subtotal,
+//         tax_gst_percent, tax_gst_amount,
+//         tax_cgst_percent, tax_cgst_amount,
+//         tax_sgst_percent, tax_sgst_amount,
+//         grand_total, advance_paid, balance_due,
+//         cash_amount, upi_amount, cheque_amount, upi_reference
+//       )
+//       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+//       `,
+//       [
+//         invoice_number,
+//         invoice_date,
+//         customer_id,
+//         customer_name,
+//         phone_number,
+//         customer_gst_number,
+//         vehicle_number,
+//         eway_bill_number,
+//         staff_name,
+//         staff_phone,
+//         bank_id,
+//         subtotal,
+//         gstPercent,
+//         tax_gst_amount,
+//         tax_cgst_percent,
+//         tax_cgst_amount,
+//         tax_sgst_percent,
+//         tax_sgst_amount,
+//         grand_total,
+//         advance_paid,
+//         balance_due,
+//         cash_amount,
+//         upi_amount,
+//         cheque_amount,
+//         upi_reference,
+//       ],
+//     );
+
+//     const billing_id = billResult.insertId;
+
+//     /* 📦 PRODUCTS */
+//     for (const item of products) {
+//       const { product_id, quantity, rate, product_quantity } = item;
+
+//       const [[product]] = await connection.query(
+//         `SELECT product_name, brand, category FROM products WHERE id = ?`,
+//         [product_id],
+//       );
+
+//       const total = quantity * rate;
+
+//       await connection.query(
+//         `
+//         INSERT INTO customerBillingProducts (
+//           billing_id, product_id,
+//           product_name, product_brand, product_category,
+//           product_quantity,
+//           quantity, rate, total
+//         )
+//         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+//         `,
+//         [
+//           billing_id,
+//           product_id,
+//           product.product_name,
+//           product.brand,
+//           product.category,
+//           product_quantity,
+//           quantity,
+//           rate,
+//           total,
+//         ],
+//       );
+
+//       await connection.query(
+//         `UPDATE products SET stock = stock - ? WHERE id = ?`,
+//         [quantity, product_id],
+//       );
+//     }
+
+//     await connection.commit();
+
+//     const [[billing]] = await connection.query(
+//       "SELECT * FROM customerBilling WHERE id = ?",
+//       [billing_id],
+//     );
+
+//     const [billingProducts] = await connection.query(
+//       "SELECT * FROM customerBillingProducts WHERE billing_id = ?",
+//       [billing_id],
+//     );
+
+//     res.status(201).json({
+//       message: "Customer billing invoice created successfully",
+//       invoice_number,
+//       billing_id,
+//       billing,
+//       products: billingProducts,
+//       bank,
+//     });
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error("Billing error:", err.message);
+//     res.status(400).json({ message: err.message });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
 export const createCustomerBilling = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -807,7 +1271,10 @@ export const createCustomerBilling = async (req, res) => {
       customer_id,
       customer_name,
       phone_number,
-      gst_number,
+      customer_gst_number,
+
+      vehicle_number,
+      eway_bill_number,
 
       staff_name,
       staff_phone,
@@ -815,9 +1282,11 @@ export const createCustomerBilling = async (req, res) => {
       bank_id,
 
       tax_gst_percent,
-      advance_paid = 0,
       cash_amount = 0,
       upi_amount = 0,
+      cheque_amount = 0,
+      upi_reference,
+
       products,
     } = req.body;
 
@@ -851,6 +1320,20 @@ export const createCustomerBilling = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Invalid or inactive bank selected" });
+    }
+
+    /* 🔁 VALIDATE UNIQUE UPI REFERENCE */
+    if (upi_reference) {
+      const [[existingUpi]] = await connection.query(
+        `SELECT id FROM customerBilling WHERE upi_reference = ?`,
+        [upi_reference],
+      );
+
+      if (existingUpi) {
+        return res.status(400).json({
+          message: "UPI reference already used",
+        });
+      }
     }
 
     const invoice_number = await generateInvoiceNumber(connection);
@@ -896,15 +1379,14 @@ export const createCustomerBilling = async (req, res) => {
     const tax_gst_amount = tax_cgst_amount + tax_sgst_amount;
 
     const grand_total = subtotal + tax_gst_amount;
+
+    /* ✅ PAYMENT LOGIC FIX */
+    const advance_paid =
+      Number(cash_amount) + Number(upi_amount) + Number(cheque_amount);
+
     const balance_due = grand_total - advance_paid;
 
     if (balance_due < 0) {
-      throw new Error("Advance exceeds bill amount");
-    }
-
-    const totalPaid =
-      Number(advance_paid) + Number(cash_amount) + Number(upi_amount);
-    if (totalPaid > grand_total) {
       throw new Error("Payment exceeds bill amount");
     }
 
@@ -913,7 +1395,8 @@ export const createCustomerBilling = async (req, res) => {
       `
       INSERT INTO customerBilling (
         invoice_number, invoice_date,
-        customer_id, customer_name, phone_number, gst_number,
+        customer_id, customer_name, phone_number, customer_gst_number,
+        vehicle_number, eway_bill_number,
         staff_name, staff_phone,
         bank_id,
         subtotal,
@@ -921,9 +1404,9 @@ export const createCustomerBilling = async (req, res) => {
         tax_cgst_percent, tax_cgst_amount,
         tax_sgst_percent, tax_sgst_amount,
         grand_total, advance_paid, balance_due,
-        cash_amount, upi_amount
+        cash_amount, upi_amount, cheque_amount, upi_reference
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         invoice_number,
@@ -931,7 +1414,9 @@ export const createCustomerBilling = async (req, res) => {
         customer_id,
         customer_name,
         phone_number,
-        gst_number,
+        customer_gst_number,
+        vehicle_number,
+        eway_bill_number,
         staff_name,
         staff_phone,
         bank_id,
@@ -947,6 +1432,8 @@ export const createCustomerBilling = async (req, res) => {
         balance_due,
         cash_amount,
         upi_amount,
+        cheque_amount,
+        upi_reference,
       ],
     );
 
@@ -994,7 +1481,6 @@ export const createCustomerBilling = async (req, res) => {
 
     await connection.commit();
 
-    /* 🔁 FETCH FULL DATA */
     const [[billing]] = await connection.query(
       "SELECT * FROM customerBilling WHERE id = ?",
       [billing_id],

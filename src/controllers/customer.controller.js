@@ -127,10 +127,6 @@ export const updateCustomer = async (req, res) => {
     const { id } = req.params;
     const { first_name, last_name, phone, email, address } = req.body;
 
-    
-
-    
-
     // ✅ Prevent duplicate phone/email
     if (phone || email) {
       const [exists] = await db.query(

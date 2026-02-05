@@ -131,6 +131,7 @@ export const createCustomerBillingTables = async (db) => {
   /* 📄 INVOICE */
   invoice_number VARCHAR(30) UNIQUE NOT NULL,
   invoice_date DATE NOT NULL,
+  company_gst_number VARCHAR(30),
 
   /* 👤 CUSTOMER */
   customer_id INT NOT NULL,

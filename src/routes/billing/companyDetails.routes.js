@@ -4,9 +4,9 @@ import {
   getCompanyDetails,
   updateCompanyDetails,
   deleteCompanyDetails,
-} from "../controllers/companyDetails.controller.js";
+} from "../../controllers/billing/companyDetails.controller.js";
 
-import { protect, adminOnly } from "../middlewares/auth.middleware.js";
+import { protect, adminOnly } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 

@@ -11,8 +11,8 @@ import {
   getPendingBills,
   productWiseReport,
   updateCustomerBilling,
-} from "../controllers/customerBilling.controller.js";
-import { verifyAdminPassword } from "../middlewares/verifyAdminPassword.js";
+} from "../../controllers/billing/customerBilling.controller.js";
+import { verifyAdminPassword } from "../../middlewares/verifyAdminPassword.js";
 
 const router = express.Router();
 

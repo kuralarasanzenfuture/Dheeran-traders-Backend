@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
-import db from "../config/db.js";
-import { generateToken } from "../utils/jwt.js";
+import db from "../../config/db.js";
+import { generateToken } from "../../utils/jwt.js";
 
 /**
  * REGISTER

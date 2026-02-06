@@ -1,4 +1,4 @@
-import { createAdminTables } from "./database/admin.tables.js";
+
 import { createCompanyBankDetailsTables } from "./database/companyBankDetails.tables.js";
 import { createCompanyDetailsTables } from "./database/companydetails.tables.js";
 import { createCustomerBillingTables } from "./database/customerBilling.tables.js";
@@ -8,7 +8,7 @@ import { createMasterTables } from "./database/master.tables.js";
 import { createProductTables } from "./database/product.tables.js";
 import { createUserTables } from "./database/user.tables.js";
 import { createVendorTables } from "./database/vendor.tables.js";
-import { createVendorStocksTables } from "./database/vendorStocks,tables.js";
+import { createVendorStocksTables } from "./database/vendorStocks.tables.js";
 import db from "./db.js";
 
 export const initDatabase = async () => {
@@ -18,9 +18,6 @@ export const initDatabase = async () => {
 
     // 2️⃣ Use Database
     await db.query(`USE \`${process.env.DB_NAME}\``);
-
-    //adminLogin
-    // await createAdminTables(db); 
 
     // 3️⃣ USERS TABLE
     await createUserTables(db);
@@ -43,56 +40,6 @@ export const initDatabase = async () => {
     await createCustomerBillingTables(db);
 
     await createCompanyDetailsTables(db);
-
-    // await db.query(`
-    //   CREATE TABLE IF NOT EXISTS customersbill (
-    //     id INT AUTO_INCREMENT PRIMARY KEY,
-    //     customer_name VARCHAR(150),
-
-    //     product_id INT,
-    //     product_name VARCHAR(150),
-    //     product_brand VARCHAR(100),
-    //     product_quantity INT,
-
-    //     phone VARCHAR(20),
-    //     email VARCHAR(150),
-    //     address TEXT,
-
-    //     payment_mode ENUM('cash','upi'),
-    //     advance_pay DECIMAL(10,2),
-    //     pending_pay DECIMAL(10,2),
-    //     stock INT,
-
-    //     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    //     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    //   )
-    // `);
-
-    // await db.query(`
-    //   CREATE TABLE IF NOT EXISTS vendorsbill (
-    //     id INT AUTO_INCREMENT PRIMARY KEY,
-    //     vendor_name VARCHAR(150),
-
-    //     brand_id INT,
-    //     brand_name VARCHAR(150),
-    //     brand_category VARCHAR(100),
-    //     brand_quantity VARCHAR(50),
-
-    //     phone VARCHAR(20),
-    //     email VARCHAR(150),
-    //     address TEXT,
-
-    //     payment_mode ENUM('cash','upi'),
-    //     advance_pay DECIMAL(10,2),
-    //     pending_pay DECIMAL(10,2),
-    //     stock INT,
-
-    //     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    //     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    //   )
-    // `);
-
-
     
 
     console.log("✅ Database & tables initialized successfully");

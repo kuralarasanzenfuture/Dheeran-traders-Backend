@@ -1,4 +1,4 @@
-import db from "../config/db.js";
+import db from "../../config/db.js";
 
 /* ➕ ADD PAYMENT */
 export const addCustomerPayment = async (req, res) => {

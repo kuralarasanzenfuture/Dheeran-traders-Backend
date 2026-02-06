@@ -2,20 +2,20 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 
-import authRoutes from "./routes/auth.routes.js";
-import userRoutes from "./routes/user.routes.js";
-import productRoutes from "./routes/product.routes.js";
-import categoryRoutes from "./routes/category.routes.js";
-import brandRoutes from "./routes/brand.routes.js";
-import customerRoutes from "./routes/customer.routes.js";
-import vendorRoutes from "./routes/vendor.routes.js";
-import quantityRoutes from "./routes/quantity.routes.js";
-import employeeRoutes from "./routes/employee.routes.js";
-import companyBankRoutes from "./routes/companyBank.routes.js";
-import vendorStock from "./routes/vendorStock.routes.js";
-import customerBillingRoutes from "./routes/customerBilling.routes.js";
-import customerPaymentRoutes from "./routes/customerPayment.routes.js";
-import companyDetailsRoutes from "./routes/companyDetails.routes.js";
+
+import userRoutes from "./routes/billing/user.routes.js";
+import productRoutes from "./routes/billing/product.routes.js";
+import categoryRoutes from "./routes/billing/category.routes.js";
+import brandRoutes from "./routes/billing/brand.routes.js";
+import customerRoutes from "./routes/billing/customer.routes.js";
+import vendorRoutes from "./routes/billing/vendor.routes.js";
+import quantityRoutes from "./routes/billing/quantity.routes.js";
+import employeeRoutes from "./routes/billing/employee.routes.js";
+import companyBankRoutes from "./routes/billing/companyBank.routes.js";
+import vendorStock from "./routes/billing/vendorStock.routes.js";
+import customerBillingRoutes from "./routes/billing/customerBilling.routes.js";
+import customerPaymentRoutes from "./routes/billing/customerPayment.routes.js";
+import companyDetailsRoutes from "./routes/billing/companyDetails.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
@@ -30,7 +30,7 @@ app.use(express.json());
 
 app.use("/uploads", express.static("src/uploads"));
 
-app.use("/api/auth", authRoutes);
+
 app.use("/api/users", userRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/products", productRoutes);

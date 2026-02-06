@@ -5,8 +5,8 @@ import {
   getVendorById,
   updateVendor,
   deleteVendor,
-} from "../controllers/vendor.controller.js";
-import { protect } from "../middlewares/auth.middleware.js";
+} from "../../controllers/billing/vendor.controller.js";
+import { protect } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 

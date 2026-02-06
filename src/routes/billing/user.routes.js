@@ -7,8 +7,8 @@ import {
   deleteUser,
   updateUser,
   updateUserRole,
-} from "../controllers/user.controller.js";
-import { protect, adminOnly } from "../middlewares/auth.middleware.js";
+} from "../../controllers/billing/user.controller.js";
+import { protect, adminOnly } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 

@@ -3,7 +3,7 @@ import {
   addCustomerPayment,
   getPaymentsByBillingId,
   getInvoiceWithPayments,
-} from "../controllers/customerPayment.controller.js";
+} from "../../controllers/billing/customerPayment.controller.js";
 
 const router = express.Router();
 

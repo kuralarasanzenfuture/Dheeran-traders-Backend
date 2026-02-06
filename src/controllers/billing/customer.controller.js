@@ -1,4 +1,4 @@
-import db from "../config/db.js";
+import db from "../../config/db.js";
 
 /**
  * CREATE CUSTOMER
@@ -20,7 +20,7 @@ export const createCustomer = async (req, res) => {
       SELECT id FROM customers
       WHERE phone = ? OR email = ?
       `,
-      [phone, email || null]
+      [phone, email || null],
     );
 
     if (exists.length) {
@@ -36,12 +36,12 @@ export const createCustomer = async (req, res) => {
       (first_name, last_name, phone, email, address)
       VALUES (?, ?, ?, ?, ?)
       `,
-      [first_name, last_name, phone, email || null, address || null]
+      [first_name, last_name, phone, email || null, address || null],
     );
 
     const [[customer]] = await db.query(
       "SELECT * FROM customers WHERE id = ?",
-      [result.insertId]
+      [result.insertId],
     );
 
     res.status(201).json({
@@ -105,7 +105,7 @@ export const getCustomerById = async (req, res) => {
   try {
     const [[customer]] = await db.query(
       "SELECT * FROM customers WHERE id = ?",
-      [req.params.id]
+      [req.params.id],
     );
 
     if (!customer) {
@@ -122,65 +122,142 @@ export const getCustomerById = async (req, res) => {
 /**
  * UPDATE CUSTOMER
  */
+// export const updateCustomer = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { first_name, last_name, phone, email, address } = req.body;
+
+//     // ✅ Prevent duplicate phone/email
+//     if (phone || email) {
+//       const [exists] = await db.query(
+//         `
+//         SELECT id FROM customers
+//         WHERE (phone = ? OR email = ?) AND id != ?
+//         `,
+//         [phone || null, email || null, id]
+//       );
+
+//       if (exists.length) {
+//         return res.status(409).json({
+//           message: "Phone or email already in use",
+//         });
+//       }
+//     }
+
+//     const [result] = await db.query(
+//       `
+//       UPDATE customers
+//       SET
+//         first_name = COALESCE(?, first_name),
+//         last_name = COALESCE(?, last_name),
+//         phone = COALESCE(?, phone),
+//         email = COALESCE(?, email),
+//         address = COALESCE(?, address)
+//       WHERE id = ?
+//       `,
+//       [
+//         first_name,
+//         last_name,
+//         phone,
+//         email,
+//         address,
+//         id,
+//       ]
+//     );
+
+//     if (!result.affectedRows) {
+//       return res.status(404).json({ message: "Customer not found" });
+//     }
+
+//     const [[customer]] = await db.query(
+//       "SELECT * FROM customers WHERE id = ?",
+//       [id]
+//     );
+
+//     res.json({
+//       message: "Customer updated successfully",
+//       customer,
+//     });
+//   } catch (error) {
+//     console.error("Update customer error:", error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 export const updateCustomer = async (req, res) => {
   try {
     const { id } = req.params;
     const { first_name, last_name, phone, email, address } = req.body;
 
-    // ✅ Prevent duplicate phone/email
-    if (phone || email) {
-      const [exists] = await db.query(
-        `
-        SELECT id FROM customers
-        WHERE (phone = ? OR email = ?) AND id != ?
-        `,
-        [phone || null, email || null, id]
+    // 🔍 Check if customer exists
+    const [[existingCustomer]] = await db.query(
+      "SELECT * FROM customers WHERE id = ?",
+      [id],
+    );
+
+    if (!existingCustomer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    // 🚫 Check phone duplicate
+    if (phone) {
+      const [phoneExists] = await db.query(
+        "SELECT id FROM customers WHERE phone = ? AND id != ?",
+        [phone, id],
       );
 
-      if (exists.length) {
-        return res.status(409).json({
-          message: "Phone or email already in use",
-        });
+      if (phoneExists.length) {
+        return res.status(409).json({ message: "Phone already in use" });
       }
     }
 
+    // 🚫 Check email duplicate
+    if (email) {
+      const [emailExists] = await db.query(
+        "SELECT id FROM customers WHERE email = ? AND id != ?",
+        [email, id],
+      );
+
+      if (emailExists.length) {
+        return res.status(409).json({ message: "Email already in use" });
+      }
+    }
+
+    // 📝 Update customer
     const [result] = await db.query(
       `
       UPDATE customers
       SET
-        first_name = COALESCE(?, first_name),
-        last_name = COALESCE(?, last_name),
-        phone = COALESCE(?, phone),
-        email = COALESCE(?, email),
-        address = COALESCE(?, address)
+        first_name = ?,
+        last_name = ?,
+        phone = ?,
+        email = ?,
+        address = ?
       WHERE id = ?
       `,
       [
-        first_name,
-        last_name,
-        phone,
-        email,
-        address,
+        first_name ?? existingCustomer.first_name,
+        last_name ?? existingCustomer.last_name,
+        phone ?? existingCustomer.phone,
+        email ?? existingCustomer.email,
+        address ?? existingCustomer.address,
         id,
-      ]
+      ],
     );
 
-    if (!result.affectedRows) {
-      return res.status(404).json({ message: "Customer not found" });
-    }
-
-    const [[customer]] = await db.query(
+    // 📦 Fetch updated record
+    const [[updatedCustomer]] = await db.query(
       "SELECT * FROM customers WHERE id = ?",
-      [id]
+      [id],
     );
 
-    res.json({
+    return res.json({
       message: "Customer updated successfully",
-      customer,
+      customer: updatedCustomer,
     });
   } catch (error) {
     console.error("Update customer error:", error);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -189,10 +266,9 @@ export const updateCustomer = async (req, res) => {
  */
 export const deleteCustomer = async (req, res) => {
   try {
-    const [result] = await db.query(
-      "DELETE FROM customers WHERE id = ?",
-      [req.params.id]
-    );
+    const [result] = await db.query("DELETE FROM customers WHERE id = ?", [
+      req.params.id,
+    ]);
 
     if (!result.affectedRows) {
       return res.status(404).json({ message: "Customer not found" });

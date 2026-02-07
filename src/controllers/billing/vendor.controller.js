@@ -225,11 +225,127 @@ export const getVendorById = async (req, res) => {
 //   }
 // };
 
+// export const updateVendor = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const {
+//       name,
+//       phone,
+//       email,
+//       address,
+//       bank_name,
+//       bank_account_number,
+//       bank_ifsc_code,
+//     } = req.body;
+
+//     // 🔍 Check vendor exists
+//     const [[existingVendor]] = await db.query(
+//       "SELECT * FROM vendors WHERE id = ?",
+//       [id],
+//     );
+
+//     if (!existingVendor) {
+//       return res.status(404).json({ message: "Vendor not found" });
+//     }
+
+//     // 📞 Phone validation
+//     if (phone && !/^[0-9]{10,15}$/.test(phone)) {
+//       return res.status(400).json({ message: "Invalid phone number" });
+//     }
+
+//     // 📧 Email validation
+//     if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+//       return res.status(400).json({ message: "Invalid email address" });
+//     }
+
+//     // 🏦 IFSC validation
+//     if (bank_ifsc_code && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bank_ifsc_code)) {
+//       return res.status(400).json({ message: "Invalid IFSC code" });
+//     }
+
+//     // 💳 Account number validation
+//     if (bank_account_number && !/^[0-9]{6,30}$/.test(bank_account_number)) {
+//       return res.status(400).json({
+//         message: "Invalid bank account number",
+//       });
+//     }
+
+//     // 🚫 Duplicate phone check
+//     if (phone) {
+//       const [phoneExists] = await db.query(
+//         "SELECT id FROM vendors WHERE phone = ? AND id != ?",
+//         [phone, id],
+//       );
+
+//       if (phoneExists.length) {
+//         return res.status(409).json({ message: "Phone already in use" });
+//       }
+//     }
+
+//     // 🚫 Duplicate email check
+//     if (email) {
+//       const [emailExists] = await db.query(
+//         "SELECT id FROM vendors WHERE email = ? AND id != ?",
+//         [email, id],
+//       );
+
+//       if (emailExists.length) {
+//         return res.status(409).json({ message: "Email already in use" });
+//       }
+//     }
+
+//     // 📝 Update vendor safely
+//     await db.query(
+//       `
+//       UPDATE vendors
+//       SET
+//         name = ?,
+//         phone = ?,
+//         email = ?,
+//         address = ?,
+//         bank_name = ?,
+//         bank_account_number = ?,
+//         bank_ifsc_code = ?
+//       WHERE id = ?
+//       `,
+//       [
+//         name ?? existingVendor.name,
+//         phone ?? existingVendor.phone,
+//         email ?? existingVendor.email,
+//         address ?? existingVendor.address,
+//         bank_name ?? existingVendor.bank_name,
+//         bank_account_number ?? existingVendor.bank_account_number,
+//         bank_ifsc_code ?? existingVendor.bank_ifsc_code,
+//         id,
+//       ],
+//     );
+
+//     const [[updatedVendor]] = await db.query(
+//       "SELECT * FROM vendors WHERE id = ?",
+//       [id],
+//     );
+
+//     return res.json({
+//       message: "Vendor updated successfully",
+//       vendor: updatedVendor,
+//     });
+//   } catch (error) {
+//     console.error("Update vendor error:", error);
+//     return res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 export const updateVendor = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid vendor id" });
+    }
+
     const {
-      name,
+      first_name,
+      last_name,
       phone,
       email,
       address,
@@ -238,10 +354,24 @@ export const updateVendor = async (req, res) => {
       bank_ifsc_code,
     } = req.body;
 
+    // ❌ No fields provided
+    if (
+      !first_name &&
+      !last_name &&
+      !phone &&
+      !email &&
+      !address &&
+      !bank_name &&
+      !bank_account_number &&
+      !bank_ifsc_code
+    ) {
+      return res.status(400).json({ message: "No fields to update" });
+    }
+
     // 🔍 Check vendor exists
     const [[existingVendor]] = await db.query(
       "SELECT * FROM vendors WHERE id = ?",
-      [id],
+      [id]
     );
 
     if (!existingVendor) {
@@ -263,43 +393,56 @@ export const updateVendor = async (req, res) => {
       return res.status(400).json({ message: "Invalid IFSC code" });
     }
 
-    // 💳 Account number validation
+    // 💳 Account validation
     if (bank_account_number && !/^[0-9]{6,30}$/.test(bank_account_number)) {
       return res.status(400).json({
         message: "Invalid bank account number",
       });
     }
 
-    // 🚫 Duplicate phone check
+    // 🚫 Duplicate phone
     if (phone) {
       const [phoneExists] = await db.query(
         "SELECT id FROM vendors WHERE phone = ? AND id != ?",
-        [phone, id],
+        [phone, id]
       );
-
       if (phoneExists.length) {
         return res.status(409).json({ message: "Phone already in use" });
       }
     }
 
-    // 🚫 Duplicate email check
+    // 🚫 Duplicate email
     if (email) {
       const [emailExists] = await db.query(
         "SELECT id FROM vendors WHERE email = ? AND id != ?",
-        [email, id],
+        [email, id]
       );
-
       if (emailExists.length) {
         return res.status(409).json({ message: "Email already in use" });
       }
     }
 
-    // 📝 Update vendor safely
+    // 🧠 Final safe values (prevent blanks)
+    const updatedData = {
+      first_name: first_name?.trim() || existingVendor.first_name,
+      last_name: last_name?.trim() || existingVendor.last_name,
+      phone: phone || existingVendor.phone,
+      email: email || existingVendor.email,
+      address: address?.trim() || existingVendor.address,
+      bank_name: bank_name?.trim() || existingVendor.bank_name,
+      bank_account_number:
+        bank_account_number || existingVendor.bank_account_number,
+      bank_ifsc_code:
+        bank_ifsc_code || existingVendor.bank_ifsc_code,
+    };
+
+    // 📝 Update
     await db.query(
       `
       UPDATE vendors
       SET
-        name = ?,
+        first_name = ?,
+        last_name = ?,
         phone = ?,
         email = ?,
         address = ?,
@@ -309,20 +452,21 @@ export const updateVendor = async (req, res) => {
       WHERE id = ?
       `,
       [
-        name ?? existingVendor.name,
-        phone ?? existingVendor.phone,
-        email ?? existingVendor.email,
-        address ?? existingVendor.address,
-        bank_name ?? existingVendor.bank_name,
-        bank_account_number ?? existingVendor.bank_account_number,
-        bank_ifsc_code ?? existingVendor.bank_ifsc_code,
+        updatedData.first_name,
+        updatedData.last_name,
+        updatedData.phone,
+        updatedData.email,
+        updatedData.address,
+        updatedData.bank_name,
+        updatedData.bank_account_number,
+        updatedData.bank_ifsc_code,
         id,
-      ],
+      ]
     );
 
     const [[updatedVendor]] = await db.query(
       "SELECT * FROM vendors WHERE id = ?",
-      [id],
+      [id]
     );
 
     return res.json({
@@ -334,6 +478,7 @@ export const updateVendor = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 /**
  * DELETE VENDOR

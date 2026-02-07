@@ -184,12 +184,99 @@ export const getCustomerById = async (req, res) => {
 //   }
 // };
 
+// export const updateCustomer = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { first_name, last_name, phone, email, address } = req.body;
+
+//     // 🔍 Check if customer exists
+//     const [[existingCustomer]] = await db.query(
+//       "SELECT * FROM customers WHERE id = ?",
+//       [id],
+//     );
+
+//     if (!existingCustomer) {
+//       return res.status(404).json({ message: "Customer not found" });
+//     }
+
+//     // 🚫 Check phone duplicate
+//     if (phone) {
+//       const [phoneExists] = await db.query(
+//         "SELECT id FROM customers WHERE phone = ? AND id != ?",
+//         [phone, id],
+//       );
+
+//       if (phoneExists.length) {
+//         return res.status(409).json({ message: "Phone already in use" });
+//       }
+//     }
+
+//     // 🚫 Check email duplicate
+//     if (email) {
+//       const [emailExists] = await db.query(
+//         "SELECT id FROM customers WHERE email = ? AND id != ?",
+//         [email, id],
+//       );
+
+//       if (emailExists.length) {
+//         return res.status(409).json({ message: "Email already in use" });
+//       }
+//     }
+
+//     // 📝 Update customer
+//     const [result] = await db.query(
+//       `
+//       UPDATE customers
+//       SET
+//         first_name = ?,
+//         last_name = ?,
+//         phone = ?,
+//         email = ?,
+//         address = ?
+//       WHERE id = ?
+//       `,
+//       [
+//         first_name ?? existingCustomer.first_name,
+//         last_name ?? existingCustomer.last_name,
+//         phone ?? existingCustomer.phone,
+//         email ?? existingCustomer.email,
+//         address ?? existingCustomer.address,
+//         id,
+//       ],
+//     );
+
+//     // 📦 Fetch updated record
+//     const [[updatedCustomer]] = await db.query(
+//       "SELECT * FROM customers WHERE id = ?",
+//       [id],
+//     );
+
+//     return res.json({
+//       message: "Customer updated successfully",
+//       customer: updatedCustomer,
+//     });
+//   } catch (error) {
+//     console.error("Update customer error:", error);
+//     return res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 export const updateCustomer = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid customer id" });
+    }
+
     const { first_name, last_name, phone, email, address } = req.body;
 
-    // 🔍 Check if customer exists
+    // ❌ No fields provided
+    if (!first_name && !last_name && !phone && !email && !address) {
+      return res.status(400).json({ message: "No fields to update" });
+    }
+
+    // 🔍 Check exists
     const [[existingCustomer]] = await db.query(
       "SELECT * FROM customers WHERE id = ?",
       [id],
@@ -199,32 +286,49 @@ export const updateCustomer = async (req, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
 
-    // 🚫 Check phone duplicate
+    // 📞 Phone validation
+    if (phone && !/^[0-9]{10,15}$/.test(phone)) {
+      return res.status(400).json({ message: "Invalid phone number" });
+    }
+
+    // 📧 Email validation
+    if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+      return res.status(400).json({ message: "Invalid email address" });
+    }
+
+    // 🚫 Duplicate phone
     if (phone) {
       const [phoneExists] = await db.query(
         "SELECT id FROM customers WHERE phone = ? AND id != ?",
         [phone, id],
       );
-
       if (phoneExists.length) {
         return res.status(409).json({ message: "Phone already in use" });
       }
     }
 
-    // 🚫 Check email duplicate
+    // 🚫 Duplicate email
     if (email) {
       const [emailExists] = await db.query(
         "SELECT id FROM customers WHERE email = ? AND id != ?",
         [email, id],
       );
-
       if (emailExists.length) {
         return res.status(409).json({ message: "Email already in use" });
       }
     }
 
-    // 📝 Update customer
-    const [result] = await db.query(
+    // 🧠 Safe values (no blanks)
+    const updatedData = {
+      first_name: first_name?.trim() || existingCustomer.first_name,
+      last_name: last_name?.trim() || existingCustomer.last_name,
+      phone: phone || existingCustomer.phone,
+      email: email || existingCustomer.email,
+      address: address?.trim() || existingCustomer.address,
+    };
+
+    // 📝 Update
+    await db.query(
       `
       UPDATE customers
       SET
@@ -236,16 +340,15 @@ export const updateCustomer = async (req, res) => {
       WHERE id = ?
       `,
       [
-        first_name ?? existingCustomer.first_name,
-        last_name ?? existingCustomer.last_name,
-        phone ?? existingCustomer.phone,
-        email ?? existingCustomer.email,
-        address ?? existingCustomer.address,
+        updatedData.first_name,
+        updatedData.last_name,
+        updatedData.phone,
+        updatedData.email,
+        updatedData.address,
         id,
       ],
     );
 
-    // 📦 Fetch updated record
     const [[updatedCustomer]] = await db.query(
       "SELECT * FROM customers WHERE id = ?",
       [id],

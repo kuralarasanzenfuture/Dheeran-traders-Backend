@@ -463,13 +463,8 @@ import db from "../../config/db.js";
 export const createVendorStock = async (req, res) => {
   const conn = await db.getConnection();
   try {
-    const {
-      vendor_name,
-      vendor_phone,
-      entry_date,
-      entry_time,
-      products
-    } = req.body;
+    const { vendor_name, vendor_phone, entry_date, entry_time, products } =
+      req.body;
 
     if (
       !vendor_name ||
@@ -482,7 +477,7 @@ export const createVendorStock = async (req, res) => {
       return res.status(400).json({ message: "Invalid vendor stock data" });
     }
 
-    if (!/^\d{10}$/.test(vendor_phone)) {
+    if (!/^\d{10,15}$/.test(vendor_phone)) {
       return res.status(400).json({ message: "Invalid phone number" });
     }
 
@@ -490,7 +485,7 @@ export const createVendorStock = async (req, res) => {
 
     /* 🔢 GENERATE ENTRY ID (ONCE) */
     const [[row]] = await conn.query(
-      `SELECT COALESCE(MAX(entry_id), 0) + 1 AS next_entry_id FROM vendor_stocks FOR UPDATE`
+      `SELECT COALESCE(MAX(entry_id), 0) + 1 AS next_entry_id FROM vendor_stocks FOR UPDATE`,
     );
     const entry_id = row.next_entry_id;
 
@@ -504,7 +499,7 @@ export const createVendorStock = async (req, res) => {
       /* 🔒 LOCK PRODUCT */
       const [[product]] = await conn.query(
         `SELECT product_name, brand, category FROM products WHERE id = ? FOR UPDATE`,
-        [product_id]
+        [product_id],
       );
 
       if (!product) throw new Error("Product not found");
@@ -531,20 +526,20 @@ export const createVendorStock = async (req, res) => {
           total_stock,
           entry_date,
           entry_time,
-        ]
+        ],
       );
 
       /* ➕ UPDATE PRODUCT STOCK */
-      await conn.query(
-        `UPDATE products SET stock = stock + ? WHERE id = ?`,
-        [total_stock, product_id]
-      );
+      await conn.query(`UPDATE products SET stock = stock + ? WHERE id = ?`, [
+        total_stock,
+        product_id,
+      ]);
     }
 
     /* 🔁 FETCH FULL ENTRY */
     const [items] = await conn.query(
       `SELECT * FROM vendor_stocks WHERE entry_id = ? ORDER BY id`,
-      [entry_id]
+      [entry_id],
     );
 
     await conn.commit();
@@ -556,9 +551,9 @@ export const createVendorStock = async (req, res) => {
         name: vendor_name,
         phone: vendor_phone,
         entry_date,
-        entry_time
+        entry_time,
       },
-      items
+      items,
     });
   } catch (err) {
     await conn.rollback();
@@ -568,7 +563,6 @@ export const createVendorStock = async (req, res) => {
     conn.release();
   }
 };
-
 
 /**
  * GET ALL VENDOR STOCK ENTRIES
@@ -841,7 +835,7 @@ export const updateVendorStock = async (req, res) => {
 
     const [[oldRow]] = await conn.query(
       `SELECT product_id, total_stock FROM vendor_stocks WHERE id = ?`,
-      [id]
+      [id],
     );
 
     if (!oldRow) {
@@ -877,13 +871,13 @@ export const updateVendorStock = async (req, res) => {
         entry_date,
         entry_time,
         id,
-      ]
+      ],
     );
 
-    await conn.query(
-      `UPDATE products SET stock = stock + ? WHERE id = ?`,
-      [diff, oldRow.product_id]
-    );
+    await conn.query(`UPDATE products SET stock = stock + ? WHERE id = ?`, [
+      diff,
+      oldRow.product_id,
+    ]);
 
     await conn.commit();
 
@@ -896,7 +890,6 @@ export const updateVendorStock = async (req, res) => {
     conn.release();
   }
 };
-
 
 /**
  * ADD STOCK (INCREMENT LOGIC)
@@ -967,7 +960,7 @@ export const deleteVendorStock = async (req, res) => {
 
     const [[row]] = await conn.query(
       `SELECT product_id, total_stock FROM vendor_stocks WHERE id = ?`,
-      [id]
+      [id],
     );
 
     if (!row) {
@@ -977,10 +970,10 @@ export const deleteVendorStock = async (req, res) => {
 
     await conn.query(`DELETE FROM vendor_stocks WHERE id = ?`, [id]);
 
-    await conn.query(
-      `UPDATE products SET stock = stock - ? WHERE id = ?`,
-      [row.total_stock, row.product_id]
-    );
+    await conn.query(`UPDATE products SET stock = stock - ? WHERE id = ?`, [
+      row.total_stock,
+      row.product_id,
+    ]);
 
     await conn.commit();
 
@@ -1003,7 +996,7 @@ export const deleteVendorEntry = async (req, res) => {
 
     const [rows] = await conn.query(
       `SELECT product_id, total_stock FROM vendor_stocks WHERE entry_id = ?`,
-      [entry_id]
+      [entry_id],
     );
 
     if (!rows.length) {
@@ -1011,16 +1004,15 @@ export const deleteVendorEntry = async (req, res) => {
     }
 
     for (const row of rows) {
-      await conn.query(
-        `UPDATE products SET stock = stock - ? WHERE id = ?`,
-        [row.total_stock, row.product_id]
-      );
+      await conn.query(`UPDATE products SET stock = stock - ? WHERE id = ?`, [
+        row.total_stock,
+        row.product_id,
+      ]);
     }
 
-    await conn.query(
-      `DELETE FROM vendor_stocks WHERE entry_id = ?`,
-      [entry_id]
-    );
+    await conn.query(`DELETE FROM vendor_stocks WHERE entry_id = ?`, [
+      entry_id,
+    ]);
 
     await conn.commit();
 
@@ -1032,4 +1024,3 @@ export const deleteVendorEntry = async (req, res) => {
     conn.release();
   }
 };
-

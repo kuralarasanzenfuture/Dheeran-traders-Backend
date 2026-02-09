@@ -94,6 +94,7 @@ export const createCustomerBillingTables = async (db) => {
 
     cash_amount DECIMAL(10,2) DEFAULT 0,
     upi_amount DECIMAL(10,2) DEFAULT 0,
+    cheque_amount DECIMAL(10,2) DEFAULT 0,
 
     reference_no VARCHAR(100),
     remarks VARCHAR(255),

@@ -422,7 +422,7 @@ export const updateVendor = async (req, res) => {
       }
     }
 
-    // 🧠 Final safe values (prevent blanks)
+    // Final safe values (prevent blanks)
     const updatedData = {
       first_name: first_name?.trim() || existingVendor.first_name,
       last_name: last_name?.trim() || existingVendor.last_name,

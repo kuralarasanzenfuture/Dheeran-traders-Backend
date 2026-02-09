@@ -8,6 +8,7 @@ export const addCustomerPayment = async (req, res) => {
       payment_date,
       cash_amount,
       upi_amount,
+      cheque_amount,
       reference_no,
       remarks,
     } = req.body;
@@ -20,8 +21,9 @@ export const addCustomerPayment = async (req, res) => {
 
     const cash = Number(cash_amount) || 0;
     const upi = Number(upi_amount) || 0;
+    const cheque = Number(cheque_amount) || 0;
 
-    const totalPaid = cash + upi;
+    const totalPaid = cash + upi + cheque;
 
     if (totalPaid <= 0) {
       return res
@@ -46,9 +48,17 @@ export const addCustomerPayment = async (req, res) => {
     /* Insert payment */
     await db.query(
       `INSERT INTO customerBillingPayment
-       (billing_id, payment_date, cash_amount, upi_amount, reference_no, remarks)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [billing_id, payment_date, cash, upi, reference_no, remarks],
+       (billing_id, payment_date, cash_amount, upi_amount,cheque_amount, reference_no, remarks)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        billing_id,
+        payment_date,
+        cash,
+        upi,
+        cheque_amount,
+        reference_no,
+        remarks,
+      ],
     );
 
     /* Update balance */

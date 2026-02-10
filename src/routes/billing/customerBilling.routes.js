@@ -13,6 +13,7 @@ import {
   updateCustomerBilling,
 } from "../../controllers/billing/customerBilling.controller.js";
 import { verifyAdminPassword } from "../../middlewares/verifyAdminPassword.js";
+import { protect } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
@@ -34,6 +35,6 @@ router.get("/pending", getPendingBills);
 router.get("/:id", getCustomerBillingById);
 
 router.put("/:id", verifyAdminPassword, updateCustomerBilling);
-router.delete("/:id", verifyAdminPassword, deleteCustomerBilling);
+router.delete("/:id",protect, verifyAdminPassword, deleteCustomerBilling);
 
 export default router;

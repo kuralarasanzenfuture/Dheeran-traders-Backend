@@ -3,17 +3,20 @@ import {
   addCustomerPayment,
   getPaymentsByBillingId,
   getInvoiceWithPayments,
+  getAllPayments,
 } from "../../controllers/billing/customerPayment.controller.js";
 
 const router = express.Router();
 
-/* Add payment */
 router.post("/", addCustomerPayment);
+
+router.get("/", getAllPayments);
+/* Get invoice + paid + balance */
+router.get("/invoice/:billing_id", getInvoiceWithPayments);
 
 /* Get payment history */
 router.get("/:billing_id", getPaymentsByBillingId);
 
-/* Get invoice + paid + balance */
-router.get("/invoice/:billing_id", getInvoiceWithPayments);
+
 
 export default router;

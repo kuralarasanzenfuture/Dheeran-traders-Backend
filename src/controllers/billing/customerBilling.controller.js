@@ -2106,6 +2106,7 @@ export const getAllCustomerBillings = async (req, res) => {
 
         cbp.quantity,
         cbp.rate,
+        cbp.final_rate,
         cbp.total
       FROM customerBillingProducts cbp
       WHERE cbp.billing_id IN (?)
@@ -2187,6 +2188,7 @@ export const getCustomerBillingById = async (req, res) => {
         product_quantity,
         quantity,
         rate,
+        final_rate,
         total
       FROM customerBillingProducts
       WHERE billing_id = ?
@@ -2240,7 +2242,7 @@ export const getCustomerProductFullData = async (req, res) => {
         cb.customer_id,
         cb.customer_name,
         cb.phone_number,
-        cb.gst_number,
+        cb.customer_gst_number,
 
         cb.staff_name,
         cb.staff_phone,
@@ -2257,6 +2259,7 @@ export const getCustomerProductFullData = async (req, res) => {
         cb.balance_due,
         cb.cash_amount,
         cb.upi_amount,
+        cb.cheque_amount,
 
         cbp.product_id,
         cbp.product_name,
@@ -2265,6 +2268,7 @@ export const getCustomerProductFullData = async (req, res) => {
         cbp.product_quantity,
         cbp.quantity,
         cbp.rate,
+        cbp.final_rate,
         cbp.total
 
       FROM customerBillingProducts cbp
@@ -2275,10 +2279,11 @@ export const getCustomerProductFullData = async (req, res) => {
 
     res.json(rows);
   } catch (error) {
-    console.error("Fetch error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("Fetch error:", error);  // 🔥 See actual SQL error here
+    res.status(500).json({ message: error.message });
   }
 };
+
 
 /* PRODUCT WISE */
 // export const productWiseReport = async (req, res) => {

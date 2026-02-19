@@ -80,6 +80,8 @@ export const createCustomerBillingTables = async (db) => {
   final_rate DECIMAL(10,2) NOT NULL,
   total DECIMAL(10,2) NOT NULL,
 
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
   FOREIGN KEY (billing_id) REFERENCES customerBilling(id) ON DELETE CASCADE,
   FOREIGN KEY (product_id) REFERENCES products(id)
 );

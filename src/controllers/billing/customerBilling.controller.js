@@ -467,6 +467,7 @@ export const getCustomerProductFullData = async (req, res) => {
         cb.cash_amount,
         cb.upi_amount,
         cb.cheque_amount,
+        cb.created_at,
 
         cbp.product_id,
         cbp.product_name,
@@ -491,6 +492,33 @@ export const getCustomerProductFullData = async (req, res) => {
   }
 };
 
+// export const productWiseReport = async (req, res) => {
+//   try {
+//     const [rows] = await db.query(`
+//       SELECT 
+//         cbp.product_id,
+//         cbp.product_name,
+//         cbp.product_brand,
+//         cbp.product_category,
+//         cbp.product_quantity,
+//         SUM(cbp.quantity) AS total_quantity_sold,
+//       FROM customerBillingProducts cbp
+//       GROUP BY
+//         cbp.product_id,
+//         cbp.product_name,
+//         cbp.product_brand,
+//         cbp.product_category,
+//         cbp.product_quantity
+//       ORDER BY total_quantity_sold DESC
+//     `);
+
+//     res.json(rows);
+//   } catch (err) {
+//     console.error("Product wise report error:", err);
+//     res.status(500).json({ message: "Failed to fetch product wise report" });
+//   }
+// };
+
 export const productWiseReport = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -500,6 +528,7 @@ export const productWiseReport = async (req, res) => {
         cbp.product_brand,
         cbp.product_category,
         cbp.product_quantity,
+        DATE(cbp.created_at) AS created_at,
         SUM(cbp.quantity) AS total_quantity_sold
       FROM customerBillingProducts cbp
       GROUP BY
@@ -507,7 +536,8 @@ export const productWiseReport = async (req, res) => {
         cbp.product_name,
         cbp.product_brand,
         cbp.product_category,
-        cbp.product_quantity
+        cbp.product_quantity,
+        DATE(cbp.created_at)
       ORDER BY total_quantity_sold DESC
     `);
 
@@ -517,6 +547,102 @@ export const productWiseReport = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch product wise report" });
   }
 };
+
+
+// export const productWiseReportByDate = async (req, res) => {
+//   try {
+//     const { fromDate, toDate } = req.query;
+
+//     const [rows] = await db.query(`
+//       SELECT 
+//         cbp.product_id,
+//         cbp.product_name,
+//         cbp.product_brand,
+//         cbp.product_category,
+//         SUM(cbp.quantity) AS total_quantity_sold
+//       FROM customerBillingProducts cbp
+//       JOIN customerBilling cb 
+//         ON cb.id = cbp.billing_id
+//       WHERE cb.created_at BETWEEN ? AND ?
+//       GROUP BY
+//         cbp.product_id,
+//         cbp.product_name,
+//         cbp.product_brand,
+//         cbp.product_category
+//       ORDER BY total_quantity_sold DESC
+//     `, [fromDate, toDate]);
+
+//     res.json(rows);
+//   } catch (err) {
+//     console.error("Product wise report error:", err);
+//     res.status(500).json({ message: "Failed to fetch product wise report" });
+//   }
+// };
+
+// export const productWiseReportByDate = async (req, res) => {
+//   try {
+//     const { fromDate, toDate } = req.query;
+
+//     const [rows] = await db.query(`
+//       SELECT 
+//         cbp.product_id,
+//         cbp.product_name,
+//         cbp.product_brand,
+//         cbp.product_category,
+//         cbp.product_quantity,
+//         SUM(cbp.quantity) AS total_quantity_sold
+//       FROM customerBillingProducts cbp
+//       JOIN customerBilling cb ON cb.id = cbp.billing_id
+//       WHERE cb.created_at BETWEEN ? AND ?
+//       GROUP BY
+//         cbp.product_id,
+//         cbp.product_name,
+//         cbp.product_brand,
+//         cbp.product_category,
+//         cbp.product_quantity
+//       ORDER BY total_quantity_sold DESC
+//     `, [fromDate, toDate]);
+
+//     res.json(rows);
+//   } catch (err) {
+//     console.error("Product wise report error:", err);
+//     res.status(500).json({ message: "Failed to fetch product wise report" });
+//   }
+// };
+
+
+export const productWiseReportByDate = async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.query;
+
+    const [rows] = await db.query(`
+      SELECT 
+        cbp.product_id,
+        cbp.product_name,
+        cbp.product_brand,
+        cbp.product_category,
+        cbp.product_quantity,
+        SUM(cbp.quantity) AS total_quantity_sold
+      FROM customerBillingProducts cbp
+      JOIN customerBilling cb ON cb.id = cbp.billing_id
+      WHERE DATE(cb.created_at) >= ? 
+        AND DATE(cb.created_at) <= ?
+      GROUP BY
+        cbp.product_id,
+        cbp.product_name,
+        cbp.product_brand,
+        cbp.product_category,
+        cbp.product_quantity
+      ORDER BY total_quantity_sold DESC
+    `, [fromDate, toDate]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Product wise report error:", err);
+    res.status(500).json({ message: "Failed to fetch product wise report" });
+  }
+};
+
 
 /* BRAND WISE – ALL BRANDS */
 export const brandWiseReport = async (req, res) => {

@@ -1,56 +1,5 @@
 import db from "../../config/db.js";
 
-/* ================= CREATE ================= */
-// export const saveCompanyDetails = async (req, res) => {
-//   try {
-//     const {
-//       company_name,
-//       company_quotes,
-//       company_address,
-//       district,
-//       state,
-//       pincode,
-//       phone,
-//       email,
-//       website,
-//       disclaimer,
-//       instruction,
-//     } = req.body;
-
-//     if (!company_name) {
-//       return res.status(400).json({ message: "Company name is required" });
-//     }
-
-//     const [result] = await db.query(
-//       `INSERT INTO company_details
-//       (company_name, company_quotes, company_address, district, state, pincode,
-//        phone, email, website, disclaimer, instruction)
-//       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-//       [
-//         company_name,
-//         company_quotes || null,
-//         company_address || null,
-//         district || null,
-//         state || null,
-//         pincode || null,
-//         phone || null,
-//         email || null,
-//         website || null,
-//         disclaimer || null,
-//         instruction || null,
-//       ]
-//     );
-
-//     res.status(201).json({
-//       message: "Company details created successfully",
-//       id: result.insertId,
-//     });
-//   } catch (err) {
-//     console.error("Create error:", err);
-//     res.status(500).json({ message: "Failed to create company details" });
-//   }
-// };
-
 export const saveCompanyDetails = async (req, res) => {
   try {
     const {
@@ -201,29 +150,6 @@ export const updateCompanyDetails = async (req, res) => {
     res.status(500).json({ message: "Failed to update company details" });
   }
 };
-
-/* ================= DELETE ================= */
-// export const deleteCompanyDetails = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     const [exists] = await db.query(
-//       "SELECT id FROM company_details WHERE id=?",
-//       [id]
-//     );
-
-//     if (!exists.length) {
-//       return res.status(404).json({ message: "Company details not found" });
-//     }
-
-//     await db.query("DELETE FROM company_details WHERE id=?", [id]);
-
-//     res.json({ message: "Company details deleted successfully" });
-//   } catch (err) {
-//     console.error("Delete error:", err);
-//     res.status(500).json({ message: "Failed to delete company details" });
-//   }
-// };
 
 export const deleteCompanyDetails = async (req, res) => {
   try {

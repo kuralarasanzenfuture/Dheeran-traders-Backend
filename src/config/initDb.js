@@ -1,14 +1,14 @@
 
-import { createCompanyBankDetailsTables } from "./database/companyBankDetails.tables.js";
-import { createCompanyDetailsTables } from "./database/companydetails.tables.js";
-import { createCustomerBillingTables } from "./database/customerBilling.tables.js";
-import { createCustomerTables } from "./database/customers.tables.js";
-import { createEmployeeTables } from "./database/employee.tables.js";
-import { createMasterTables } from "./database/master.tables.js";
-import { createProductTables } from "./database/product.tables.js";
-import { createUserTables } from "./database/user.tables.js";
-import { createVendorTables } from "./database/vendor.tables.js";
-import { createVendorStocksTables } from "./database/vendorStocks.tables.js";
+import { createCompanyBankDetailsTables } from "./database/billing/companyBankDetails.tables.js";
+import { createCompanyDetailsTables } from "./database/billing/companydetails.tables.js";
+import { createCustomerBillingTables } from "./database/billing/customerBilling.tables.js";
+import { createCustomerTables } from "./database/billing/customers.tables.js";
+import { createEmployeeTables } from "./database/billing/employee.tables.js";
+import { createMasterTables } from "./database/billing/master.tables.js";
+import { createProductTables } from "./database/billing/product.tables.js";
+import { createUserTables } from "./database/billing/user.tables.js";
+import { createVendorTables } from "./database/billing/vendor.tables.js";
+import { createVendorStocksTables } from "./database/billing/vendorStocks.tables.js";
 import db from "./db.js";
 
 export const initDatabase = async () => {

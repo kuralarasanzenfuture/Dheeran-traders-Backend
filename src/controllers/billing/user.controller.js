@@ -57,45 +57,6 @@ export const register = async (req, res, next) => {
   }
 };
 
-/**
- * LOGIN
- */
-// export const login = async (req, res, next) => {
-//   try {
-//     const { email, password } = req.body;
-
-//     const [users] = await db.query(
-//       "SELECT * FROM users WHERE email = ?",
-//       [email]
-//     );
-
-//     if (!users.length) {
-//       return res.status(401).json({ message: "Invalid credentials" });
-//     }
-
-//     const user = users[0];
-
-//     const match = await bcrypt.compare(password, user.password);
-//     if (!match) {
-//       return res.status(401).json({ message: "Invalid credentials" });
-//     }
-
-//     await db.query(
-//       "UPDATE users SET last_login_at = NOW() WHERE id = ?",
-//       [user.id]
-//     );
-
-//     delete user.password;
-
-//     res.json({
-//       token: generateToken({ id: user.id }),
-//       user,
-//     });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
 export const login = async (req, res, next) => {
   try {
     const { identifier, password } = req.body;
@@ -159,18 +120,6 @@ export const getProfile = async (req, res) => {
   res.json(req.user);
 };
 
-/**
- * DELETE USER (ADMIN)
- */
-// export const deleteUser = async (req, res, next) => {
-//   try {
-//     await db.query("DELETE FROM users WHERE id = ?", [req.params.id]);
-//     res.json({ message: "User deleted successfully" });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
 export const deleteUser = async (req, res, next) => {
   try {
     const [user] = await db.query("SELECT role FROM users WHERE id = ?", [req.params.id]);
@@ -187,29 +136,6 @@ export const deleteUser = async (req, res, next) => {
     next(err);
   }
 };
-
-/**
- * UPDATE USER ROLE (ADMIN ONLY)
- */
-// export const updateUserRole = async (req, res, next) => {
-//   try {
-//     const { role } = req.body;
-//     const { id } = req.params;
-
-//     if (!["admin", "user"].includes(role)) {
-//       return res.status(400).json({ message: "Invalid role" });
-//     }
-
-//     await db.query(
-//       "UPDATE users SET role = ? WHERE id = ?",
-//       [role, id]
-//     );
-
-//     res.json({ message: "Role updated successfully" });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
 
 export const updateUserRole = async (req, res, next) => {
   try {

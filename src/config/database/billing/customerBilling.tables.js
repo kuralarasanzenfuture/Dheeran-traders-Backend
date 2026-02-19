@@ -20,7 +20,7 @@ export const createCustomerBillingTables = async (db) => {
 
   /* 👤 STAFF */
   staff_name VARCHAR(150) NOT NULL,
-  staff_phone VARCHAR(20) NOT NULL,
+  staff_phone VARCHAR(20),
 
   /* 🏦 BANK */
   bank_id INT NOT NULL,
@@ -85,25 +85,6 @@ export const createCustomerBillingTables = async (db) => {
 );
   `);
 
-  // await db.query(`
-  //   CREATE TABLE IF NOT EXISTS customerBillingPayment (
-  //   id INT AUTO_INCREMENT PRIMARY KEY,
-  //   billing_id INT NOT NULL,
-
-  //   payment_date DATE NOT NULL,
-
-  //   cash_amount DECIMAL(10,2) DEFAULT 0,
-  //   upi_amount DECIMAL(10,2) DEFAULT 0,
-  //   cheque_amount DECIMAL(10,2) DEFAULT 0,
-
-  //   reference_no VARCHAR(100),
-  //   remarks VARCHAR(255),
-
-  //   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-  //   FOREIGN KEY (billing_id) REFERENCES customerBilling(id) ON DELETE CASCADE
-  //   );
-  //   `);
 await db.query(`
 CREATE TABLE IF NOT EXISTS customerBillingPayment (
     id INT AUTO_INCREMENT PRIMARY KEY,

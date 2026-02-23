@@ -16,9 +16,6 @@ export const createProduct = async (req, res, next) => {
       sgst_rate,
     } = req.body;
 
-    /* ===============================
-       BASIC VALIDATION
-    ================================ */
     if (
       !product_name ||
       !brand ||
@@ -29,9 +26,7 @@ export const createProduct = async (req, res, next) => {
       cgst_rate === undefined ||
       sgst_rate === undefined
     ) {
-      return res.status(400).json({
-        message: "All fields are required",
-      });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
     product_name = String(product_name).trim();
@@ -41,31 +36,21 @@ export const createProduct = async (req, res, next) => {
     hsn_code = String(hsn_code).trim();
 
     if (!product_name || !brand || !category || !quantity || !hsn_code) {
-      return res.status(400).json({
-        message: "Fields cannot be empty",
-      });
+      return res.status(400).json({ message: "Fields cannot be empty" });
     }
 
     if (isNaN(price) || Number(price) <= 0) {
-      return res.status(400).json({
-        message: "Price must be a valid positive number",
-      });
+      return res.status(400).json({ message: "Price must be positive number" });
     }
 
     if (isNaN(cgst_rate) || isNaN(sgst_rate)) {
-      return res.status(400).json({
-        message: "CGST and SGST must be valid numbers",
-      });
+      return res.status(400).json({ message: "GST must be valid numbers" });
     }
 
-    /* ===============================
-       GENERATE PRODUCT CODE
-    ================================ */
+    const gst_total_rate = Number(cgst_rate) + Number(sgst_rate);
+
     const [[lastRow]] = await db.query(`
-      SELECT product_code
-      FROM products
-      ORDER BY id DESC
-      LIMIT 1
+      SELECT product_code FROM products ORDER BY id DESC LIMIT 1
     `);
 
     let nextNumber = 1;
@@ -75,14 +60,11 @@ export const createProduct = async (req, res, next) => {
 
     const product_code = `DTT-PDT-${String(nextNumber).padStart(3, "0")}`;
 
-    /* ===============================
-       INSERT PRODUCT
-    ================================ */
     const [result] = await db.query(
       `
       INSERT INTO products
-      (product_code, product_name, brand, category, quantity, hsn_code, cgst_rate, sgst_rate, price)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (product_code, product_name, brand, category, quantity, hsn_code, cgst_rate, sgst_rate, gst_total_rate, price)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         product_code,
@@ -93,16 +75,15 @@ export const createProduct = async (req, res, next) => {
         hsn_code,
         cgst_rate,
         sgst_rate,
+        gst_total_rate,
         price,
       ]
     );
 
-    /* ===============================
-       FETCH CREATED PRODUCT
-    ================================ */
-    const [[product]] = await db.query("SELECT * FROM products WHERE id = ?", [
-      result.insertId,
-    ]);
+    const [[product]] = await db.query(
+      "SELECT * FROM products WHERE id = ?",
+      [result.insertId]
+    );
 
     res.status(201).json({
       message: "Product created successfully",
@@ -112,10 +93,9 @@ export const createProduct = async (req, res, next) => {
     if (err.code === "ER_DUP_ENTRY") {
       return res.status(409).json({
         message:
-          "Product already exists with the same name, brand, category and quantity",
+          "Product already exists with same name, brand, category and quantity",
       });
     }
-
     next(err);
   }
 };
@@ -130,12 +110,13 @@ export const getProducts = async (req, res, next) => {
         id,
         product_code,
         product_name,
-        brand AS brand_name,
-        category AS category_name,
-        quantity AS quantity_name,
+        brand,
+        category,
+        quantity,
         hsn_code,
         cgst_rate,
         sgst_rate,
+        gst_total_rate,
         price,
         stock
       FROM products
@@ -174,8 +155,15 @@ export const updateProduct = async (req, res, next) => {
   try {
     const { id } = req.params;
 
+    const data = { ...req.body };
+
+    if (data.cgst_rate !== undefined && data.sgst_rate !== undefined) {
+      data.gst_total_rate =
+        Number(data.cgst_rate) + Number(data.sgst_rate);
+    }
+
     const [result] = await db.query("UPDATE products SET ? WHERE id = ?", [
-      req.body,
+      data,
       id,
     ]);
 
@@ -187,10 +175,7 @@ export const updateProduct = async (req, res, next) => {
       id,
     ]);
 
-    res.json({
-      message: "Product updated successfully",
-      product,
-    });
+    res.json({ message: "Product updated successfully", product });
   } catch (err) {
     next(err);
   }

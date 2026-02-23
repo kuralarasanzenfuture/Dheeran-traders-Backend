@@ -5,7 +5,7 @@ import db from "../../config/db.js";
  */
 export const createCategory = async (req, res, next) => {
   try {
-    const { brand_id, name } = req.body;
+    const { brand_id, name, hsn_code } = req.body;
 
     if (!brand_id || !name) {
       return res.status(400).json({
@@ -13,7 +13,7 @@ export const createCategory = async (req, res, next) => {
       });
     }
 
-    // ✅ Check brand exists
+    // Check brand exists
     const [[brand]] = await db.query(
       "SELECT id FROM brands WHERE id = ?",
       [brand_id]
@@ -23,7 +23,7 @@ export const createCategory = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid brand" });
     }
 
-    // ✅ Prevent duplicate category under same brand
+    // Prevent duplicate category under same brand
     const [exists] = await db.query(
       "SELECT id FROM categories WHERE brand_id = ? AND name = ?",
       [brand_id, name]
@@ -35,16 +35,14 @@ export const createCategory = async (req, res, next) => {
       });
     }
 
-    // ✅ Insert category
     const [result] = await db.query(
-      "INSERT INTO categories (brand_id, name) VALUES (?, ?)",
-      [brand_id, name]
+      "INSERT INTO categories (brand_id, name, hsn_code) VALUES (?, ?, ?)",
+      [brand_id, name, hsn_code || null]
     );
 
-    // ✅ Fetch created category
     const [[category]] = await db.query(
       `
-      SELECT c.id, c.name, c.brand_id, b.name AS brand_name
+      SELECT c.id, c.name, c.hsn_code, c.brand_id, b.name AS brand_name
       FROM categories c
       JOIN brands b ON c.brand_id = b.id
       WHERE c.id = ?
@@ -71,6 +69,7 @@ export const getCategories = async (req, res, next) => {
       SELECT 
         c.id,
         c.name,
+        c.hsn_code,
         c.brand_id,
         b.name AS brand_name
       FROM categories c
@@ -94,7 +93,7 @@ export const getCategoriesByBrand = async (req, res, next) => {
 
     const [rows] = await db.query(
       `
-      SELECT id, name
+      SELECT id, name, hsn_code
       FROM categories
       WHERE brand_id = ?
       ORDER BY name ASC
@@ -118,6 +117,7 @@ export const getCategoryById = async (req, res, next) => {
       SELECT 
         c.id,
         c.name,
+        c.hsn_code,
         c.brand_id,
         b.name AS brand_name
       FROM categories c
@@ -143,9 +143,8 @@ export const getCategoryById = async (req, res, next) => {
 export const updateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { brand_id, name } = req.body;
+    const { brand_id, name, hsn_code } = req.body;
 
-    // ✅ Validate brand if provided
     if (brand_id) {
       const [[brand]] = await db.query(
         "SELECT id FROM brands WHERE id = ?",
@@ -161,10 +160,11 @@ export const updateCategory = async (req, res, next) => {
       UPDATE categories
       SET 
         brand_id = COALESCE(?, brand_id),
-        name = COALESCE(?, name)
+        name = COALESCE(?, name),
+        hsn_code = COALESCE(?, hsn_code)
       WHERE id = ?
       `,
-      [brand_id, name, id]
+      [brand_id, name, hsn_code, id]
     );
 
     if (!result.affectedRows) {
@@ -176,6 +176,7 @@ export const updateCategory = async (req, res, next) => {
       SELECT 
         c.id,
         c.name,
+        c.hsn_code,
         c.brand_id,
         b.name AS brand_name
       FROM categories c
@@ -226,6 +227,7 @@ export const getBrandCategoryDropdown = async (req, res) => {
         b.id AS brand_id,
         b.name AS brand_name,
         c.name AS category_name,
+        c.hsn_code,
         CONCAT(b.name, ' - ', c.name) AS label
       FROM categories c
       JOIN brands b ON c.brand_id = b.id

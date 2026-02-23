@@ -1,5 +1,4 @@
 export const createMasterTables = async (db) => {
- 
   // 7️⃣ BRANDS TABLE
   await db.query(`
   CREATE TABLE IF NOT EXISTS brands (
@@ -15,6 +14,7 @@ export const createMasterTables = async (db) => {
     id INT AUTO_INCREMENT PRIMARY KEY,
   brand_id INT NOT NULL,
   name VARCHAR(100) NOT NULL,
+  hsn_code VARCHAR(20),
 
   CONSTRAINT fk_categories_brand
     FOREIGN KEY (brand_id)

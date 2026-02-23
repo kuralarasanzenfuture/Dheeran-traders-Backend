@@ -5,7 +5,16 @@ import db from "../../config/db.js";
  */
 export const createProduct = async (req, res, next) => {
   try {
-    let { product_name, brand, category, quantity, price } = req.body;
+    let {
+      product_name,
+      brand,
+      category,
+      quantity,
+      price,
+      hsn_code,
+      cgst_rate,
+      sgst_rate,
+    } = req.body;
 
     /* ===============================
        BASIC VALIDATION
@@ -15,7 +24,10 @@ export const createProduct = async (req, res, next) => {
       !brand ||
       !category ||
       !quantity ||
-      price === undefined
+      price === undefined ||
+      !hsn_code ||
+      cgst_rate === undefined ||
+      sgst_rate === undefined
     ) {
       return res.status(400).json({
         message: "All fields are required",
@@ -26,8 +38,9 @@ export const createProduct = async (req, res, next) => {
     brand = String(brand).trim();
     category = String(category).trim();
     quantity = String(quantity).trim();
+    hsn_code = String(hsn_code).trim();
 
-    if (!product_name || !brand || !category || !quantity) {
+    if (!product_name || !brand || !category || !quantity || !hsn_code) {
       return res.status(400).json({
         message: "Fields cannot be empty",
       });
@@ -36,6 +49,12 @@ export const createProduct = async (req, res, next) => {
     if (isNaN(price) || Number(price) <= 0) {
       return res.status(400).json({
         message: "Price must be a valid positive number",
+      });
+    }
+
+    if (isNaN(cgst_rate) || isNaN(sgst_rate)) {
+      return res.status(400).json({
+        message: "CGST and SGST must be valid numbers",
       });
     }
 
@@ -62,10 +81,20 @@ export const createProduct = async (req, res, next) => {
     const [result] = await db.query(
       `
       INSERT INTO products
-      (product_code, product_name, brand, category, quantity, price)
-      VALUES (?, ?, ?, ?, ?, ?)
+      (product_code, product_name, brand, category, quantity, hsn_code, cgst_rate, sgst_rate, price)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
-      [product_code, product_name, brand, category, quantity, price],
+      [
+        product_code,
+        product_name,
+        brand,
+        category,
+        quantity,
+        hsn_code,
+        cgst_rate,
+        sgst_rate,
+        price,
+      ]
     );
 
     /* ===============================
@@ -80,9 +109,6 @@ export const createProduct = async (req, res, next) => {
       product,
     });
   } catch (err) {
-    /* ===============================
-       HANDLE DUPLICATE ENTRY
-    ================================ */
     if (err.code === "ER_DUP_ENTRY") {
       return res.status(409).json({
         message:
@@ -95,24 +121,26 @@ export const createProduct = async (req, res, next) => {
 };
 
 /**
- * GET ALL PRODUCTS (WITH BRAND, CATEGORY, QUANTITY NAMES)
+ * GET ALL PRODUCTS
  */
 export const getProducts = async (req, res, next) => {
   try {
-
     const [rows] = await db.query(`
-          SELECT
-      id,
-      product_code,
-      product_name,
-      brand AS brand_name,
-      category AS category_name,
-      quantity AS quantity_name,
-      price,
-      stock
-    FROM products
-    ORDER BY id DESC;
-        `);
+      SELECT
+        id,
+        product_code,
+        product_name,
+        brand AS brand_name,
+        category AS category_name,
+        quantity AS quantity_name,
+        hsn_code,
+        cgst_rate,
+        sgst_rate,
+        price,
+        stock
+      FROM products
+      ORDER BY id DESC
+    `);
 
     res.json(rows);
   } catch (err) {
@@ -187,31 +215,30 @@ export const deleteProduct = async (req, res, next) => {
   }
 };
 
+/**
+ * UPDATE PRODUCT STOCK
+ */
 export const updateProductStock = async (req, res) => {
-try {
-const { stock } = req.body;
-const { id } = req.params;
+  try {
+    const { stock } = req.body;
+    const { id } = req.params;
 
+    if (stock === undefined || isNaN(stock)) {
+      return res.status(400).json({ message: "Valid stock is required" });
+    }
 
-if (stock === undefined || isNaN(stock)) {
-return res.status(400).json({ message: "Valid stock is required" });
-}
+    const [result] = await db.query(
+      `UPDATE products SET stock = ? WHERE id = ?`,
+      [stock, id]
+    );
 
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
 
-const [result] = await db.query(
-`UPDATE products SET stock = ? WHERE id = ?`,
-[stock, id]
-);
-
-
-if (result.affectedRows === 0) {
-return res.status(404).json({ message: "Product not found" });
-}
-
-
-res.json({ message: "Stock updated successfully" });
-} catch (err) {
-console.error("Stock update error:", err);
-res.status(500).json({ message: "Server error" });
-}
+    res.json({ message: "Stock updated successfully" });
+  } catch (err) {
+    console.error("Stock update error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 };

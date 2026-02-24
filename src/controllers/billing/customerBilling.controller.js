@@ -549,7 +549,7 @@ export const createCustomerBilling = async (req, res) => {
         hsn_code = null,
         cgst_rate = 0,
         sgst_rate = 0,
-        gst_total_rate = 0,
+        // gst_total_rate = 0,
       } = item;
 
       const qty = Number(quantity);
@@ -574,6 +574,10 @@ export const createCustomerBilling = async (req, res) => {
 
       const cgst_amount = (finalBaseTotal * cgst_rate) / 100;
       const sgst_amount = (finalBaseTotal * sgst_rate) / 100;
+
+      /* ✅ AUTO GST TOTAL RATE */
+      const gst_total_rate = Number(cgst_rate) + Number(sgst_rate);
+
       const gst_total_amount = cgst_amount + sgst_amount;
 
       // const total = finalBaseTotal + gst_total_amount; // including gst total

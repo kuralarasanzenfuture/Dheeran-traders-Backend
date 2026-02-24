@@ -79,7 +79,7 @@ export const createCustomerBillingTables = async (db) => {
 
   quantity INT NOT NULL,
   rate DECIMAL(10,2) NOT NULL,
-  final_rate DECIMAL(10,2) NOT NULL,
+  final_rate DECIMAL(10,2),
   total DECIMAL(10,2) NOT NULL,
 
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

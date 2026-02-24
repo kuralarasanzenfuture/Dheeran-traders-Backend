@@ -9,11 +9,11 @@ export const createProductTables = async (db) => {
   quantity VARCHAR(50),
 
   hsn_code VARCHAR(20),
-  cgst_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
-  sgst_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
-  gst_total_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+  cgst_rate DECIMAL(5,2) NULL,
+  sgst_rate DECIMAL(5,2) NULL,
+  gst_total_rate DECIMAL(5,2) NULL,
 
-  price DECIMAL(10,2),
+  price DECIMAL(10,2) NOT NULL,
   stock INT NOT NULL DEFAULT 0,
 
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -41,18 +41,25 @@ export const createCustomerBilling = async (req, res) => {
       upi_amount = 0,
       cheque_amount = 0,
       upi_reference,
-      products
+      products,
     } = req.body;
 
     /* 🔴 BASIC VALIDATION */
-    if (!customer_id || !customer_name || !staff_name || !bank_id || !Array.isArray(products) || products.length === 0) {
+    if (
+      !customer_id ||
+      !customer_name ||
+      !staff_name ||
+      !bank_id ||
+      !Array.isArray(products) ||
+      products.length === 0
+    ) {
       return res.status(400).json({ message: "Invalid billing data" });
     }
 
     /* 🏦 VALID BANK */
     const [[bank]] = await connection.query(
       `SELECT id FROM company_bank_details WHERE id=? AND status='active'`,
-      [bank_id]
+      [bank_id],
     );
     if (!bank) throw new Error("Invalid bank");
 
@@ -71,16 +78,18 @@ export const createCustomerBilling = async (req, res) => {
 
       const [[product]] = await connection.query(
         `SELECT stock, product_name, price FROM products WHERE id=? FOR UPDATE`,
-        [product_id]
+        [product_id],
       );
 
       if (!product) throw new Error("Product not found");
-      if (product.stock < qty) throw new Error(`Stock low: ${product.product_name}`);
+      if (product.stock < qty)
+        throw new Error(`Stock low: ${product.product_name}`);
 
       subtotal += qty * Number(product.price);
     }
 
-    const advance_paid = Number(cash_amount) + Number(upi_amount) + Number(cheque_amount);
+    const advance_paid =
+      Number(cash_amount) + Number(upi_amount) + Number(cheque_amount);
     const balance_due = subtotal - advance_paid;
     if (balance_due < 0) throw new Error("Payment exceeds bill");
 
@@ -98,13 +107,27 @@ export const createCustomerBilling = async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
-        invoice_number, invoice_date, company_gst_number,
-        customer_id, customer_name, phone_number, customer_gst_number,
-        vehicle_number, eway_bill_number,
-        staff_name, staff_phone, bank_id,
-        subtotal, 0, advance_paid, balance_due,
-        cash_amount, upi_amount, cheque_amount, upi_reference
-      ]
+        invoice_number,
+        invoice_date,
+        company_gst_number,
+        customer_id,
+        customer_name,
+        phone_number,
+        customer_gst_number,
+        vehicle_number,
+        eway_bill_number,
+        staff_name,
+        staff_phone,
+        bank_id,
+        subtotal,
+        0,
+        advance_paid,
+        balance_due,
+        cash_amount,
+        upi_amount,
+        cheque_amount,
+        upi_reference,
+      ],
     );
 
     const billing_id = billResult.insertId;
@@ -119,14 +142,14 @@ export const createCustomerBilling = async (req, res) => {
         sgst_rate = 0,
         gst_total_rate = 0,
         discount_percent = 0,
-        discount_amount = 0
+        discount_amount = 0,
       } = item;
 
       const qty = Number(quantity);
 
       const [[product]] = await connection.query(
         `SELECT product_name, brand, category, quantity, price FROM products WHERE id=?`,
-        [product_id]
+        [product_id],
       );
 
       const rate = Number(product.price);
@@ -152,33 +175,73 @@ export const createCustomerBilling = async (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
-          billing_id, product_id,
-          product.product_name, product.brand, product.category, product.quantity,
-          hsn_code, cgst_rate, sgst_rate, gst_total_rate,
-          cgst_amount, sgst_amount, gst_total_amount,
-          discount_percent, discount_amount,
-          qty, rate, final_rate, total
-        ]
+          billing_id,
+          product_id,
+          product.product_name,
+          product.brand,
+          product.category,
+          product.quantity,
+          hsn_code,
+          cgst_rate,
+          sgst_rate,
+          gst_total_rate,
+          cgst_amount,
+          sgst_amount,
+          gst_total_amount,
+          discount_percent,
+          discount_amount,
+          qty,
+          rate,
+          final_rate,
+          total,
+        ],
       );
 
       await connection.query(
         `UPDATE products SET stock = stock - ? WHERE id=?`,
-        [qty, product_id]
+        [qty, product_id],
       );
     }
 
     await connection.query(
       `UPDATE customerBilling SET grand_total=?, balance_due=? WHERE id=?`,
-      [grand_total, grand_total - advance_paid, billing_id]
+      [grand_total, grand_total - advance_paid, billing_id],
+    );
+
+    // 🔄 FETCH FULL BILL DATA
+    const [[billing]] = await connection.query(
+      `
+  SELECT 
+    b.*,
+    c.customer_name AS customer_master_name,
+    c.phone_number AS customer_master_phone,
+    cb.bank_name
+  FROM customerBilling b
+  JOIN customers c ON b.customer_id = c.id
+  JOIN company_bank_details cb ON b.bank_id = cb.id
+  WHERE b.id = ?
+  `,
+      [billing_id],
+    );
+
+    const [productsData] = await connection.query(
+      `
+  SELECT * 
+  FROM customerBillingProducts
+  WHERE billing_id = ?
+  `,
+      [billing_id],
     );
 
     await connection.commit();
+
     res.status(201).json({
       message: "Invoice created successfully",
-      invoice_number,
-      billing_id
+      invoice: {
+        ...billing,
+        products: productsData,
+      },
     });
-
   } catch (err) {
     await connection.rollback();
     console.error("Billing error:", err.message);

@@ -22,7 +22,6 @@ export const createProduct = async (req, res, next) => {
       !category ||
       !quantity ||
       price === undefined ||
-      !hsn_code ||
       cgst_rate === undefined ||
       sgst_rate === undefined
     ) {

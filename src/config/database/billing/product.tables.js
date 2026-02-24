@@ -8,7 +8,7 @@ export const createProductTables = async (db) => {
   category VARCHAR(100),
   quantity VARCHAR(50),
 
-  hsn_code VARCHAR(20) NOT NULL,
+  hsn_code VARCHAR(20),
   cgst_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
   sgst_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
   gst_total_rate DECIMAL(5,2) NOT NULL DEFAULT 0,

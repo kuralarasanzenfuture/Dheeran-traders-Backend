@@ -19,6 +19,6 @@ router.get("/:id", protect, getProductById);
 router.put("/:id", protect, updateProduct);
 router.delete("/:id", protect, deleteProduct);
 /* 🔥 ONLY STOCK UPDATE */
-router.patch("/update-stock/:id", protect, verifyAdminPassword, updateProductStock);
+router.patch("/update-stock/:id", verifyAdminPassword, updateProductStock);
 
 export default router;

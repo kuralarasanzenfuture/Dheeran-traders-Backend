@@ -20,9 +20,9 @@ const generateInvoiceNumber = async () => {
   return `INV-${year}-${String(next).padStart(4, "0")}`;
 };
 
+/* ================= CREATE BILL ================= */
 export const createCustomerBilling = async (req, res) => {
   const connection = await db.getConnection();
-
   try {
     await connection.beginTransaction();
 
@@ -37,231 +37,148 @@ export const createCustomerBilling = async (req, res) => {
       staff_name,
       staff_phone,
       bank_id,
-      tax_gst_percent,
       cash_amount = 0,
       upi_amount = 0,
       cheque_amount = 0,
       upi_reference,
-      products,
+      products
     } = req.body;
 
     /* 🔴 BASIC VALIDATION */
-    if (
-      !customer_id ||
-      !customer_name ||
-      !staff_name ||
-      !bank_id ||
-      !Array.isArray(products) ||
-      products.length === 0
-    ) {
+    if (!customer_id || !customer_name || !staff_name || !bank_id || !Array.isArray(products) || products.length === 0) {
       return res.status(400).json({ message: "Invalid billing data" });
     }
 
-    
-
-    const gstPercent = Number(tax_gst_percent);
-    const validGST = [0, 5, 12, 18, 28];
-
-    if (!validGST.includes(gstPercent)) {
-      return res.status(400).json({ message: "Invalid GST rate" });
-    }
-
-    /* 🏦 VALIDATE BANK */
+    /* 🏦 VALID BANK */
     const [[bank]] = await connection.query(
-      `SELECT * FROM company_bank_details WHERE id = ? AND status = 'active'`,
-      [bank_id],
+      `SELECT id FROM company_bank_details WHERE id=? AND status='active'`,
+      [bank_id]
     );
+    if (!bank) throw new Error("Invalid bank");
 
-    if (!bank) {
-      return res.status(400).json({
-        message: "Invalid or inactive bank selected",
-      });
-    }
-
-    /* 🔁 UNIQUE UPI CHECK */
-    if (upi_reference) {
-      const [[existingUpi]] = await connection.query(
-        `SELECT id FROM customerBilling WHERE upi_reference = ?`,
-        [upi_reference],
-      );
-
-      if (existingUpi) {
-        return res.status(400).json({
-          message: "UPI reference already used",
-        });
-      }
-    }
-
-    const invoice_number = await generateInvoiceNumber(connection);
+    const invoice_number = await generateInvoiceNumber();
     const invoice_date = new Date();
 
     let subtotal = 0;
+    let grand_total = 0;
 
-    /* 🔒 STOCK CHECK + FINAL RATE CALCULATION */
+    /* 🔒 STOCK CHECK + PRICE FROM DB */
     for (const item of products) {
-      const { product_id, quantity, rate, final_rate, product_quantity } = item;
-
+      const { product_id, quantity } = item;
       const qty = Number(quantity);
-      const appliedRate = Number(final_rate ?? rate);
 
-      if (!product_id || qty <= 0 || appliedRate <= 0) {
-        throw new Error("Invalid product line");
-      }
-
-      if (!product_quantity) {
-        throw new Error("product_quantity is required");
-      }
+      if (!product_id || qty <= 0) throw new Error("Invalid product line");
 
       const [[product]] = await connection.query(
-        `SELECT stock, product_name FROM products WHERE id = ? FOR UPDATE`,
-        [product_id],
+        `SELECT stock, product_name, price FROM products WHERE id=? FOR UPDATE`,
+        [product_id]
       );
 
       if (!product) throw new Error("Product not found");
+      if (product.stock < qty) throw new Error(`Stock low: ${product.product_name}`);
 
-      if (product.stock < qty) {
-        throw new Error(`Insufficient stock for ${product.product_name}`);
-      }
-
-      subtotal += qty * appliedRate;
+      subtotal += qty * Number(product.price);
     }
 
-    /* 🧮 GST CALCULATION */
-    const tax_cgst_percent = gstPercent / 2;
-    const tax_sgst_percent = gstPercent / 2;
-
-    const tax_cgst_amount = (subtotal * tax_cgst_percent) / 100;
-    const tax_sgst_amount = (subtotal * tax_sgst_percent) / 100;
-
-    const tax_gst_amount = tax_cgst_amount + tax_sgst_amount;
-    const grand_total = subtotal + tax_gst_amount;
-
-    /* 💳 PAYMENT */
-    const advance_paid =
-      Number(cash_amount) + Number(upi_amount) + Number(cheque_amount);
-
-    const balance_due = grand_total - advance_paid;
-
-    if (balance_due < 0) {
-      throw new Error("Payment exceeds bill amount");
-    }
+    const advance_paid = Number(cash_amount) + Number(upi_amount) + Number(cheque_amount);
+    const balance_due = subtotal - advance_paid;
+    if (balance_due < 0) throw new Error("Payment exceeds bill");
 
     /* 🧾 INSERT BILL HEADER */
     const [billResult] = await connection.query(
       `
       INSERT INTO customerBilling (
-        invoice_number, invoice_date,
-        company_gst_number,
+        invoice_number, invoice_date, company_gst_number,
         customer_id, customer_name, phone_number, customer_gst_number,
         vehicle_number, eway_bill_number,
-        staff_name, staff_phone,
-        bank_id,
-        subtotal,
-        tax_gst_percent, tax_gst_amount,
-        tax_cgst_percent, tax_cgst_amount,
-        tax_sgst_percent, tax_sgst_amount,
-        grand_total, advance_paid, balance_due,
+        staff_name, staff_phone, bank_id,
+        subtotal, grand_total, advance_paid, balance_due,
         cash_amount, upi_amount, cheque_amount, upi_reference
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
-        invoice_number,
-        invoice_date,
-        company_gst_number,
-        customer_id,
-        customer_name,
-        phone_number,
-        customer_gst_number,
-        vehicle_number,
-        eway_bill_number,
-        staff_name,
-        staff_phone,
-        bank_id,
-        subtotal,
-        gstPercent,
-        tax_gst_amount,
-        tax_cgst_percent,
-        tax_cgst_amount,
-        tax_sgst_percent,
-        tax_sgst_amount,
-        grand_total,
-        advance_paid,
-        balance_due,
-        cash_amount,
-        upi_amount,
-        cheque_amount,
-        upi_reference,
-      ],
+        invoice_number, invoice_date, company_gst_number,
+        customer_id, customer_name, phone_number, customer_gst_number,
+        vehicle_number, eway_bill_number,
+        staff_name, staff_phone, bank_id,
+        subtotal, 0, advance_paid, balance_due,
+        cash_amount, upi_amount, cheque_amount, upi_reference
+      ]
     );
 
     const billing_id = billResult.insertId;
 
-    /* 📦 INSERT PRODUCTS */
+    /* 📦 PRODUCTS */
     for (const item of products) {
-      const { product_id, quantity, rate, final_rate, product_quantity } = item;
+      const {
+        product_id,
+        quantity,
+        hsn_code = null,
+        cgst_rate = 0,
+        sgst_rate = 0,
+        gst_total_rate = 0,
+        discount_percent = 0,
+        discount_amount = 0
+      } = item;
 
       const qty = Number(quantity);
-      const baseRate = Number(rate);
-      const appliedRate = Number(final_rate ?? rate);
-      const total = qty * appliedRate;
 
       const [[product]] = await connection.query(
-        `SELECT product_name, brand, category FROM products WHERE id = ?`,
-        [product_id],
+        `SELECT product_name, brand, category, quantity, price FROM products WHERE id=?`,
+        [product_id]
       );
+
+      const rate = Number(product.price);
+      const final_rate = rate;
+      const baseTotal = qty * final_rate;
+
+      const cgst_amount = (baseTotal * cgst_rate) / 100;
+      const sgst_amount = (baseTotal * sgst_rate) / 100;
+      const gst_total_amount = cgst_amount + sgst_amount;
+
+      const total = baseTotal + gst_total_amount - discount_amount;
+      grand_total += total;
 
       await connection.query(
         `
         INSERT INTO customerBillingProducts (
-          billing_id, product_id,
-          product_name, product_brand, product_category,
-          product_quantity,
-          quantity, rate, final_rate, total
+          billing_id, product_id, product_name, product_brand, product_category, product_quantity,
+          hsn_code, cgst_rate, sgst_rate, gst_total_rate,
+          cgst_amount, sgst_amount, gst_total_amount,
+          discount_percent, discount_amount,
+          \`quantity\`, \`rate\`, \`final_rate\`, \`total\`
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
-          billing_id,
-          product_id,
-          product.product_name,
-          product.brand,
-          product.category,
-          product_quantity,
-          qty,
-          baseRate,
-          appliedRate,
-          total,
-        ],
+          billing_id, product_id,
+          product.product_name, product.brand, product.category, product.quantity,
+          hsn_code, cgst_rate, sgst_rate, gst_total_rate,
+          cgst_amount, sgst_amount, gst_total_amount,
+          discount_percent, discount_amount,
+          qty, rate, final_rate, total
+        ]
       );
 
       await connection.query(
-        `UPDATE products SET stock = stock - ? WHERE id = ?`,
-        [qty, product_id],
+        `UPDATE products SET stock = stock - ? WHERE id=?`,
+        [qty, product_id]
       );
     }
 
+    await connection.query(
+      `UPDATE customerBilling SET grand_total=?, balance_due=? WHERE id=?`,
+      [grand_total, grand_total - advance_paid, billing_id]
+    );
+
     await connection.commit();
-
-    /* 📤 FETCH FULL RESPONSE DATA */
-    const [[billing]] = await connection.query(
-      `SELECT * FROM customerBilling WHERE id = ?`,
-      [billing_id],
-    );
-
-    const [billingProducts] = await connection.query(
-      `SELECT * FROM customerBillingProducts WHERE billing_id = ?`,
-      [billing_id],
-    );
-
     res.status(201).json({
-      message: "Customer billing invoice created successfully",
+      message: "Invoice created successfully",
       invoice_number,
-      billing_id,
-      billing,
-      products: billingProducts,
-      bank,
+      billing_id
     });
+
   } catch (err) {
     await connection.rollback();
     console.error("Billing error:", err.message);
@@ -525,7 +442,8 @@ export const productWiseReportByDate = async (req, res) => {
   try {
     const { fromDate, toDate } = req.query;
 
-    const [rows] = await db.query(`
+    const [rows] = await db.query(
+      `
       SELECT 
         cbp.product_id,
         cbp.product_name,
@@ -544,7 +462,9 @@ export const productWiseReportByDate = async (req, res) => {
         cbp.product_category,
         cbp.product_quantity
       ORDER BY total_quantity_sold DESC
-    `, [fromDate, toDate]);
+    `,
+      [fromDate, toDate],
+    );
 
     res.json(rows);
   } catch (err) {
@@ -552,7 +472,6 @@ export const productWiseReportByDate = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch product wise report" });
   }
 };
-
 
 /* BRAND WISE – ALL BRANDS */
 export const brandWiseReport = async (req, res) => {

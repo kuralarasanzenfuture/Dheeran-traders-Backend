@@ -14,7 +14,7 @@ const router = express.Router();
 /* CREATE */
 router.post(
   "/",
-  protect,
+  // protect,
   uploadBankQR.single("qr_code_image"),
   createCompanyBank,
 );

@@ -28,15 +28,6 @@ export const createCustomerBillingTables = async (db) => {
   /* 💰 BILL AMOUNTS */
   subtotal DECIMAL(10,2) NOT NULL,
 
-  tax_gst_percent DECIMAL(5,2) NOT NULL,
-  tax_gst_amount DECIMAL(10,2) NOT NULL,
-
-  tax_cgst_percent DECIMAL(5,2) NOT NULL,
-  tax_cgst_amount DECIMAL(10,2) NOT NULL,
-
-  tax_sgst_percent DECIMAL(5,2) NOT NULL,
-  tax_sgst_amount DECIMAL(10,2) NOT NULL,
-
   grand_total DECIMAL(10,2) NOT NULL,
   advance_paid DECIMAL(10,2) DEFAULT 0,
   balance_due DECIMAL(10,2) NOT NULL,
@@ -75,6 +66,18 @@ export const createCustomerBillingTables = async (db) => {
   product_category VARCHAR(100),
   product_quantity VARCHAR(50),
 
+  hsn_code VARCHAR(20),
+  cgst_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+  sgst_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+  gst_total_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+
+  cgst_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  sgst_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  gst_total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+
+  discount_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+  discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+
   quantity INT NOT NULL,
   rate DECIMAL(10,2) NOT NULL,
   final_rate DECIMAL(10,2) NOT NULL,
@@ -87,7 +90,7 @@ export const createCustomerBillingTables = async (db) => {
 );
   `);
 
-await db.query(`
+  await db.query(`
 CREATE TABLE IF NOT EXISTS customerBillingPayment (
     id INT AUTO_INCREMENT PRIMARY KEY,
     billing_id INT NOT NULL,
@@ -118,5 +121,4 @@ CREATE TABLE IF NOT EXISTS customerBillingPayment (
     ON DELETE CASCADE
 );
 `);
-
 };

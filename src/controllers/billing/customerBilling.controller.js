@@ -213,8 +213,8 @@ export const createCustomerBilling = async (req, res) => {
       `
   SELECT 
     b.*,
-    c.customer_name AS customer_master_name,
-    c.phone_number AS customer_master_phone,
+    CONCAT(c.first_name, ' ', c.last_name) AS customer_master_name,
+    c.phone AS customer_master_phone,
     cb.bank_name
   FROM customerBilling b
   JOIN customers c ON b.customer_id = c.id

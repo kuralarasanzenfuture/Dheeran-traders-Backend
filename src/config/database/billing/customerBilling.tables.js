@@ -57,7 +57,6 @@ export const createCustomerBillingTables = async (db) => {
   await db.query(`
   CREATE TABLE IF NOT EXISTS customerBillingProducts (
   id INT AUTO_INCREMENT PRIMARY KEY,
-
   billing_id INT NOT NULL,
 
   product_id INT NOT NULL,
@@ -67,16 +66,16 @@ export const createCustomerBillingTables = async (db) => {
   product_quantity VARCHAR(50),
 
   hsn_code VARCHAR(20),
-  cgst_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
-  sgst_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
-  gst_total_rate DECIMAL(5,2) NOT NULL DEFAULT 0,
+  cgst_rate DECIMAL(5,2) NULL,
+  sgst_rate DECIMAL(5,2) NULL,
+  gst_total_rate DECIMAL(5,2) NULL,
 
-  cgst_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
-  sgst_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
-  gst_total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  cgst_amount DECIMAL(10,2) DEFAULT 0,
+  sgst_amount DECIMAL(10,2) DEFAULT 0,
+  gst_total_amount DECIMAL(10,2) DEFAULT 0,
 
-  discount_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
-  discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  discount_percent DECIMAL(5,2) DEFAULT 0,
+  discount_amount DECIMAL(10,2) DEFAULT 0,
 
   quantity INT NOT NULL,
   rate DECIMAL(10,2) NOT NULL,
@@ -86,7 +85,7 @@ export const createCustomerBillingTables = async (db) => {
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
   FOREIGN KEY (billing_id) REFERENCES customerBilling(id) ON DELETE CASCADE,
-  FOREIGN KEY (product_id) REFERENCES products(id)
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
 );
   `);
 

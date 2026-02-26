@@ -19,7 +19,7 @@ import { protect } from "../../middlewares/auth.middleware.js";
 const router = express.Router();
 
 /* CREATE INVOICE */
-router.post("/", createCustomerBilling);
+router.post("/", protect, createCustomerBilling);
 
 router.get("/", getAllCustomerBillings);
 
@@ -36,7 +36,7 @@ router.get("/pending", getPendingBills);
 
 router.get("/:id", getCustomerBillingById);
 
-router.put("/:id", verifyAdminPassword, updateCustomerBilling);
-router.delete("/:id", deleteCustomerBilling);
+router.put("/:id", protect, verifyAdminPassword, updateCustomerBilling);
+router.delete("/:id", protect, verifyAdminPassword,  deleteCustomerBilling);
 
 export default router;

@@ -13,7 +13,7 @@ import { verifyAdminPassword } from "../../middlewares/verifyAdminPassword.js";
 
 const router = express.Router();
 
-router.post("/", createProduct);
+router.post("/", protect, createProduct);
 router.get("/", protect, getProducts);
 router.get("/:id", protect, getProductById);
 router.put("/:id",  updateProduct);

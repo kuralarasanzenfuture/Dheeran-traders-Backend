@@ -5,10 +5,11 @@ import {
   getInvoiceWithPayments,
   getAllPayments,
 } from "../../controllers/billing/customerPayment.controller.js";
+import { protect } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/", addCustomerPayment);
+router.post("/",protect, addCustomerPayment);
 
 router.get("/", getAllPayments);
 /* Get invoice + paid + balance */

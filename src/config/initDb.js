@@ -9,6 +9,8 @@ import { createProductTables } from "./database/billing/product.tables.js";
 import { createUserTables } from "./database/billing/user.tables.js";
 import { createVendorTables } from "./database/billing/vendor.tables.js";
 import { createVendorStocksTables } from "./database/billing/vendorStocks.tables.js";
+import { createBatchTables } from "./database/chit/batches.tables.js";
+import { createPlanTables } from "./database/chit/plan.tables.js";
 import db from "./db.js";
 
 export const initDatabase = async () => {
@@ -40,6 +42,12 @@ export const initDatabase = async () => {
     await createCustomerBillingTables(db);
 
     await createCompanyDetailsTables(db);
+
+    // chit tables
+
+    await createPlanTables(db);
+
+    await createBatchTables(db);
     
 
     console.log("✅ Database & tables initialized successfully");

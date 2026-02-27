@@ -18,6 +18,10 @@ import customerBillingRoutes from "./routes/billing/customerBilling.routes.js";
 import customerPaymentRoutes from "./routes/billing/customerPayment.routes.js";
 import companyDetailsRoutes from "./routes/billing/companyDetails.routes.js";
 
+// chit api end points
+import planRoutes from "./routes/chit/plan.routes.js";
+import batchRoutes from "./routes/chit/batch.routes.js";
+
 // Middlewares
 import { errorHandler } from "./middlewares/error.middleware.js";
 
@@ -68,6 +72,11 @@ app.use("/api/customer-billing", customerBillingRoutes);
 app.use("/api/customer-payments", customerPaymentRoutes);
 
 app.use("/api/company-details", companyDetailsRoutes);
+
+
+// chit api end points
+app.use("/api/plans", planRoutes);
+app.use("/api/batches", batchRoutes);
 
 // ------------------------------------------------------------------
 // Health Check (optional but recommended)

@@ -986,3 +986,72 @@ export const updateCustomerBilling = async (req, res) => {
     connection.release();
   }
 };
+
+export const getLastInvoiceNumber = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT invoice_number 
+      FROM customerBilling 
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `);
+
+    if (rows.length === 0) {
+      return res.json({ lastInvoiceNumber: null });
+    }
+
+    return res.json({
+      lastInvoiceNumber: rows[0].invoice_number,
+    });
+
+  } catch (error) {
+    console.error("Error fetching last invoice:", error);
+    return res.status(500).json({ message: "Failed to get last invoice number" });
+  }
+};
+
+export const getNextInvoiceNumber = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT invoice_number 
+      FROM customerBilling 
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `);
+
+    const year = new Date().getFullYear();
+
+    // No invoices yet
+    if (rows.length === 0) {
+      return res.json({
+        nextInvoiceNumber: `INV-${year}-001`,
+      });
+    }
+
+    const lastInvoice = rows[0].invoice_number; // e.g. INV-2026-045
+
+    // extract last numeric part
+    const match = lastInvoice.match(/(\d+)$/);
+
+    if (!match) {
+      return res.status(400).json({
+        message: "Invalid invoice number format in DB",
+      });
+    }
+
+    const lastNumber = Number(match[1]);
+    const nextNumber = lastNumber + 1;
+
+    const padded = String(nextNumber).padStart(4, "0");
+
+    const nextInvoice = `INV-${year}-${padded}`;
+
+    return res.json({
+      nextInvoiceNumber: nextInvoice,
+    });
+
+  } catch (error) {
+    console.error("Error generating next invoice:", error);
+    return res.status(500).json({ message: "Failed to generate next invoice number" });
+  }
+};

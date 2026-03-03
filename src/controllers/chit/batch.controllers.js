@@ -98,10 +98,16 @@ import db from "../../config/db.js";
 
 // helper to calculate status
 const calculateStatus = (start_date, end_date) => {
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date();
+  today.setHours(0,0,0,0);
 
-  if (today < start_date) return "WAITING";
-  if (today >= start_date && today <= end_date) return "ACTIVE";
+  const start = new Date(start_date);
+  const end = new Date(end_date);
+  start.setHours(0,0,0,0);
+  end.setHours(0,0,0,0);
+
+  if (today < start) return "WAITING";
+  if (today >= start && today <= end) return "ACTIVE";
   return "CLOSED";
 };
 

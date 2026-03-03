@@ -4,6 +4,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 // Routes
+
+import roleRoutes from "./routes/roleBased.routes.js";
+
 import userRoutes from "./routes/billing/user.routes.js";
 import productRoutes from "./routes/billing/product.routes.js";
 import categoryRoutes from "./routes/billing/category.routes.js";
@@ -21,6 +24,7 @@ import companyDetailsRoutes from "./routes/billing/companyDetails.routes.js";
 // chit api end points
 import planRoutes from "./routes/chit/plan.routes.js";
 import batchRoutes from "./routes/chit/batch.routes.js";
+import batchPlanRoutes from "./routes/chit/batchPlan.routes.js";
 
 // Middlewares
 import { errorHandler } from "./middlewares/error.middleware.js";
@@ -57,6 +61,9 @@ app.use(
 // ------------------------------------------------------------------
 // API Routes
 // ------------------------------------------------------------------
+
+app.use("/api/roles", roleRoutes);
+
 app.use("/api/users", userRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/products", productRoutes);
@@ -77,6 +84,7 @@ app.use("/api/company-details", companyDetailsRoutes);
 // chit api end points
 app.use("/api/plans", planRoutes);
 app.use("/api/batches", batchRoutes);
+app.use("/api/batch-plans", batchPlanRoutes);
 
 // ------------------------------------------------------------------
 // Health Check (optional but recommended)

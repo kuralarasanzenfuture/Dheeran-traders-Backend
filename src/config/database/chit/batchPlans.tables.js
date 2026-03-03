@@ -7,7 +7,8 @@ export const createBatchPlanTables = async (db) => {
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                         FOREIGN KEY (batch_id) REFERENCES batches(id) ON DELETE CASCADE,
-                        FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE CASCADE
+                        FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE CASCADE,
+                        UNIQUE KEY unique_batch_plan (batch_id, plan_id)
                 )
         `);
 };

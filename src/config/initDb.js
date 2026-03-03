@@ -6,10 +6,12 @@ import { createCustomerTables } from "./database/billing/customers.tables.js";
 import { createEmployeeTables } from "./database/billing/employee.tables.js";
 import { createMasterTables } from "./database/billing/master.tables.js";
 import { createProductTables } from "./database/billing/product.tables.js";
+import { createRoleBasedTables } from "./database/billing/roleBased.tables.js";
 import { createUserTables } from "./database/billing/user.tables.js";
 import { createVendorTables } from "./database/billing/vendor.tables.js";
 import { createVendorStocksTables } from "./database/billing/vendorStocks.tables.js";
 import { createBatchTables } from "./database/chit/batches.tables.js";
+import { createBatchPlanTables } from "./database/chit/batchPlans.tables.js";
 import { createPlanTables } from "./database/chit/plan.tables.js";
 import db from "./db.js";
 
@@ -20,6 +22,8 @@ export const initDatabase = async () => {
 
     // 2️⃣ Use Database
     await db.query(`USE \`${process.env.DB_NAME}\``);
+
+    await createRoleBasedTables(db);
 
     // 3️⃣ USERS TABLE
     await createUserTables(db);
@@ -48,6 +52,8 @@ export const initDatabase = async () => {
     await createPlanTables(db);
 
     await createBatchTables(db);
+
+    await createBatchPlanTables(db);
     
 
     console.log("✅ Database & tables initialized successfully");

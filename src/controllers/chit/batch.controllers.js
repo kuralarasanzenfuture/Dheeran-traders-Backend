@@ -232,13 +232,48 @@
 import db from "../../config/db.js";
 
 // CREATE BATCH (no status column used)
+// export const createBatch = async (req, res) => {
+//   try {
+//     const { batch_name, batch_duration, start_date, end_date } = req.body;
+
+//     if (!batch_name || !start_date || !end_date) {
+//       return res.status(400).json({ message: "Required fields missing" });
+//     }
+
+//     const [result] = await db.query(
+//       `INSERT INTO batches (batch_name, batch_duration, start_date, end_date)
+//        VALUES (?, ?, ?, ?)`,
+//       [batch_name, batch_duration, start_date, end_date]
+//     );
+
+//     res.status(201).json({
+//       message: "Batch created successfully",
+//       id: result.insertId,
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 export const createBatch = async (req, res) => {
   try {
-    const { batch_name, batch_duration, start_date, end_date } = req.body;
+    const { batch_duration, start_date, end_date } = req.body;
 
-    if (!batch_name || !start_date || !end_date) {
+    if (!start_date || !end_date) {
       return res.status(400).json({ message: "Required fields missing" });
     }
+
+    // get last batch number
+    const [rows] = await db.query(`
+      SELECT 
+        MAX(CAST(SUBSTRING(batch_name, 7) AS UNSIGNED)) AS last_no
+      FROM batches
+      WHERE batch_name LIKE 'Batch_%'
+    `);
+
+    const nextNo = (rows[0].last_no || 0) + 1;
+    const batch_name = `Batch_${String(nextNo).padStart(2, "0")}`;
 
     const [result] = await db.query(
       `INSERT INTO batches (batch_name, batch_duration, start_date, end_date)
@@ -246,10 +281,34 @@ export const createBatch = async (req, res) => {
       [batch_name, batch_duration, start_date, end_date]
     );
 
+    const [newBatch] = await db.query(
+  `
+  SELECT 
+    id,
+    batch_name,
+    batch_duration,
+    start_date,
+    end_date,
+    created_at,
+    updated_at,
+    CASE
+      WHEN CURDATE() < start_date THEN 'WAITING'
+      WHEN CURDATE() BETWEEN start_date AND end_date THEN 'ACTIVE'
+      ELSE 'CLOSED'
+    END AS status
+  FROM batches
+  WHERE id = ?
+  `,
+  [result.insertId]
+);
+
     res.status(201).json({
       message: "Batch created successfully",
+      batch_name,
       id: result.insertId,
+      data: newBatch[0],
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -328,10 +387,49 @@ export const getBatchById = async (req, res) => {
 
 
 // UPDATE BATCH
+// export const updateBatch = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { batch_name, batch_duration, start_date, end_date } = req.body;
+
+//     const [result] = await db.query(
+//       `UPDATE batches
+//        SET batch_name=?, batch_duration=?, start_date=?, end_date=?
+//        WHERE id=?`,
+//       [batch_name, batch_duration, start_date, end_date, id]
+//     );
+
+//     if (result.affectedRows === 0) {
+//       return res.status(404).json({ message: "Batch not found" });
+//     }
+
+//     res.json({ message: "Batch updated successfully" });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 export const updateBatch = async (req, res) => {
   try {
     const { id } = req.params;
-    const { batch_name, batch_duration, start_date, end_date } = req.body;
+    let { batch_name, batch_duration, start_date, end_date } = req.body;
+
+    if (!batch_name || !start_date || !end_date) {
+      return res.status(400).json({ message: "Required fields missing" });
+    }
+
+    batch_name = batch_name.trim();
+
+    // check duplicate except current record
+    const [exists] = await db.query(
+      "SELECT id FROM batches WHERE batch_name = ? AND id != ?",
+      [batch_name, id]
+    );
+
+    if (exists.length > 0) {
+      return res.status(409).json({ message: "Batch name already exists" });
+    }
 
     const [result] = await db.query(
       `UPDATE batches
@@ -345,12 +443,16 @@ export const updateBatch = async (req, res) => {
     }
 
     res.json({ message: "Batch updated successfully" });
+
   } catch (err) {
+    // handle DB unique constraint error also
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({ message: "Batch name already exists" });
+    }
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 
 // DELETE BATCH

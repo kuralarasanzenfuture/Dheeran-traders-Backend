@@ -10,8 +10,8 @@
 //     }
 
 //     const [result] = await db.query(
-//       `INSERT INTO batches 
-//        (batch_name, batch_duration, start_date, end_date, status) 
+//       `INSERT INTO batches
+//        (batch_name, batch_duration, start_date, end_date, status)
 //        VALUES (?, ?, ?, ?, ?)`,
 //       [batch_name, batch_duration, start_date, end_date, status || "WAITING"]
 //     );
@@ -60,8 +60,8 @@
 //     const { batch_name, batch_duration, start_date, end_date, status } = req.body;
 
 //     const [result] = await db.query(
-//       `UPDATE batches 
-//        SET batch_name=?, batch_duration=?, start_date=?, end_date=?, status=? 
+//       `UPDATE batches
+//        SET batch_name=?, batch_duration=?, start_date=?, end_date=?, status=?
 //        WHERE id=?`,
 //       [batch_name, batch_duration, start_date, end_date, status, id]
 //     );
@@ -93,7 +93,6 @@
 //   }
 // };
 
-
 // import db from "../../config/db.js";
 
 // // helper to calculate status
@@ -123,8 +122,8 @@
 //     const status = calculateStatus(start_date, end_date);
 
 //     const [result] = await db.query(
-//       `INSERT INTO batches 
-//        (batch_name, batch_duration, start_date, end_date, status) 
+//       `INSERT INTO batches
+//        (batch_name, batch_duration, start_date, end_date, status)
 //        VALUES (?, ?, ?, ?, ?)`,
 //       [batch_name, batch_duration, start_date, end_date, status]
 //     );
@@ -196,8 +195,8 @@
 //     const status = calculateStatus(start_date, end_date);
 
 //     const [result] = await db.query(
-//       `UPDATE batches 
-//        SET batch_name=?, batch_duration=?, start_date=?, end_date=?, status=? 
+//       `UPDATE batches
+//        SET batch_name=?, batch_duration=?, start_date=?, end_date=?, status=?
 //        WHERE id=?`,
 //       [batch_name, batch_duration, start_date, end_date, status, id]
 //     );
@@ -278,11 +277,11 @@ export const createBatch = async (req, res) => {
     const [result] = await db.query(
       `INSERT INTO batches (batch_name, batch_duration, start_date, end_date)
        VALUES (?, ?, ?, ?)`,
-      [batch_name, batch_duration, start_date, end_date]
+      [batch_name, batch_duration, start_date, end_date],
     );
 
     const [newBatch] = await db.query(
-  `
+      `
   SELECT 
     id,
     batch_name,
@@ -299,8 +298,8 @@ export const createBatch = async (req, res) => {
   FROM batches
   WHERE id = ?
   `,
-  [result.insertId]
-);
+      [result.insertId],
+    );
 
     res.status(201).json({
       message: "Batch created successfully",
@@ -308,14 +307,11 @@ export const createBatch = async (req, res) => {
       id: result.insertId,
       data: newBatch[0],
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
 
 // GET ALL BATCHES (status calculated by DB)
 export const getBatches = async (req, res) => {
@@ -345,8 +341,6 @@ export const getBatches = async (req, res) => {
   }
 };
 
-
-
 // GET SINGLE BATCH
 export const getBatchById = async (req, res) => {
   try {
@@ -370,7 +364,7 @@ export const getBatchById = async (req, res) => {
       FROM batches
       WHERE id = ?
       `,
-      [id]
+      [id],
     );
 
     if (!rows.length) {
@@ -383,8 +377,6 @@ export const getBatchById = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
 
 // UPDATE BATCH
 // export const updateBatch = async (req, res) => {
@@ -410,32 +402,64 @@ export const getBatchById = async (req, res) => {
 //   }
 // };
 
+// export const updateBatch = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     let { batch_name, batch_duration, start_date, end_date } = req.body;
+
+//     if (!batch_name || !start_date || !end_date) {
+//       return res.status(400).json({ message: "Required fields missing" });
+//     }
+
+//     batch_name = batch_name.trim();
+
+//     // check duplicate except current record
+//     const [exists] = await db.query(
+//       "SELECT id FROM batches WHERE batch_name = ? AND id != ?",
+//       [batch_name, id]
+//     );
+
+//     if (exists.length > 0) {
+//       return res.status(409).json({ message: "Batch name already exists" });
+//     }
+
+//     const [result] = await db.query(
+//       `UPDATE batches
+//        SET batch_name=?, batch_duration=?, start_date=?, end_date=?
+//        WHERE id=?`,
+//       [batch_name, batch_duration, start_date, end_date, id]
+//     );
+
+//     if (result.affectedRows === 0) {
+//       return res.status(404).json({ message: "Batch not found" });
+//     }
+
+//     res.json({ message: "Batch updated successfully" });
+
+//   } catch (err) {
+//     // handle DB unique constraint error also
+//     if (err.code === "ER_DUP_ENTRY") {
+//       return res.status(409).json({ message: "Batch name already exists" });
+//     }
+//     console.error(err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 export const updateBatch = async (req, res) => {
   try {
     const { id } = req.params;
-    let { batch_name, batch_duration, start_date, end_date } = req.body;
+    let { batch_duration, start_date, end_date } = req.body;
 
-    if (!batch_name || !start_date || !end_date) {
+    if (!batch_duration || !start_date || !end_date) {
       return res.status(400).json({ message: "Required fields missing" });
-    }
-
-    batch_name = batch_name.trim();
-
-    // check duplicate except current record
-    const [exists] = await db.query(
-      "SELECT id FROM batches WHERE batch_name = ? AND id != ?",
-      [batch_name, id]
-    );
-
-    if (exists.length > 0) {
-      return res.status(409).json({ message: "Batch name already exists" });
     }
 
     const [result] = await db.query(
       `UPDATE batches
-       SET batch_name=?, batch_duration=?, start_date=?, end_date=?
+       SET batch_duration=?, start_date=?, end_date=?
        WHERE id=?`,
-      [batch_name, batch_duration, start_date, end_date, id]
+      [batch_duration, start_date, end_date, id],
     );
 
     if (result.affectedRows === 0) {
@@ -443,17 +467,10 @@ export const updateBatch = async (req, res) => {
     }
 
     res.json({ message: "Batch updated successfully" });
-
   } catch (err) {
-    // handle DB unique constraint error also
-    if (err.code === "ER_DUP_ENTRY") {
-      return res.status(409).json({ message: "Batch name already exists" });
-    }
-    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 // DELETE BATCH
 export const deleteBatch = async (req, res) => {
@@ -467,6 +484,45 @@ export const deleteBatch = async (req, res) => {
     }
 
     res.json({ message: "Batch deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getNextBatchName = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT batch_name 
+      FROM batches 
+      ORDER BY id DESC 
+      LIMIT 1
+    `);
+
+    let nextBatchName = "Batch_01";
+
+    if (rows.length > 0) {
+      const lastName = rows[0].batch_name; // ex: Batch_07
+
+      // extract number part
+      const match = lastName.match(/(\d+)$/);
+
+      if (!match) {
+        return res.status(400).json({
+          message: "Invalid batch name format in DB",
+        });
+      }
+
+      const lastNumber = parseInt(match[1], 10);
+      const nextNumber = lastNumber + 1;
+
+      nextBatchName = `Batch_${String(nextNumber).padStart(2, "0")}`;
+    }
+
+    res.json({
+      last_batch_name: rows.length ? rows[0].batch_name : null,
+      next_batch_name: nextBatchName,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

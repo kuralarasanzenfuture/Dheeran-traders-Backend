@@ -263,6 +263,46 @@ export const createBatch = async (req, res) => {
       return res.status(400).json({ message: "Required fields missing" });
     }
 
+    // // ❌ check duplicate start_date & end_date
+    // const [dateExists] = await db.query(
+    //   `SELECT id FROM batches WHERE start_date = ? AND end_date = ?`,
+    //   [start_date, end_date]
+    // );
+
+    // if (dateExists.length > 0) {
+    //   return res.status(409).json({
+    //     message: "Batch already exists for this start date and end date",
+    //   });
+    // }
+
+    // ❌ same start_date & end_date not allowed
+    const [sameDates] = await db.query(
+      `SELECT id FROM batches WHERE start_date = ? AND end_date = ?`,
+      [start_date, end_date]
+    );
+
+    if (sameDates.length > 0) {
+      return res.status(409).json({
+        message: "Batch already exists for this date range",
+      });
+    }
+
+    // ❌ start_date must not fall inside any existing batch
+    const [startOverlap] = await db.query(
+      `
+      SELECT id 
+      FROM batches
+      WHERE ? BETWEEN start_date AND end_date
+      `,
+      [start_date]
+    );
+
+    if (startOverlap.length > 0) {
+      return res.status(409).json({
+        message: "Start date already falls inside another batch",
+      });
+    }
+
     // get last batch number
     const [rows] = await db.query(`
       SELECT 
@@ -453,6 +493,34 @@ export const updateBatch = async (req, res) => {
 
     if (!batch_duration || !start_date || !end_date) {
       return res.status(400).json({ message: "Required fields missing" });
+    }
+
+    // ❌ same start_date & end_date not allowed
+    const [sameDates] = await db.query(
+      `SELECT id FROM batches WHERE start_date = ? AND end_date = ?`,
+      [start_date, end_date]
+    );
+
+    if (sameDates.length > 0) {
+      return res.status(409).json({
+        message: "Batch already exists for this date range",
+      });
+    }
+
+    // ❌ start_date must not fall inside any existing batch
+    const [startOverlap] = await db.query(
+      `
+      SELECT id 
+      FROM batches
+      WHERE ? BETWEEN start_date AND end_date
+      `,
+      [start_date]
+    );
+
+    if (startOverlap.length > 0) {
+      return res.status(409).json({
+        message: "Start date already falls inside another batch",
+      });
     }
 
     const [result] = await db.query(

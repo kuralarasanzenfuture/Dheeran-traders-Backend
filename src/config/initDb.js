@@ -10,6 +10,7 @@ import { createRoleBasedTables } from "./database/billing/roleBased.tables.js";
 import { createUserTables } from "./database/billing/user.tables.js";
 import { createVendorTables } from "./database/billing/vendor.tables.js";
 import { createVendorStocksTables } from "./database/billing/vendorStocks.tables.js";
+import { createAgentAndStaffTables } from "./database/chit/agentAndStaff.tables.js";
 import { createBatchTables } from "./database/chit/batches.tables.js";
 import { createBatchPlanTables } from "./database/chit/batchPlans.tables.js";
 import { createChitCustomerTable } from "./database/chit/customer.tables.js";
@@ -57,6 +58,8 @@ export const initDatabase = async () => {
     await createBatchPlanTables(db);
     
     await createChitCustomerTable(db);
+
+    await createAgentAndStaffTables(db);
 
     console.log("✅ Database & tables initialized successfully");
   } catch (error) {

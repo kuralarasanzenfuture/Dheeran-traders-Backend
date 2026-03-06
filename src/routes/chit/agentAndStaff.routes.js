@@ -1,0 +1,18 @@
+import express from "express";
+import {
+  createAgentStaff,
+  getAgentStaff,
+  getAgentStaffById,
+  updateAgentStaff,
+  deleteAgentStaff
+} from "../../controllers/chit/agentAndStaff.controller.js";
+
+const router = express.Router();
+
+router.post("/create", createAgentStaff);
+router.get("/", getAgentStaff);
+router.get("/:id", getAgentStaffById);
+router.put("/:id", updateAgentStaff);
+router.delete("/:id", deleteAgentStaff);
+
+export default router;

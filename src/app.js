@@ -23,6 +23,7 @@ import companyDetailsRoutes from "./routes/billing/companyDetails.routes.js";
 
 // chit api end points
 import planRoutes from "./routes/chit/plan.routes.js";
+import planRulesRoutes from "./routes/chit/planRules.routes.js";
 import batchRoutes from "./routes/chit/batch.routes.js";
 import batchPlanRoutes from "./routes/chit/batchPlan.routes.js";
 import chitCustomersRoutes from "./routes/chit/chitCustomer.routes.js";
@@ -85,6 +86,7 @@ app.use("/api/company-details", companyDetailsRoutes);
 
 // chit api end points
 app.use("/api/plans", planRoutes);
+app.use("/api/plan-rules", planRulesRoutes);
 app.use("/api/batches", batchRoutes);
 app.use("/api/batch-plans", batchPlanRoutes);
 app.use("/api/chit-customers", chitCustomersRoutes);

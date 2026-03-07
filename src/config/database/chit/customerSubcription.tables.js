@@ -6,7 +6,6 @@ export const createCustomerSubcriptionTables = async (db) => {
                         customer_id INT NOT NULL,
                         batch_id INT NOT NULL,
                         plan_id INT NOT NULL,
-                        collection_type varchar(10) NOT NULL,
 
                         no_of_slots INT NOT NULL,
                         investment_amount DECIMAL(12,2) NOT NULL,

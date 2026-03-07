@@ -5,6 +5,6 @@ const router = express.Router();
 
 router.post("/update-location", updateLocation);
 
-router.get("/", getUserLocation);
+router.get("/:user_id", getUserLocation);
 
 export default router;

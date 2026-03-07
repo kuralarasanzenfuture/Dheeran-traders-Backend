@@ -29,6 +29,25 @@ export const updateLocation = async (req, res) => {
   }
 };
 
+// export const getUserLocation = async (req, res) => {
+//   try {
+//     const { user_id } = req.params;
+
+//     const [rows] = await db.query(
+//       `SELECT * FROM user_locations 
+//        WHERE user_id = ? 
+//        ORDER BY created_at DESC 
+//        LIMIT 1`,
+//       [user_id]
+//     );
+
+//     res.json(rows[0]);
+
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
 export const getUserLocation = async (req, res) => {
   try {
     const { user_id } = req.params;
@@ -36,12 +55,14 @@ export const getUserLocation = async (req, res) => {
     const [rows] = await db.query(
       `SELECT * FROM user_locations 
        WHERE user_id = ? 
-       ORDER BY created_at DESC 
-       LIMIT 1`,
+       ORDER BY created_at DESC`,
       [user_id]
     );
 
-    res.json(rows[0]);
+    res.json({
+      success: true,
+      data: rows
+    });
 
   } catch (error) {
     res.status(500).json({ message: error.message });

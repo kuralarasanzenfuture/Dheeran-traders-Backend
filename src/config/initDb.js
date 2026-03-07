@@ -15,6 +15,7 @@ import { createBatchTables } from "./database/chit/batches.tables.js";
 import { createBatchPlanTables } from "./database/chit/batchPlans.tables.js";
 import { createChitCustomerTable } from "./database/chit/customer.tables.js";
 import { createCustomerSubcriptionTables } from "./database/chit/customerSubcription.tables.js";
+import { createLocationTable } from "./database/chit/location.tables.js";
 import { createPlanTables } from "./database/chit/plan.tables.js";
 import { createPlanRulesTables } from "./database/chit/planRules.tables.js";
 import db from "./db.js";
@@ -66,6 +67,8 @@ export const initDatabase = async () => {
     await createAgentAndStaffTables(db);
 
     await createCustomerSubcriptionTables(db);
+
+    await createLocationTable(db);
 
     console.log("✅ Database & tables initialized successfully");
   } catch (error) {

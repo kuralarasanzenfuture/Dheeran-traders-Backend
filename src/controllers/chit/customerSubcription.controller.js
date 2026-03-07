@@ -253,9 +253,6 @@ export const updateCustomerSubscription = async (req,res)=>{
 };
 
 
-
-
-
 /* DELETE */
 export const deleteCustomerSubscription = async (req,res)=>{
   try{

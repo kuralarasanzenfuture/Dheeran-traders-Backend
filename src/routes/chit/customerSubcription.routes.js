@@ -16,8 +16,8 @@ router.get("/", getCustomerSubscriptions);
 
 router.get("/:id", getCustomerSubscriptionById);
 
-router.put("/update/:id", updateCustomerSubscription);
+router.put("/:id", updateCustomerSubscription);
 
-router.delete("/delete/:id", deleteCustomerSubscription);
+router.delete("/:id", deleteCustomerSubscription);
 
 export default router;

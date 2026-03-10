@@ -291,6 +291,7 @@ export const createCustomerSubscription = async (req, res) => {
       nominee_phone,
       batch_id,
       plan_id,
+      installment_amount,
       investment_amount,
       start_date,
       duration,
@@ -411,6 +412,7 @@ export const createCustomerSubscription = async (req, res) => {
         nominee_phone,
         batch_id,
         plan_id,
+        installment_amount,
         investment_amount,
         start_date,
         duration,
@@ -418,13 +420,14 @@ export const createCustomerSubscription = async (req, res) => {
         reference_mode,
         agent_staff_id
       )
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         customer_id,
         nominee_name || null,
         nominee_phone || null,
         batch_id,
         plan_id,
+        installment_amount,
         investment_amount,
         start_date,
         duration,
@@ -454,6 +457,7 @@ export const createCustomerSubscription = async (req, res) => {
         p.collection_type,
         p.total_installments,
 
+        s.installment_amount,
         s.investment_amount,
         s.start_date,
         s.duration,
@@ -755,6 +759,7 @@ export const updateCustomerSubscription = async (req, res) => {
     let {
       nominee_name,
       nominee_phone,
+      installment_amount,
       investment_amount,
       start_date,
       duration,
@@ -844,6 +849,7 @@ export const updateCustomerSubscription = async (req, res) => {
        SET
        nominee_name=?,
        nominee_phone=?,
+       installment_amount=?,
        investment_amount=?,
        start_date=?,
        duration=?,
@@ -854,6 +860,7 @@ export const updateCustomerSubscription = async (req, res) => {
       [
         nominee_name || null,
         nominee_phone || null,
+        installment_amount,
         investment_amount,
         start_date,
         duration,
@@ -885,6 +892,7 @@ export const updateCustomerSubscription = async (req, res) => {
         p.collection_type,
         p.total_installments,
 
+        s.installment_amount,
         s.investment_amount,
         s.start_date,
         s.duration,
@@ -1057,7 +1065,7 @@ export const getCustomerSubscriptions = async (req, res) => {
         p.collection_type,
         p.total_installments,
 
-        s.no_of_slots,
+        s.installment_amount,
         s.investment_amount,
         s.start_date,
         s.duration,
@@ -1162,7 +1170,7 @@ export const getCustomerSubscriptionById = async (req, res) => {
         p.collection_type,
         p.total_installments,
 
-        s.no_of_slots,
+        s.installment_amount,
         s.investment_amount,
         s.start_date,
         s.duration,

@@ -38,7 +38,8 @@ export const createCustomerSubcriptionTables = async (db) => {
 
                         batch_id INT NOT NULL,
                         plan_id INT NOT NULL,
-
+                        
+                        installment_amount DECIMAL(12,2),
                         investment_amount DECIMAL(12,2) NOT NULL,
 
                         start_date DATE NOT NULL,

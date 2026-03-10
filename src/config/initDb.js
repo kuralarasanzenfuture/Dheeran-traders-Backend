@@ -6,7 +6,7 @@ import { createCustomerTables } from "./database/billing/customers.tables.js";
 import { createEmployeeTables } from "./database/billing/employee.tables.js";
 import { createMasterTables } from "./database/billing/master.tables.js";
 import { createProductTables } from "./database/billing/product.tables.js";
-import { createRoleBasedTables } from "./database/billing/roleBased.tables.js";
+import { createRoleBasedTables } from "./database/roles/roleBased.tables.js";
 import { createUserTables } from "./database/billing/user.tables.js";
 import { createVendorTables } from "./database/billing/vendor.tables.js";
 import { createVendorStocksTables } from "./database/billing/vendorStocks.tables.js";
@@ -19,6 +19,9 @@ import { createLocationTable } from "./database/chit/location.tables.js";
 import { createPlanTables } from "./database/chit/plan.tables.js";
 import { createPlanRulesTables } from "./database/chit/planRules.tables.js";
 import db from "./db.js";
+import { createLoginHistoryTables } from "./database/roles/login_history.tables.js";
+import { createUserRolesTables } from "./database/roles/user_roles.tables.js";
+import { createRefeshTokensTable } from "./database/roles/refresh_tokens.tables.js";
 
 export const initDatabase = async () => {
   try {
@@ -29,6 +32,12 @@ export const initDatabase = async () => {
     await db.query(`USE \`${process.env.DB_NAME}\``);
 
     await createRoleBasedTables(db);
+
+    await createUserRolesTables(db);
+
+    await createLoginHistoryTables(db);
+
+    await createRefeshTokensTable(db);
 
     // 3️⃣ USERS TABLE
     await createUserTables(db);

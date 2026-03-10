@@ -38,6 +38,39 @@
 
 // };
 
+// import db from "../config/db.js";
+
+// export const locationSocket = (io) => {
+
+//   console.log("✅ Socket.IO initialized");
+
+//   io.on("connection", (socket) => {
+
+//     console.log("🟢 Client connected:", socket.id);
+
+//     socket.on("staffLocation", async (data) => {
+//       console.log("📍 Location received:", data);
+
+//       const { user_id, latitude, longitude } = data;
+
+//       await db.query(
+//         `INSERT INTO user_locations (user_id, latitude, longitude)
+//          VALUES (?, ?, ?)`,
+//         [user_id, latitude, longitude]
+//       );
+
+//       io.emit("staffLocationUpdate", data);
+//     });
+
+//     socket.on("disconnect", () => {
+//       console.log("🔴 Client disconnected:", socket.id);
+//     });
+
+//   });
+
+// };
+
+
 import db from "../config/db.js";
 
 export const locationSocket = (io) => {
@@ -49,17 +82,37 @@ export const locationSocket = (io) => {
     console.log("🟢 Client connected:", socket.id);
 
     socket.on("staffLocation", async (data) => {
-      console.log("📍 Location received:", data);
+      try {
 
-      const { staff_id, latitude, longitude } = data;
+        const { user_id, latitude, longitude } = data;
 
-      await db.query(
-        `INSERT INTO user_locations (user_id, latitude, longitude)
-         VALUES (?, ?, ?)`,
-        [staff_id, latitude, longitude]
-      );
+        if (!user_id || !latitude || !longitude) return;
 
-      io.emit("staffLocationUpdate", data);
+        // update current location
+        await db.query(
+          `INSERT INTO user_locations_current (user_id, latitude, longitude)
+           VALUES (?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+           latitude = VALUES(latitude),
+           longitude = VALUES(longitude),
+           updated_at = CURRENT_TIMESTAMP`,
+          [user_id, latitude, longitude]
+        );
+
+        // randomly store history (example: every ~30 seconds)
+        if (Math.random() < 0.2) {
+          await db.query(
+            `INSERT INTO user_locations_history (user_id, latitude, longitude)
+             VALUES (?, ?, ?)`,
+            [user_id, latitude, longitude]
+          );
+        }
+
+        io.emit("staffLocationUpdate", data);
+
+      } catch (error) {
+        console.error("Socket error:", error);
+      }
     });
 
     socket.on("disconnect", () => {
@@ -69,3 +122,4 @@ export const locationSocket = (io) => {
   });
 
 };
+

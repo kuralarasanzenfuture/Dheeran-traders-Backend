@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 
 import roleRoutes from "./routes/roles/roleBased.routes.js";
 import userRolesRoutes from "./routes/roles/user.routes.js";
+import employeeDetailsRoutes from "./routes/roles/employees-details.routes.js";
 
 import userRoutes from "./routes/billing/user.routes.js";
 import productRoutes from "./routes/billing/product.routes.js";
@@ -71,6 +72,7 @@ app.use(
 
 app.use("/api/roles", roleRoutes);
 app.use("/api/users-roles", userRolesRoutes);
+app.use("/api/employees-details", employeeDetailsRoutes);
 
 app.use("/api/users", userRoutes);
 app.use("/api/employees", employeeRoutes);

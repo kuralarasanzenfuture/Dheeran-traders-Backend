@@ -6,6 +6,9 @@ import {
   refreshToken,
   deleteUser,
   logoutAllDevices,
+  checkUsername,
+  checkEmail,
+  checkPhone,
 } from "../../controllers/roles/user.controller.js";
 import { verifyToken } from "../../middlewares/auth.middleware.js";
 
@@ -16,6 +19,9 @@ router.post("/login", loginUser);
 router.post("/refresh-token", refreshToken);
 router.post("/logout", logoutUser);
 router.post("/logout-all", verifyToken, logoutAllDevices);
+router.get("/check-username/:username", checkUsername);
+router.get("/check-email/:email", checkEmail);
+router.get("/check-phone/:phone", checkPhone);
 router.delete("/delete/:id", deleteUser);
 
 export default router;

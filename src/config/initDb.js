@@ -22,6 +22,7 @@ import db from "./db.js";
 import { createLoginHistoryTables } from "./database/roles/login_history.tables.js";
 import { createUserRolesTables } from "./database/roles/user_roles.tables.js";
 import { createRefeshTokensTable } from "./database/roles/refresh_tokens.tables.js";
+import { createEmployeeDetailsTables } from "./database/roles/employees_details.tables.js";
 
 export const initDatabase = async () => {
   try {
@@ -38,6 +39,8 @@ export const initDatabase = async () => {
     await createLoginHistoryTables(db);
 
     await createRefeshTokensTable(db);
+
+    await createEmployeeDetailsTables(db);
 
     // 3️⃣ USERS TABLE
     await createUserTables(db);

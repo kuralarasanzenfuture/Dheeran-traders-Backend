@@ -29,58 +29,58 @@ const generateEmployeeCode = async () => {
   return `DTT-EMP-${nextNumber}`;
 };
 
-const checkDuplicateEmployee = async ({
-  email,
-  phone,
-  aadhar_number,
-  pan_number,
-}) => {
-  if (email) {
-    const [rows] = await db.query(
-      "SELECT id FROM employees_details WHERE email=?",
-      [email],
-    );
+// const checkDuplicateEmployee = async ({
+//   email,
+//   phone,
+//   aadhar_number,
+//   pan_number,
+// }) => {
+//   if (email) {
+//     const [rows] = await db.query(
+//       "SELECT id FROM employees_details WHERE email=?",
+//       [email],
+//     );
 
-    if (rows.length) {
-      return "Email already exists";
-    }
-  }
+//     if (rows.length) {
+//       return "Email already exists";
+//     }
+//   }
 
-  if (phone) {
-    const [rows] = await db.query(
-      "SELECT id FROM employees_details WHERE phone=?",
-      [phone],
-    );
+//   if (phone) {
+//     const [rows] = await db.query(
+//       "SELECT id FROM employees_details WHERE phone=?",
+//       [phone],
+//     );
 
-    if (rows.length) {
-      return "Phone number already exists";
-    }
-  }
+//     if (rows.length) {
+//       return "Phone number already exists";
+//     }
+//   }
 
-  if (aadhar_number) {
-    const [rows] = await db.query(
-      "SELECT id FROM employees_details WHERE aadhar_number=?",
-      [aadhar_number],
-    );
+//   if (aadhar_number) {
+//     const [rows] = await db.query(
+//       "SELECT id FROM employees_details WHERE aadhar_number=?",
+//       [aadhar_number],
+//     );
 
-    if (rows.length) {
-      return "Aadhaar number already exists";
-    }
-  }
+//     if (rows.length) {
+//       return "Aadhaar number already exists";
+//     }
+//   }
 
-  if (pan_number) {
-    const [rows] = await db.query(
-      "SELECT id FROM employees_details WHERE pan_number=?",
-      [pan_number],
-    );
+//   if (pan_number) {
+//     const [rows] = await db.query(
+//       "SELECT id FROM employees_details WHERE pan_number=?",
+//       [pan_number],
+//     );
 
-    if (rows.length) {
-      return "PAN number already exists";
-    }
-  }
+//     if (rows.length) {
+//       return "PAN number already exists";
+//     }
+//   }
 
-  return null;
-};
+//   return null;
+// };
 
 // export const createEmployee = async (req, res) => {
 //   try {
@@ -352,6 +352,58 @@ const checkDuplicateEmployee = async ({
 //     });
 //   }
 // };
+
+// update same email send again
+const checkDuplicateEmployee = async ({
+  email,
+  phone,
+  aadhar_number,
+  pan_number,
+  excludeId = null
+}) => {
+
+  if (email) {
+    const [rows] = await db.query(
+      `SELECT id FROM employees_details 
+       WHERE email=? AND id != ?`,
+      [email, excludeId]
+    );
+
+    if (rows.length) return "Email already exists";
+  }
+
+  if (phone) {
+    const [rows] = await db.query(
+      `SELECT id FROM employees_details 
+       WHERE phone=? AND id != ?`,
+      [phone, excludeId]
+    );
+
+    if (rows.length) return "Phone number already exists";
+  }
+
+  if (aadhar_number) {
+    const [rows] = await db.query(
+      `SELECT id FROM employees_details 
+       WHERE aadhar_number=? AND id != ?`,
+      [aadhar_number, excludeId]
+    );
+
+    if (rows.length) return "Aadhaar number already exists";
+  }
+
+  if (pan_number) {
+    const [rows] = await db.query(
+      `SELECT id FROM employees_details 
+       WHERE pan_number=? AND id != ?`,
+      [pan_number, excludeId]
+    );
+
+    if (rows.length) return "PAN number already exists";
+  }
+
+  return null;
+};
 
 export const createEmployee = async (req, res) => {
   try {
@@ -1244,7 +1296,9 @@ export const updateEmployee = async (req, res) => {
     res.json({
       success:true,
       message:"Employee updated successfully",
-      data: updatedData
+      newdata: updatedData,
+      old_data: emp,
+      
     });
 
   } catch (error) {
@@ -1253,7 +1307,8 @@ export const updateEmployee = async (req, res) => {
 
     res.status(500).json({
       success:false,
-      message:"Server error"
+      message:"Server error",
+      message:error.message
     });
 
   }

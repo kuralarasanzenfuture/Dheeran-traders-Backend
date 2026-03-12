@@ -265,7 +265,6 @@ const checkExists = async (table, id) => {
 //       [result.insertId],
 //     );
 
-
 //     res.status(201).json({
 //       success: true,
 //       message: "Customer subscription created successfully",
@@ -281,10 +280,8 @@ const checkExists = async (table, id) => {
 //   }
 // };
 
-
 export const createCustomerSubscription = async (req, res) => {
   try {
-
     let {
       customer_id,
       nominee_name,
@@ -297,7 +294,7 @@ export const createCustomerSubscription = async (req, res) => {
       duration,
       end_date,
       reference_mode,
-      agent_staff_id
+      agent_staff_id,
     } = req.body;
 
     /* REQUIRED VALIDATION */
@@ -314,7 +311,7 @@ export const createCustomerSubscription = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Required fields missing"
+        message: "Required fields missing",
       });
     }
 
@@ -323,14 +320,14 @@ export const createCustomerSubscription = async (req, res) => {
     if (isNaN(investment_amount) || investment_amount <= 0) {
       return res.status(400).json({
         success: false,
-        message: "Invalid investment_amount"
+        message: "Invalid investment_amount",
       });
     }
 
     if (isNaN(duration) || duration <= 0) {
       return res.status(400).json({
         success: false,
-        message: "Invalid duration"
+        message: "Invalid duration",
       });
     }
 
@@ -342,7 +339,7 @@ export const createCustomerSubscription = async (req, res) => {
     if (start >= end) {
       return res.status(400).json({
         success: false,
-        message: "Start date must be before end date"
+        message: "Start date must be before end date",
       });
     }
 
@@ -353,7 +350,7 @@ export const createCustomerSubscription = async (req, res) => {
     if (!VALID_REF.includes(reference_mode)) {
       return res.status(400).json({
         success: false,
-        message: "Reference mode must be AGENT, STAFF or OFFICE"
+        message: "Reference mode must be AGENT, STAFF or OFFICE",
       });
     }
 
@@ -362,42 +359,40 @@ export const createCustomerSubscription = async (req, res) => {
     if (!(await checkExists("chit_customers", customer_id))) {
       return res.status(400).json({
         success: false,
-        message: "Invalid customer_id"
+        message: "Invalid customer_id",
       });
     }
 
     if (!(await checkExists("batches", batch_id))) {
       return res.status(400).json({
         success: false,
-        message: "Invalid batch_id"
+        message: "Invalid batch_id",
       });
     }
 
     if (!(await checkExists("plans", plan_id))) {
       return res.status(400).json({
         success: false,
-        message: "Invalid plan_id"
+        message: "Invalid plan_id",
       });
     }
 
     /* AGENT / STAFF VALIDATION */
 
     if (reference_mode === "AGENT" || reference_mode === "STAFF") {
-
       if (!agent_staff_id) {
         return res.status(400).json({
           success: false,
-          message: "agent_staff_id required"
+          message: "agent_staff_id required",
         });
       }
 
       if (!(await checkExists("chit_agent_and_staff", agent_staff_id))) {
         return res.status(400).json({
           success: false,
-          message: "Invalid agent_staff_id"
+          message: "Invalid agent_staff_id",
         });
       }
-
     } else {
       agent_staff_id = null;
     }
@@ -433,13 +428,14 @@ export const createCustomerSubscription = async (req, res) => {
         duration,
         end_date,
         reference_mode,
-        agent_staff_id
-      ]
+        agent_staff_id,
+      ],
     );
 
     /* RETURN FULL DETAILS */
 
-    const [data] = await db.query(`
+    const [data] = await db.query(
+      `
       SELECT 
         s.id,
 
@@ -484,23 +480,22 @@ export const createCustomerSubscription = async (req, res) => {
       ON a.id = s.agent_staff_id
 
       WHERE s.id = ?
-    `, [result.insertId]);
+    `,
+      [result.insertId],
+    );
 
     res.status(201).json({
       success: true,
       message: "Customer subscription created successfully",
-      data: data[0]
+      data: data[0],
     });
-
   } catch (error) {
-
     console.error(error);
 
     res.status(500).json({
       success: false,
-      message: "Server error"
+      message: "Server error",
     });
-
   }
 };
 
@@ -746,7 +741,7 @@ export const updateCustomerSubscription = async (req, res) => {
 
     const [existing] = await db.query(
       "SELECT * FROM chit_customer_subscriptions WHERE id=?",
-      [id]
+      [id],
     );
 
     if (existing.length === 0) {
@@ -868,7 +863,7 @@ export const updateCustomerSubscription = async (req, res) => {
         reference_mode,
         agent_staff_id,
         id,
-      ]
+      ],
     );
 
     /* RETURN FULL MERGED DATA */
@@ -920,7 +915,7 @@ export const updateCustomerSubscription = async (req, res) => {
 
       WHERE s.id = ?
       `,
-      [id]
+      [id],
     );
 
     res.status(200).json({
@@ -1043,71 +1038,113 @@ export const deleteCustomerSubscription = async (req, res) => {
 
 export const getCustomerSubscriptions = async (req, res) => {
   try {
+    // const [rows] = await db.query(`
+    //   SELECT
+    //     s.id AS subscription_id,
+
+    //     c.id AS customer_id,
+    //     c.name AS customer_name,
+    //     c.phone,
+    //     c.place,
+
+    //     b.id AS batch_id,
+    //     b.batch_name,
+    //     b.batch_duration,
+    //     b.start_date AS batch_start_date,
+    //     b.end_date AS batch_end_date,
+
+    //     p.id AS plan_id,
+    //     p.plan_name,
+    //     p.duration_days,
+    //     p.collection_type,
+    //     p.total_installments,
+
+    //     s.installment_amount,
+    //     s.investment_amount,
+    //     s.start_date,
+    //     s.duration,
+    //     s.end_date,
+
+    //     s.reference_mode,
+    //     s.agent_staff_id,
+
+    //     s.created_at
+
+    //   FROM chit_customer_subscriptions s
+
+    //   LEFT JOIN chit_customers c
+    //     ON c.id = s.customer_id
+
+    //   LEFT JOIN batches b
+    //     ON b.id = s.batch_id
+
+    //   LEFT JOIN batch_plans bp
+    //     ON bp.batch_id = b.id
+
+    //   LEFT JOIN plans p
+    //     ON p.id = bp.plan_id
+
+    //   ORDER BY s.id DESC
+    // `);
 
     const [rows] = await db.query(`
       SELECT 
-        s.id AS subscription_id,
+  s.id AS subscription_id,
 
-        c.id AS customer_id,
-        c.name AS customer_name,
-        c.phone,
-        c.place,
+  c.id AS customer_id,
+  c.name AS customer_name,
+  c.phone,
+  c.place,
 
-        b.id AS batch_id,
-        b.batch_name,
-        b.batch_duration,
-        b.start_date AS batch_start_date,
-        b.end_date AS batch_end_date,
+  b.id AS batch_id,
+  b.batch_name,
+  b.batch_duration,
+  b.start_date AS batch_start_date,
+  b.end_date AS batch_end_date,
 
-        p.id AS plan_id,
-        p.plan_name,
-        p.duration_days,
-        p.collection_type,
-        p.total_installments,
+  p.id AS plan_id,
+  p.plan_name,
+  p.duration_days,
+  p.collection_type,
+  p.total_installments,
 
-        s.installment_amount,
-        s.investment_amount,
-        s.start_date,
-        s.duration,
-        s.end_date,
+  s.installment_amount,
+  s.investment_amount,
+  s.start_date,
+  s.duration,
+  s.end_date,
 
-        s.reference_mode,
-        s.agent_staff_id,
+  s.reference_mode,
+  s.agent_staff_id,
 
-        s.created_at
+  s.created_at
 
-      FROM chit_customer_subscriptions s
+FROM chit_customer_subscriptions s
 
-      LEFT JOIN chit_customers c 
-        ON c.id = s.customer_id
+LEFT JOIN chit_customers c 
+  ON c.id = s.customer_id
 
-      LEFT JOIN batches b 
-        ON b.id = s.batch_id
+LEFT JOIN batches b 
+  ON b.id = s.batch_id
 
-      LEFT JOIN batch_plans bp 
-        ON bp.batch_id = b.id
+LEFT JOIN plans p 
+  ON p.id = s.plan_id
 
-      LEFT JOIN plans p 
-        ON p.id = bp.plan_id
-
-      ORDER BY s.id DESC
+ORDER BY s.id DESC
     `);
 
     res.status(200).json({
       success: true,
       count: rows.length,
-      data: rows
+      data: rows,
     });
-
   } catch (error) {
-
     console.error(error);
 
     res.status(500).json({
       success: false,
-      message: "Server error"
+      message: "Server error",
     });
-
   }
 };
 
@@ -1142,82 +1179,127 @@ export const getCustomerSubscriptions = async (req, res) => {
 
 export const getCustomerSubscriptionById = async (req, res) => {
   try {
-
     const { id } = req.params;
+
+    // const [rows] = await db.query(
+    //   `
+    //   SELECT
+    //     s.id AS subscription_id,
+
+    //     c.id AS customer_id,
+    //     c.name AS customer_name,
+    //     c.phone,
+    //     c.place,
+    //     c.address,
+    //     c.state,
+    //     c.district,
+    //     c.pincode,
+
+    //     b.id AS batch_id,
+    //     b.batch_name,
+    //     b.batch_duration,
+    //     b.start_date AS batch_start_date,
+    //     b.end_date AS batch_end_date,
+
+    //     p.id AS plan_id,
+    //     p.plan_name,
+    //     p.duration_days,
+    //     p.collection_type,
+    //     p.total_installments,
+
+    //     s.installment_amount,
+    //     s.investment_amount,
+    //     s.start_date,
+    //     s.duration,
+    //     s.end_date,
+
+    //     s.reference_mode,
+    //     s.agent_staff_id,
+
+    //     s.created_at
+
+    //   FROM chit_customer_subscriptions s
+
+    //   LEFT JOIN chit_customers c
+    //     ON c.id = s.customer_id
+
+    //   LEFT JOIN batches b
+    //     ON b.id = s.batch_id
+
+    //   LEFT JOIN batch_plans bp
+    //     ON bp.batch_id = b.id
+
+    //   LEFT JOIN plans p
+    //     ON p.id = bp.plan_id
+
+    //   WHERE s.id = ?
+    // `,
+    //   [id],
+    // );
 
     const [rows] = await db.query(`
       SELECT 
-        s.id AS subscription_id,
+  s.id AS subscription_id,
 
-        c.id AS customer_id,
-        c.name AS customer_name,
-        c.phone,
-        c.place,
-        c.address,
-        c.state,
-        c.district,
-        c.pincode,
+  c.id AS customer_id,
+  c.name AS customer_name,
+  c.phone,
+  c.place,
 
-        b.id AS batch_id,
-        b.batch_name,
-        b.batch_duration,
-        b.start_date AS batch_start_date,
-        b.end_date AS batch_end_date,
+  b.id AS batch_id,
+  b.batch_name,
+  b.batch_duration,
+  b.start_date AS batch_start_date,
+  b.end_date AS batch_end_date,
 
-        p.id AS plan_id,
-        p.plan_name,
-        p.duration_days,
-        p.collection_type,
-        p.total_installments,
+  p.id AS plan_id,
+  p.plan_name,
+  p.duration_days,
+  p.collection_type,
+  p.total_installments,
 
-        s.installment_amount,
-        s.investment_amount,
-        s.start_date,
-        s.duration,
-        s.end_date,
+  s.installment_amount,
+  s.investment_amount,
+  s.start_date,
+  s.duration,
+  s.end_date,
 
-        s.reference_mode,
-        s.agent_staff_id,
+  s.reference_mode,
+  s.agent_staff_id,
 
-        s.created_at
+  s.created_at
 
-      FROM chit_customer_subscriptions s
+FROM chit_customer_subscriptions s
 
-      LEFT JOIN chit_customers c 
-        ON c.id = s.customer_id
+LEFT JOIN chit_customers c 
+  ON c.id = s.customer_id
 
-      LEFT JOIN batches b 
-        ON b.id = s.batch_id
+LEFT JOIN batches b 
+  ON b.id = s.batch_id
 
-      LEFT JOIN batch_plans bp 
-        ON bp.batch_id = b.id
+LEFT JOIN plans p 
+  ON p.id = s.plan_id
 
-      LEFT JOIN plans p 
-        ON p.id = bp.plan_id
-
-      WHERE s.id = ?
-    `, [id]);
+ORDER BY s.id DESC
+    `);
 
     if (rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Subscription not found"
+        message: "Subscription not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      data: rows[0]
+      data: rows[0],
     });
-
   } catch (error) {
-
     console.error(error);
 
     res.status(500).json({
       success: false,
-      message: "Server error"
+      message: "Server error",
     });
-
   }
 };

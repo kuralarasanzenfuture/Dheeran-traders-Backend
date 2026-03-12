@@ -11,8 +11,8 @@ import { validateEmployee } from "../../middlewares/employeeValidation.middlewar
 
 const router = express.Router();
 
-router.post("/", employeeDocsUpload, validateEmployee, createEmployee);
-router.put("/:id", employeeDocsUpload, validateEmployee, updateEmployee);
+router.post("/", employeeDocsUpload, createEmployee);
+router.put("/:id", employeeDocsUpload, updateEmployee);
 router.get("/", getEmployees);
 router.delete("/:id", deleteEmployee);
 

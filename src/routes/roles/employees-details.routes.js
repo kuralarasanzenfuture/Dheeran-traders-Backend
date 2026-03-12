@@ -2,6 +2,7 @@ import express from "express";
 import {
   createEmployee,
   deleteEmployee,
+  getEmployeeById,
   getEmployees,
   updateEmployee,
 } from "../../controllers/roles/employees-details.controller.js";
@@ -12,8 +13,13 @@ import { validateEmployee } from "../../middlewares/employeeValidation.middlewar
 const router = express.Router();
 
 router.post("/", employeeDocsUpload, createEmployee);
-router.put("/:id", employeeDocsUpload, updateEmployee);
+
 router.get("/", getEmployees);
+
+router.get("/:id", getEmployeeById);
+
+router.put("/:id", employeeDocsUpload, updateEmployee);
+
 router.delete("/:id", deleteEmployee);
 
 export default router;

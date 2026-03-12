@@ -177,9 +177,186 @@ const checkDuplicateEmployee = async ({
 //   }
 // };
 
+// export const createEmployee = async (req, res) => {
+//   try {
+//     let employee_code = await generateEmployeeCode();
+
+//     let {
+//       employee_name,
+//       email,
+//       phone,
+//       date_of_birth,
+//       gender,
+//       address,
+//       aadhar_number,
+//       pan_number,
+//       bank_name,
+//       bank_account_number,
+//       ifsc_code,
+//       emergency_contact_name,
+//       emergency_contact_phone,
+//       emergency_contact_relation,
+//     } = req.body;
+
+//     // employee_name = employee_name.trim();
+//     email = email.trim().toLowerCase();
+//     phone = phone.trim();
+//     date_of_birth = date_of_birth.trim();
+//     address = address.trim();
+//     aadhar_number = aadhar_number.trim();
+
+//     pan_number = pan_number.trim().toUpperCase();
+//     ifsc_code = ifsc_code.trim().toUpperCase();
+//     bank_name = bank_name.trim();
+//     gender = gender.trim().toUpperCase();
+//     emergency_contact_relation = emergency_contact_relation
+//       .trim()
+//       .toUpperCase();
+
+//     if (!employee_name || employee_name.trim().length < 3) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Employee name must be at least 3 characters",
+//       });
+//     }
+
+//     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+//     if (!emailRegex.test(email)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid email format",
+//       });
+//     }
+
+//     if (!/^[0-9]{10}$/.test(phone)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Phone must be 10 digits",
+//       });
+//     }
+
+//     if (aadhar_number && !/^[0-9]{12}$/.test(aadhar_number)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid Aadhaar number",
+//       });
+//     }
+
+//     if (pan_number && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan_number)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid PAN format",
+//       });
+//     }
+
+//     const duplicateError = await checkDuplicateEmployee({
+//       email,
+//       phone,
+//       aadhar_number,
+//       pan_number,
+//     });
+
+//     if (duplicateError) {
+//       deleteFiles(req.files);
+
+//       return res.status(400).json({
+//         success: false,
+//         message: duplicateError,
+//       });
+//     }
+
+//     const pan_card_image = req.files?.pan_card_image?.[0]?.filename || null;
+//     const aadhar_front_image =
+//       req.files?.aadhar_front_image?.[0]?.filename || null;
+//     const aadhar_back_image =
+//       req.files?.aadhar_back_image?.[0]?.filename || null;
+//     const bank_passbook_image =
+//       req.files?.bank_passbook_image?.[0]?.filename || null;
+//     const marksheet_10_image =
+//       req.files?.marksheet_10_image?.[0]?.filename || null;
+//     const marksheet_12_image =
+//       req.files?.marksheet_12_image?.[0]?.filename || null;
+//     const college_marksheet_image =
+//       req.files?.college_marksheet_image?.[0]?.filename || null;
+
+//     const [result] = await db.query(
+//       `INSERT INTO employees_details (
+//         employee_code,
+//         employee_name,
+//         email,
+//         phone,
+//         date_of_birth,
+//         gender,
+//         address,
+//         aadhar_number,
+//         pan_number,
+//         bank_name,
+//         bank_account_number,
+//         ifsc_code,
+//         pan_card_image,
+//         aadhar_front_image,
+//         aadhar_back_image,
+//         bank_passbook_image,
+//         marksheet_10_image,
+//         marksheet_12_image,
+//         college_marksheet_image,
+//         emergency_contact_name,
+//         emergency_contact_phone,
+//         emergency_contact_relation
+//       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+//       [
+//         employee_code,
+//         employee_name,
+//         email,
+//         phone,
+//         date_of_birth,
+//         gender,
+//         address,
+//         aadhar_number,
+//         pan_number,
+//         bank_name,
+//         bank_account_number,
+//         ifsc_code,
+//         pan_card_image,
+//         aadhar_front_image,
+//         aadhar_back_image,
+//         bank_passbook_image,
+//         marksheet_10_image,
+//         marksheet_12_image,
+//         college_marksheet_image,
+//         emergency_contact_name,
+//         emergency_contact_phone,
+//         emergency_contact_relation,
+//       ],
+//     );
+
+//     const [rows] = await db.query(
+//       "SELECT * FROM employees_details WHERE id=?",
+//       [result.insertId],
+//     );
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Employee created successfully",
+//       employee_code,
+//       id: result.insertId,
+//       data: rows[0],
+//     });
+//   } catch (error) {
+//     deleteFiles(req.files);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Server Error",
+//     });
+//   }
+// };
+
 export const createEmployee = async (req, res) => {
   try {
-    let employee_code = await generateEmployeeCode();
+
+    const employee_code = await generateEmployeeCode();
 
     let {
       employee_name,
@@ -198,57 +375,74 @@ export const createEmployee = async (req, res) => {
       emergency_contact_relation,
     } = req.body;
 
-    // employee_name = employee_name.trim();
-    email = email.trim().toLowerCase();
+    /* ---------------- REQUIRED VALIDATION ---------------- */
+
+    if (!employee_name || employee_name.trim().length < 3) {
+      return res.status(400).json({
+        success: false,
+        message: "Employee name must be at least 3 characters",
+      });
+    }
+
+    if (!phone || !/^[0-9]{10}$/.test(phone.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone must be a valid 10 digit number",
+      });
+    }
+
+    /* ---------------- SANITIZE DATA ---------------- */
+
+    employee_name = employee_name.trim();
     phone = phone.trim();
-    date_of_birth = date_of_birth.trim();
-    address = address.trim();
-    aadhar_number = aadhar_number.trim();
 
-    pan_number = pan_number.trim().toUpperCase();
-    ifsc_code = ifsc_code.trim().toUpperCase();
-    bank_name = bank_name.trim();
-    gender = gender.trim().toUpperCase();
-    emergency_contact_relation = emergency_contact_relation
-      .trim()
-      .toUpperCase();
+    email = email?.trim().toLowerCase() || null;
+    date_of_birth = date_of_birth?.trim() || null;
+    gender = gender?.trim().toLowerCase() || null;
+    address = address?.trim() || null;
 
-      if (!employee_name || employee_name.trim().length < 3) {
-    return res.status(400).json({
-      success:false,
-      message:"Employee name must be at least 3 characters"
-    });
-  }
+    aadhar_number = aadhar_number?.trim() || null;
+    pan_number = pan_number?.trim().toUpperCase() || null;
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    bank_name = bank_name?.trim() || null;
+    bank_account_number = bank_account_number?.trim() || null;
+    ifsc_code = ifsc_code?.trim().toUpperCase() || null;
 
-  if (!emailRegex.test(email)) {
-    return res.status(400).json({
-      success:false,
-      message:"Invalid email format"
-    });
-  }
+    emergency_contact_name = emergency_contact_name?.trim() || null;
+    emergency_contact_phone = emergency_contact_phone?.trim() || null;
+    emergency_contact_relation = emergency_contact_relation?.trim() || null;
 
-  if (!/^[0-9]{10}$/.test(phone)) {
-    return res.status(400).json({
-      success:false,
-      message:"Phone must be 10 digits"
-    });
-  }
+    /* ---------------- OPTIONAL VALIDATION ---------------- */
 
-  if (aadhar_number && !/^[0-9]{12}$/.test(aadhar_number)) {
-    return res.status(400).json({
-      success:false,
-      message:"Invalid Aadhaar number"
-    });
-  }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email format",
+      });
+    }
 
-  if (pan_number && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan_number)) {
-    return res.status(400).json({
-      success:false,
-      message:"Invalid PAN format"
-    });
-  }
+    if (aadhar_number && !/^[0-9]{12}$/.test(aadhar_number)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Aadhaar number",
+      });
+    }
+
+    if (pan_number && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan_number)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid PAN format",
+      });
+    }
+
+    if (ifsc_code && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc_code)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid IFSC code",
+      });
+    }
+
+    /* ---------------- DUPLICATE CHECK ---------------- */
 
     const duplicateError = await checkDuplicateEmployee({
       email,
@@ -258,27 +452,27 @@ export const createEmployee = async (req, res) => {
     });
 
     if (duplicateError) {
+
       deleteFiles(req.files);
 
       return res.status(400).json({
         success: false,
         message: duplicateError,
       });
+
     }
 
+    /* ---------------- FILES ---------------- */
+
     const pan_card_image = req.files?.pan_card_image?.[0]?.filename || null;
-    const aadhar_front_image =
-      req.files?.aadhar_front_image?.[0]?.filename || null;
-    const aadhar_back_image =
-      req.files?.aadhar_back_image?.[0]?.filename || null;
-    const bank_passbook_image =
-      req.files?.bank_passbook_image?.[0]?.filename || null;
-    const marksheet_10_image =
-      req.files?.marksheet_10_image?.[0]?.filename || null;
-    const marksheet_12_image =
-      req.files?.marksheet_12_image?.[0]?.filename || null;
-    const college_marksheet_image =
-      req.files?.college_marksheet_image?.[0]?.filename || null;
+    const aadhar_front_image = req.files?.aadhar_front_image?.[0]?.filename || null;
+    const aadhar_back_image = req.files?.aadhar_back_image?.[0]?.filename || null;
+    const bank_passbook_image = req.files?.bank_passbook_image?.[0]?.filename || null;
+    const marksheet_10_image = req.files?.marksheet_10_image?.[0]?.filename || null;
+    const marksheet_12_image = req.files?.marksheet_12_image?.[0]?.filename || null;
+    const college_marksheet_image = req.files?.college_marksheet_image?.[0]?.filename || null;
+
+    /* ---------------- INSERT ---------------- */
 
     const [result] = await db.query(
       `INSERT INTO employees_details (
@@ -328,28 +522,30 @@ export const createEmployee = async (req, res) => {
         emergency_contact_name,
         emergency_contact_phone,
         emergency_contact_relation,
-      ],
+      ]
     );
 
     const [rows] = await db.query(
       "SELECT * FROM employees_details WHERE id=?",
-      [result.insertId],
+      [result.insertId]
     );
 
     res.status(201).json({
       success: true,
       message: "Employee created successfully",
       employee_code,
-      id: result.insertId,
       data: rows[0],
     });
+
   } catch (error) {
+
     deleteFiles(req.files);
 
     res.status(500).json({
       success: false,
       message: "Server Error",
     });
+
   }
 };
 
@@ -364,7 +560,6 @@ export const getEmployees = async (req, res) => {
       data: rows,
     });
   } catch (error) {
-    deleteFiles(req.files);
     res.status(500).json({
       success: false,
       message: "Server Error",
@@ -372,9 +567,488 @@ export const getEmployees = async (req, res) => {
   }
 };
 
+export const getEmployeeById = async (req, res) => {
+  try {
+
+    const { id } = req.params;
+
+    const [rows] = await db.query(
+      "SELECT * FROM employees_details WHERE id=?",
+      [id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: rows[0],
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+
+  }
+};
+
+// export const updateEmployee = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     let {
+//       employee_name,
+//       email,
+//       phone,
+//       date_of_birth,
+//       gender,
+//       address,
+//       aadhar_number,
+//       pan_number,
+//       bank_name,
+//       bank_account_number,
+//       ifsc_code,
+//       emergency_contact_name,
+//       emergency_contact_phone,
+//       emergency_contact_relation,
+//     } = req.body;
+
+//     // employee_name = employee_name.trim();
+//     email = email.trim().toLowerCase();
+//     phone = phone.trim();
+//     date_of_birth = date_of_birth.trim();
+//     address = address.trim();
+//     aadhar_number = aadhar_number.trim();
+
+//     pan_number = pan_number.trim().toUpperCase();
+//     ifsc_code = ifsc_code.trim().toUpperCase();
+//     bank_name = bank_name.trim();
+//     gender = gender.trim().toUpperCase();
+//     emergency_contact_relation = emergency_contact_relation
+//       .trim()
+//       .toUpperCase();
+
+//     if (!employee_name || employee_name.trim().length < 3) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Employee name must be at least 3 characters",
+//       });
+//     }
+
+//     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+//     if (!emailRegex.test(email)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid email format",
+//       });
+//     }
+
+//     if (!/^[0-9]{10}$/.test(phone)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Phone must be 10 digits",
+//       });
+//     }
+
+//     if (aadhar_number && !/^[0-9]{12}$/.test(aadhar_number)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid Aadhaar number",
+//       });
+//     }
+
+//     if (pan_number && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan_number)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid PAN format",
+//       });
+//     }
+
+//     const duplicateError = await checkDuplicateEmployee({
+//       email,
+//       phone,
+//       aadhar_number,
+//       pan_number,
+//     });
+
+//     if (duplicateError) {
+//       deleteFiles(req.files);
+
+//       return res.status(400).json({
+//         success: false,
+//         message: duplicateError,
+//       });
+//     }
+
+//     const [existing] = await db.query(
+//       "SELECT * FROM employees_details WHERE id=?",
+//       [id],
+//     );
+
+//     if (!existing.length) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Employee not found",
+//       });
+//     }
+
+//     const emp = existing[0];
+
+//     const pan_card_image =
+//       req.files?.pan_card_image?.[0]?.filename || emp.pan_card_image;
+
+//     const aadhar_front_image =
+//       req.files?.aadhar_front_image?.[0]?.filename || emp.aadhar_front_image;
+
+//     const aadhar_back_image =
+//       req.files?.aadhar_back_image?.[0]?.filename || emp.aadhar_back_image;
+
+//     const bank_passbook_image =
+//       req.files?.bank_passbook_image?.[0]?.filename || emp.bank_passbook_image;
+
+//     const marksheet_10_image =
+//       req.files?.marksheet_10_image?.[0]?.filename || emp.marksheet_10_image;
+
+//     const marksheet_12_image =
+//       req.files?.marksheet_12_image?.[0]?.filename || emp.marksheet_12_image;
+
+//     const college_marksheet_image =
+//       req.files?.college_marksheet_image?.[0]?.filename ||
+//       emp.college_marksheet_image;
+
+//     await db.query(
+//       `UPDATE employees_details
+//       SET
+//       employee_name=?,
+//       email=?,
+//       phone=?,
+//       date_of_birth=?,
+//       gender=?,
+//       address=?,
+//       aadhar_number=?,
+//       pan_number=?,
+//       bank_name=?,
+//       bank_account_number=?,
+//       ifsc_code=?,
+//       pan_card_image=?,
+//       aadhar_front_image=?,
+//       aadhar_back_image=?,
+//       bank_passbook_image=?,
+//       marksheet_10_image=?,
+//       marksheet_12_image=?,
+//       college_marksheet_image=?,
+//       emergency_contact_name=?,
+//       emergency_contact_phone=?,
+//       emergency_contact_relation=?
+//       WHERE id=?`,
+//       [
+//         employee_name,
+//         email,
+//         phone,
+//         date_of_birth,
+//         gender,
+//         address,
+//         aadhar_number,
+//         pan_number,
+//         bank_name,
+//         bank_account_number,
+//         ifsc_code,
+//         pan_card_image,
+//         aadhar_front_image,
+//         aadhar_back_image,
+//         bank_passbook_image,
+//         marksheet_10_image,
+//         marksheet_12_image,
+//         college_marksheet_image,
+//         emergency_contact_name,
+//         emergency_contact_phone,
+//         emergency_contact_relation,
+//         id,
+//       ],
+//     );
+
+//     res.json({
+//       success: true,
+//       message: "Employee updated successfully",
+//     });
+//   } catch (error) {
+//     deleteFiles(req.files);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error",
+//     });
+//   }
+// };
+
+// put employee
+// export const updateEmployee = async (req, res) => {
+//   try {
+
+//     const { id } = req.params;
+
+//     let {
+//       employee_name,
+//       email,
+//       phone,
+//       date_of_birth,
+//       gender,
+//       address,
+//       aadhar_number,
+//       pan_number,
+//       bank_name,
+//       bank_account_number,
+//       ifsc_code,
+//       emergency_contact_name,
+//       emergency_contact_phone,
+//       emergency_contact_relation,
+//     } = req.body;
+
+//     /* ---------------- REQUIRED VALIDATION ---------------- */
+
+//     if (!employee_name || employee_name.trim().length < 3) {
+//       return res.status(400).json({
+//         success:false,
+//         message:"Employee name must be at least 3 characters"
+//       });
+//     }
+
+//     if (!phone || !/^[0-9]{10}$/.test(phone.trim())) {
+//       return res.status(400).json({
+//         success:false,
+//         message:"Phone must be 10 digits"
+//       });
+//     }
+
+//     /* ---------------- SANITIZE DATA ---------------- */
+
+//     employee_name = employee_name.trim();
+//     phone = phone.trim();
+
+//     email = email?.trim().toLowerCase() || null;
+//     date_of_birth = date_of_birth?.trim() || null;
+//     gender = gender?.trim().toLowerCase() || null;
+//     address = address?.trim() || null;
+
+//     aadhar_number = aadhar_number?.trim() || null;
+//     pan_number = pan_number?.trim().toUpperCase() || null;
+
+//     bank_name = bank_name?.trim() || null;
+//     bank_account_number = bank_account_number?.trim() || null;
+//     ifsc_code = ifsc_code?.trim().toUpperCase() || null;
+
+//     emergency_contact_name = emergency_contact_name?.trim() || null;
+//     emergency_contact_phone = emergency_contact_phone?.trim() || null;
+//     emergency_contact_relation = emergency_contact_relation?.trim() || null;
+
+//     /* ---------------- OPTIONAL VALIDATION ---------------- */
+
+//     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+//       return res.status(400).json({
+//         success:false,
+//         message:"Invalid email format"
+//       });
+//     }
+
+//     if (aadhar_number && !/^[0-9]{12}$/.test(aadhar_number)) {
+//       return res.status(400).json({
+//         success:false,
+//         message:"Invalid Aadhaar number"
+//       });
+//     }
+
+//     if (pan_number && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan_number)) {
+//       return res.status(400).json({
+//         success:false,
+//         message:"Invalid PAN format"
+//       });
+//     }
+
+//     if (ifsc_code && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc_code)) {
+//       return res.status(400).json({
+//         success:false,
+//         message:"Invalid IFSC code"
+//       });
+//     }
+
+//     /* ---------------- CHECK EXISTING EMPLOYEE ---------------- */
+
+//     const [existing] = await db.query(
+//       "SELECT * FROM employees_details WHERE id=?",
+//       [id]
+//     );
+
+//     if (!existing.length) {
+//       return res.status(404).json({
+//         success:false,
+//         message:"Employee not found"
+//       });
+//     }
+
+//     const emp = existing[0];
+
+//     /* ---------------- DUPLICATE CHECK ---------------- */
+
+//     const duplicateError = await checkDuplicateEmployee({
+//       email,
+//       phone,
+//       aadhar_number,
+//       pan_number,
+//       excludeId:id
+//     });
+
+//     if (duplicateError) {
+
+//       deleteFiles(req.files);
+
+//       return res.status(400).json({
+//         success:false,
+//         message:duplicateError
+//       });
+
+//     }
+
+//     /* ---------------- FILE HANDLING ---------------- */
+
+//     const pan_card_image =
+//       req.files?.pan_card_image?.[0]?.filename || emp.pan_card_image;
+
+//     const aadhar_front_image =
+//       req.files?.aadhar_front_image?.[0]?.filename || emp.aadhar_front_image;
+
+//     const aadhar_back_image =
+//       req.files?.aadhar_back_image?.[0]?.filename || emp.aadhar_back_image;
+
+//     const bank_passbook_image =
+//       req.files?.bank_passbook_image?.[0]?.filename || emp.bank_passbook_image;
+
+//     const marksheet_10_image =
+//       req.files?.marksheet_10_image?.[0]?.filename || emp.marksheet_10_image;
+
+//     const marksheet_12_image =
+//       req.files?.marksheet_12_image?.[0]?.filename || emp.marksheet_12_image;
+
+//     const college_marksheet_image =
+//       req.files?.college_marksheet_image?.[0]?.filename || emp.college_marksheet_image;
+
+//     // old data
+
+//     const [oldData] = await db.query(
+//       "SELECT * FROM employees_details WHERE id=?",
+//       [id]
+//     )
+
+//     /* ---------------- UPDATE ---------------- */
+
+//     const [updated] = await db.query(
+//       `UPDATE employees_details
+//       SET
+//       employee_name=?,
+//       email=?,
+//       phone=?,
+//       date_of_birth=?,
+//       gender=?,
+//       address=?,
+//       aadhar_number=?,
+//       pan_number=?,
+//       bank_name=?,
+//       bank_account_number=?,
+//       ifsc_code=?,
+//       pan_card_image=?,
+//       aadhar_front_image=?,
+//       aadhar_back_image=?,
+//       bank_passbook_image=?,
+//       marksheet_10_image=?,
+//       marksheet_12_image=?,
+//       college_marksheet_image=?,
+//       emergency_contact_name=?,
+//       emergency_contact_phone=?,
+//       emergency_contact_relation=?
+//       WHERE id=?`,
+//       [
+//         employee_name,
+//         email,
+//         phone,
+//         date_of_birth,
+//         gender,
+//         address,
+//         aadhar_number,
+//         pan_number,
+//         bank_name,
+//         bank_account_number,
+//         ifsc_code,
+//         pan_card_image,
+//         aadhar_front_image,
+//         aadhar_back_image,
+//         bank_passbook_image,
+//         marksheet_10_image,
+//         marksheet_12_image,
+//         college_marksheet_image,
+//         emergency_contact_name,
+//         emergency_contact_phone,
+//         emergency_contact_relation,
+//         id
+//       ]
+//     );
+
+
+
+//     res.json({
+//       success:true,
+//       message:"Employee updated successfully",
+//       data: {
+//         ...oldData[0],
+//         ...req.body,
+//         pan_card_image,
+//         aadhar_front_image,
+//         aadhar_back_image,
+//         bank_passbook_image,
+//         marksheet_10_image,
+//         marksheet_12_image,
+//         college_marksheet_image
+//       }
+
+//     });
+
+//   } catch (error) {
+
+//     deleteFiles(req.files);
+
+//     res.status(500).json({
+//       success:false,
+//       message:"Server error"
+//     });
+
+//   }
+// };
+
+
 export const updateEmployee = async (req, res) => {
   try {
+
     const { id } = req.params;
+
+    const [existing] = await db.query(
+      "SELECT * FROM employees_details WHERE id=?",
+      [id]
+    );
+
+    if (!existing.length) {
+      return res.status(404).json({
+        success:false,
+        message:"Employee not found"
+      });
+    }
+
+    const emp = existing[0];
 
     let {
       employee_name,
@@ -393,50 +1067,79 @@ export const updateEmployee = async (req, res) => {
       emergency_contact_relation,
     } = req.body;
 
-    // employee_name = employee_name.trim();
-    email = email.trim().toLowerCase();
-    phone = phone.trim();
-    date_of_birth = date_of_birth.trim();
-    address = address.trim();
-    aadhar_number = aadhar_number.trim();
+    /* ---------------- VALIDATE ONLY IF PROVIDED ---------------- */
 
-    pan_number = pan_number.trim().toUpperCase();
-    ifsc_code = ifsc_code.trim().toUpperCase();
-    bank_name = bank_name.trim();
-    gender = gender.trim().toUpperCase();
-    emergency_contact_relation = emergency_contact_relation
-      .trim()
-      .toUpperCase();
+    if (employee_name !== undefined) {
+      if (employee_name.trim().length < 3) {
+        return res.status(400).json({
+          success:false,
+          message:"Employee name must be at least 3 characters"
+        });
+      }
+      employee_name = employee_name.trim();
+    }
+
+    if (phone !== undefined) {
+      if (!/^[0-9]{10}$/.test(phone.trim())) {
+        return res.status(400).json({
+          success:false,
+          message:"Phone must be 10 digits"
+        });
+      }
+      phone = phone.trim();
+    }
+
+    if (email !== undefined) {
+      email = email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({
+          success:false,
+          message:"Invalid email format"
+        });
+      }
+    }
+
+    if (aadhar_number && !/^[0-9]{12}$/.test(aadhar_number)) {
+      return res.status(400).json({
+        success:false,
+        message:"Invalid Aadhaar number"
+      });
+    }
+
+    if (pan_number && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan_number)) {
+      return res.status(400).json({
+        success:false,
+        message:"Invalid PAN format"
+      });
+    }
+
+    if (ifsc_code && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc_code)) {
+      return res.status(400).json({
+        success:false,
+        message:"Invalid IFSC code"
+      });
+    }
+
+    /* ---------------- DUPLICATE CHECK ---------------- */
 
     const duplicateError = await checkDuplicateEmployee({
       email,
       phone,
       aadhar_number,
       pan_number,
+      excludeId:id
     });
 
     if (duplicateError) {
       deleteFiles(req.files);
 
       return res.status(400).json({
-        success: false,
-        message: duplicateError,
+        success:false,
+        message:duplicateError
       });
     }
 
-    const [existing] = await db.query(
-      "SELECT * FROM employees_details WHERE id=?",
-      [id],
-    );
-
-    if (!existing.length) {
-      return res.status(404).json({
-        success: false,
-        message: "Employee not found",
-      });
-    }
-
-    const emp = existing[0];
+    /* ---------------- FILE HANDLING ---------------- */
 
     const pan_card_image =
       req.files?.pan_card_image?.[0]?.filename || emp.pan_card_image;
@@ -457,8 +1160,35 @@ export const updateEmployee = async (req, res) => {
       req.files?.marksheet_12_image?.[0]?.filename || emp.marksheet_12_image;
 
     const college_marksheet_image =
-      req.files?.college_marksheet_image?.[0]?.filename ||
-      emp.college_marksheet_image;
+      req.files?.college_marksheet_image?.[0]?.filename || emp.college_marksheet_image;
+
+    /* ---------------- MERGE DATA ---------------- */
+
+    const updatedData = {
+      employee_name: employee_name ?? emp.employee_name,
+      email: email ?? emp.email,
+      phone: phone ?? emp.phone,
+      date_of_birth: date_of_birth ?? emp.date_of_birth,
+      gender: gender ?? emp.gender,
+      address: address ?? emp.address,
+      aadhar_number: aadhar_number ?? emp.aadhar_number,
+      pan_number: pan_number ?? emp.pan_number,
+      bank_name: bank_name ?? emp.bank_name,
+      bank_account_number: bank_account_number ?? emp.bank_account_number,
+      ifsc_code: ifsc_code ?? emp.ifsc_code,
+      emergency_contact_name: emergency_contact_name ?? emp.emergency_contact_name,
+      emergency_contact_phone: emergency_contact_phone ?? emp.emergency_contact_phone,
+      emergency_contact_relation: emergency_contact_relation ?? emp.emergency_contact_relation,
+      pan_card_image,
+      aadhar_front_image,
+      aadhar_back_image,
+      bank_passbook_image,
+      marksheet_10_image,
+      marksheet_12_image,
+      college_marksheet_image
+    };
+
+    /* ---------------- UPDATE ---------------- */
 
     await db.query(
       `UPDATE employees_details
@@ -486,42 +1216,46 @@ export const updateEmployee = async (req, res) => {
       emergency_contact_relation=?
       WHERE id=?`,
       [
-        employee_name,
-        email,
-        phone,
-        date_of_birth,
-        gender,
-        address,
-        aadhar_number,
-        pan_number,
-        bank_name,
-        bank_account_number,
-        ifsc_code,
-        pan_card_image,
-        aadhar_front_image,
-        aadhar_back_image,
-        bank_passbook_image,
-        marksheet_10_image,
-        marksheet_12_image,
-        college_marksheet_image,
-        emergency_contact_name,
-        emergency_contact_phone,
-        emergency_contact_relation,
-        id,
-      ],
+        updatedData.employee_name,
+        updatedData.email,
+        updatedData.phone,
+        updatedData.date_of_birth,
+        updatedData.gender,
+        updatedData.address,
+        updatedData.aadhar_number,
+        updatedData.pan_number,
+        updatedData.bank_name,
+        updatedData.bank_account_number,
+        updatedData.ifsc_code,
+        updatedData.pan_card_image,
+        updatedData.aadhar_front_image,
+        updatedData.aadhar_back_image,
+        updatedData.bank_passbook_image,
+        updatedData.marksheet_10_image,
+        updatedData.marksheet_12_image,
+        updatedData.college_marksheet_image,
+        updatedData.emergency_contact_name,
+        updatedData.emergency_contact_phone,
+        updatedData.emergency_contact_relation,
+        id
+      ]
     );
 
     res.json({
-      success: true,
-      message: "Employee updated successfully",
+      success:true,
+      message:"Employee updated successfully",
+      data: updatedData
     });
+
   } catch (error) {
+
     deleteFiles(req.files);
 
     res.status(500).json({
-      success: false,
-      message: "Server error",
+      success:false,
+      message:"Server error"
     });
+
   }
 };
 

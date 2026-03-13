@@ -29,58 +29,58 @@ const generateEmployeeCode = async () => {
   return `DTT-EMP-${nextNumber}`;
 };
 
-// const checkDuplicateEmployee = async ({
-//   email,
-//   phone,
-//   aadhar_number,
-//   pan_number,
-// }) => {
-//   if (email) {
-//     const [rows] = await db.query(
-//       "SELECT id FROM employees_details WHERE email=?",
-//       [email],
-//     );
+const checkDuplicateEmployee = async ({
+  email,
+  phone,
+  aadhar_number,
+  pan_number,
+}) => {
+  if (email) {
+    const [rows] = await db.query(
+      "SELECT id FROM employees_details WHERE email=?",
+      [email],
+    );
 
-//     if (rows.length) {
-//       return "Email already exists";
-//     }
-//   }
+    if (rows.length) {
+      return "Email already exists";
+    }
+  }
 
-//   if (phone) {
-//     const [rows] = await db.query(
-//       "SELECT id FROM employees_details WHERE phone=?",
-//       [phone],
-//     );
+  if (phone) {
+    const [rows] = await db.query(
+      "SELECT id FROM employees_details WHERE phone=?",
+      [phone],
+    );
 
-//     if (rows.length) {
-//       return "Phone number already exists";
-//     }
-//   }
+    if (rows.length) {
+      return "Phone number already exists";
+    }
+  }
 
-//   if (aadhar_number) {
-//     const [rows] = await db.query(
-//       "SELECT id FROM employees_details WHERE aadhar_number=?",
-//       [aadhar_number],
-//     );
+  if (aadhar_number) {
+    const [rows] = await db.query(
+      "SELECT id FROM employees_details WHERE aadhar_number=?",
+      [aadhar_number],
+    );
 
-//     if (rows.length) {
-//       return "Aadhaar number already exists";
-//     }
-//   }
+    if (rows.length) {
+      return "Aadhaar number already exists";
+    }
+  }
 
-//   if (pan_number) {
-//     const [rows] = await db.query(
-//       "SELECT id FROM employees_details WHERE pan_number=?",
-//       [pan_number],
-//     );
+  if (pan_number) {
+    const [rows] = await db.query(
+      "SELECT id FROM employees_details WHERE pan_number=?",
+      [pan_number],
+    );
 
-//     if (rows.length) {
-//       return "PAN number already exists";
-//     }
-//   }
+    if (rows.length) {
+      return "PAN number already exists";
+    }
+  }
 
-//   return null;
-// };
+  return null;
+};
 
 // export const createEmployee = async (req, res) => {
 //   try {
@@ -354,19 +354,18 @@ const generateEmployeeCode = async () => {
 // };
 
 // update same email send again
-const checkDuplicateEmployee = async ({
+const checkDuplicateEmployeeupdate = async ({
   email,
   phone,
   aadhar_number,
   pan_number,
-  excludeId = null
+  excludeId = null,
 }) => {
-
   if (email) {
     const [rows] = await db.query(
       `SELECT id FROM employees_details 
        WHERE email=? AND id != ?`,
-      [email, excludeId]
+      [email, excludeId],
     );
 
     if (rows.length) return "Email already exists";
@@ -376,7 +375,7 @@ const checkDuplicateEmployee = async ({
     const [rows] = await db.query(
       `SELECT id FROM employees_details 
        WHERE phone=? AND id != ?`,
-      [phone, excludeId]
+      [phone, excludeId],
     );
 
     if (rows.length) return "Phone number already exists";
@@ -386,7 +385,7 @@ const checkDuplicateEmployee = async ({
     const [rows] = await db.query(
       `SELECT id FROM employees_details 
        WHERE aadhar_number=? AND id != ?`,
-      [aadhar_number, excludeId]
+      [aadhar_number, excludeId],
     );
 
     if (rows.length) return "Aadhaar number already exists";
@@ -396,7 +395,7 @@ const checkDuplicateEmployee = async ({
     const [rows] = await db.query(
       `SELECT id FROM employees_details 
        WHERE pan_number=? AND id != ?`,
-      [pan_number, excludeId]
+      [pan_number, excludeId],
     );
 
     if (rows.length) return "PAN number already exists";
@@ -405,9 +404,25 @@ const checkDuplicateEmployee = async ({
   return null;
 };
 
+const allowedFields = [
+  "employee_name",
+  "email",
+  "phone",
+  "date_of_birth",
+  "gender",
+  "address",
+  "aadhar_number",
+  "pan_number",
+  "bank_name",
+  "bank_account_number",
+  "ifsc_code",
+  "emergency_contact_name",
+  "emergency_contact_phone",
+  "emergency_contact_relation",
+];
+
 export const createEmployee = async (req, res) => {
   try {
-
     const employee_code = await generateEmployeeCode();
 
     let {
@@ -427,16 +442,58 @@ export const createEmployee = async (req, res) => {
       emergency_contact_relation,
     } = req.body;
 
+    const receivedFields = Object.keys(req.body);
+
+    const invalidFields = receivedFields.filter(
+      (field) => !allowedFields.includes(field),
+    );
+
+    if (invalidFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid fields sent in request",
+        invalid_fields: invalidFields,
+      });
+    }
+
+    if (!req.body.employee_name) {
+      return res.status(400).json({
+        success: false,
+        message: "employee_name is required",
+      });
+    }
+
+    if (!req.body.phone) {
+      return res.status(400).json({
+        success: false,
+        message: "phone is required",
+      });
+    }
+
     /* ---------------- REQUIRED VALIDATION ---------------- */
 
-    if (!employee_name || employee_name.trim().length < 3) {
+    // if (!employee_name || employee_name.trim().length < 3) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Employee name must be at least 3 characters",
+    //   });
+    // }
+
+    // if (!phone || !/^[0-9]{10}$/.test(phone.trim())) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Phone must be a valid 10 digit number and required",
+    //   });
+    // }
+
+    if (employee_name.trim().length < 3) {
       return res.status(400).json({
         success: false,
         message: "Employee name must be at least 3 characters",
       });
     }
 
-    if (!phone || !/^[0-9]{10}$/.test(phone.trim())) {
+    if (!/^[0-9]{10}$/.test(phone.trim())) {
       return res.status(400).json({
         success: false,
         message: "Phone must be a valid 10 digit number",
@@ -504,25 +561,29 @@ export const createEmployee = async (req, res) => {
     });
 
     if (duplicateError) {
-
       deleteFiles(req.files);
 
       return res.status(400).json({
         success: false,
         message: duplicateError,
       });
-
     }
 
     /* ---------------- FILES ---------------- */
 
     const pan_card_image = req.files?.pan_card_image?.[0]?.filename || null;
-    const aadhar_front_image = req.files?.aadhar_front_image?.[0]?.filename || null;
-    const aadhar_back_image = req.files?.aadhar_back_image?.[0]?.filename || null;
-    const bank_passbook_image = req.files?.bank_passbook_image?.[0]?.filename || null;
-    const marksheet_10_image = req.files?.marksheet_10_image?.[0]?.filename || null;
-    const marksheet_12_image = req.files?.marksheet_12_image?.[0]?.filename || null;
-    const college_marksheet_image = req.files?.college_marksheet_image?.[0]?.filename || null;
+    const aadhar_front_image =
+      req.files?.aadhar_front_image?.[0]?.filename || null;
+    const aadhar_back_image =
+      req.files?.aadhar_back_image?.[0]?.filename || null;
+    const bank_passbook_image =
+      req.files?.bank_passbook_image?.[0]?.filename || null;
+    const marksheet_10_image =
+      req.files?.marksheet_10_image?.[0]?.filename || null;
+    const marksheet_12_image =
+      req.files?.marksheet_12_image?.[0]?.filename || null;
+    const college_marksheet_image =
+      req.files?.college_marksheet_image?.[0]?.filename || null;
 
     /* ---------------- INSERT ---------------- */
 
@@ -574,12 +635,12 @@ export const createEmployee = async (req, res) => {
         emergency_contact_name,
         emergency_contact_phone,
         emergency_contact_relation,
-      ]
+      ],
     );
 
     const [rows] = await db.query(
       "SELECT * FROM employees_details WHERE id=?",
-      [result.insertId]
+      [result.insertId],
     );
 
     res.status(201).json({
@@ -588,16 +649,14 @@ export const createEmployee = async (req, res) => {
       employee_code,
       data: rows[0],
     });
-
   } catch (error) {
-
     deleteFiles(req.files);
 
     res.status(500).json({
       success: false,
       message: "Server Error",
+      error: error.message,
     });
-
   }
 };
 
@@ -621,12 +680,11 @@ export const getEmployees = async (req, res) => {
 
 export const getEmployeeById = async (req, res) => {
   try {
-
     const { id } = req.params;
 
     const [rows] = await db.query(
       "SELECT * FROM employees_details WHERE id=?",
-      [id]
+      [id],
     );
 
     if (!rows.length) {
@@ -640,14 +698,11 @@ export const getEmployeeById = async (req, res) => {
       success: true,
       data: rows[0],
     });
-
   } catch (error) {
-
     res.status(500).json({
       success: false,
       message: "Server Error",
     });
-
   }
 };
 
@@ -1051,8 +1106,6 @@ export const getEmployeeById = async (req, res) => {
 //       ]
 //     );
 
-
-
 //     res.json({
 //       success:true,
 //       message:"Employee updated successfully",
@@ -1082,21 +1135,19 @@ export const getEmployeeById = async (req, res) => {
 //   }
 // };
 
-
 export const updateEmployee = async (req, res) => {
   try {
-
     const { id } = req.params;
 
     const [existing] = await db.query(
       "SELECT * FROM employees_details WHERE id=?",
-      [id]
+      [id],
     );
 
     if (!existing.length) {
       return res.status(404).json({
-        success:false,
-        message:"Employee not found"
+        success: false,
+        message: "Employee not found",
       });
     }
 
@@ -1124,8 +1175,8 @@ export const updateEmployee = async (req, res) => {
     if (employee_name !== undefined) {
       if (employee_name.trim().length < 3) {
         return res.status(400).json({
-          success:false,
-          message:"Employee name must be at least 3 characters"
+          success: false,
+          message: "Employee name must be at least 3 characters",
         });
       }
       employee_name = employee_name.trim();
@@ -1134,8 +1185,8 @@ export const updateEmployee = async (req, res) => {
     if (phone !== undefined) {
       if (!/^[0-9]{10}$/.test(phone.trim())) {
         return res.status(400).json({
-          success:false,
-          message:"Phone must be 10 digits"
+          success: false,
+          message: "Phone must be 10 digits",
         });
       }
       phone = phone.trim();
@@ -1145,49 +1196,49 @@ export const updateEmployee = async (req, res) => {
       email = email.trim().toLowerCase();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return res.status(400).json({
-          success:false,
-          message:"Invalid email format"
+          success: false,
+          message: "Invalid email format",
         });
       }
     }
 
     if (aadhar_number && !/^[0-9]{12}$/.test(aadhar_number)) {
       return res.status(400).json({
-        success:false,
-        message:"Invalid Aadhaar number"
+        success: false,
+        message: "Invalid Aadhaar number",
       });
     }
 
     if (pan_number && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan_number)) {
       return res.status(400).json({
-        success:false,
-        message:"Invalid PAN format"
+        success: false,
+        message: "Invalid PAN format",
       });
     }
 
     if (ifsc_code && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc_code)) {
       return res.status(400).json({
-        success:false,
-        message:"Invalid IFSC code"
+        success: false,
+        message: "Invalid IFSC code",
       });
     }
 
     /* ---------------- DUPLICATE CHECK ---------------- */
 
-    const duplicateError = await checkDuplicateEmployee({
+    const duplicateError = await checkDuplicateEmployeeupdate({
       email,
       phone,
       aadhar_number,
       pan_number,
-      excludeId:id
+      excludeId: id,
     });
 
     if (duplicateError) {
       deleteFiles(req.files);
 
       return res.status(400).json({
-        success:false,
-        message:duplicateError
+        success: false,
+        message: duplicateError,
       });
     }
 
@@ -1212,7 +1263,8 @@ export const updateEmployee = async (req, res) => {
       req.files?.marksheet_12_image?.[0]?.filename || emp.marksheet_12_image;
 
     const college_marksheet_image =
-      req.files?.college_marksheet_image?.[0]?.filename || emp.college_marksheet_image;
+      req.files?.college_marksheet_image?.[0]?.filename ||
+      emp.college_marksheet_image;
 
     /* ---------------- MERGE DATA ---------------- */
 
@@ -1228,16 +1280,19 @@ export const updateEmployee = async (req, res) => {
       bank_name: bank_name ?? emp.bank_name,
       bank_account_number: bank_account_number ?? emp.bank_account_number,
       ifsc_code: ifsc_code ?? emp.ifsc_code,
-      emergency_contact_name: emergency_contact_name ?? emp.emergency_contact_name,
-      emergency_contact_phone: emergency_contact_phone ?? emp.emergency_contact_phone,
-      emergency_contact_relation: emergency_contact_relation ?? emp.emergency_contact_relation,
+      emergency_contact_name:
+        emergency_contact_name ?? emp.emergency_contact_name,
+      emergency_contact_phone:
+        emergency_contact_phone ?? emp.emergency_contact_phone,
+      emergency_contact_relation:
+        emergency_contact_relation ?? emp.emergency_contact_relation,
       pan_card_image,
       aadhar_front_image,
       aadhar_back_image,
       bank_passbook_image,
       marksheet_10_image,
       marksheet_12_image,
-      college_marksheet_image
+      college_marksheet_image,
     };
 
     /* ---------------- UPDATE ---------------- */
@@ -1289,28 +1344,24 @@ export const updateEmployee = async (req, res) => {
         updatedData.emergency_contact_name,
         updatedData.emergency_contact_phone,
         updatedData.emergency_contact_relation,
-        id
-      ]
+        id,
+      ],
     );
 
     res.json({
-      success:true,
-      message:"Employee updated successfully",
+      success: true,
+      message: "Employee updated successfully",
       newdata: updatedData,
       old_data: emp,
-      
     });
-
   } catch (error) {
-
     deleteFiles(req.files);
 
     res.status(500).json({
-      success:false,
-      message:"Server error",
-      message:error.message
+      success: false,
+      message: "Server error",
+      message: error.message,
     });
-
   }
 };
 

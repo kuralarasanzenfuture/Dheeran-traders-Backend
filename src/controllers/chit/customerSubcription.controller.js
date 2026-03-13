@@ -1090,6 +1090,8 @@ export const getCustomerSubscriptions = async (req, res) => {
     const [rows] = await db.query(`
       SELECT 
   s.id AS subscription_id,
+  s.nominee_name,
+  s.nominee_phone,
 
   c.id AS customer_id,
   c.name AS customer_name,
@@ -1240,6 +1242,8 @@ export const getCustomerSubscriptionById = async (req, res) => {
     const [rows] = await db.query(`
       SELECT 
   s.id AS subscription_id,
+  s.nominee_name,
+  s.nominee_phone,
 
   c.id AS customer_id,
   c.name AS customer_name,
@@ -1301,5 +1305,118 @@ ORDER BY s.id DESC
       success: false,
       message: "Server error",
     });
+  }
+};
+
+
+export const getCustomerFullDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    /* CUSTOMER BASIC DETAILS */
+
+    const [customer] = await db.query(
+      `SELECT * FROM chit_customers WHERE id=?`,
+      [id]
+    );
+
+    if (customer.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found"
+      });
+    }
+
+    /* SUBSCRIPTIONS + PLAN + BATCH + AGENT */
+
+    const [subscriptions] = await db.query(`
+      SELECT
+        s.id as subscription_id,
+
+        b.batch_name,
+        p.plan_name,
+
+        s.start_date,
+        s.end_date,
+
+        s.nominee_name,
+        s.nominee_phone,
+
+        s.investment_amount,
+
+        a.name as agent_name,
+        a.phone as agent_phone,
+
+        CASE
+          WHEN CURDATE() > s.end_date THEN 'completed'
+          WHEN CURDATE() < s.start_date THEN 'pending'
+          ELSE 'active'
+        END as status
+
+      FROM chit_customer_subscriptions s
+
+      LEFT JOIN batches b 
+      ON b.id = s.batch_id
+
+      LEFT JOIN plans p 
+      ON p.id = s.plan_id
+
+      LEFT JOIN chit_agent_and_staff a
+      ON a.id = s.agent_staff_id
+
+      WHERE s.customer_id = ?
+
+      ORDER BY s.start_date DESC
+    `,[id]);
+
+    /* TOTAL INVESTMENT */
+
+    const [investment] = await db.query(
+      `SELECT SUM(investment_amount) as total_investment
+       FROM chit_customer_subscriptions
+       WHERE customer_id=?`,
+      [id]
+    );
+
+    /* ACTIVE BATCH COUNT */
+
+    const [activeBatch] = await db.query(
+      `SELECT COUNT(DISTINCT batch_id) as active_batches
+       FROM chit_customer_subscriptions
+       WHERE customer_id=? 
+       AND CURDATE() BETWEEN start_date AND end_date`,
+      [id]
+    );
+
+    /* ACTIVE PLAN COUNT */
+
+    const [activePlan] = await db.query(
+      `SELECT COUNT(DISTINCT plan_id) as active_plans
+       FROM chit_customer_subscriptions
+       WHERE customer_id=? 
+       AND CURDATE() BETWEEN start_date AND end_date`,
+      [id]
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        customer: customer[0],
+        total_investment: investment[0].total_investment || 0,
+        active_batches: activeBatch[0].active_batches,
+        active_plans: activePlan[0].active_plans,
+        subscriptions
+      }
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      success:false,
+      message:"Server error"
+    });
+
   }
 };

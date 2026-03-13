@@ -12,7 +12,7 @@ import { validateEmployee } from "../../middlewares/employeeValidation.middlewar
 
 const router = express.Router();
 
-router.post("/", employeeDocsUpload, createEmployee);
+router.post("/", employeeDocsUpload, validateEmployee, createEmployee);
 
 router.get("/", getEmployees);
 

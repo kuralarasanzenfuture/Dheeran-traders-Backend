@@ -100,13 +100,13 @@ export const locationSocket = (io) => {
         );
 
         // randomly store history (example: every ~30 seconds)
-        if (Math.random() < 0.2) {
+        // if (Math.random() < 0.2) {
           await db.query(
             `INSERT INTO user_locations_history (user_id, latitude, longitude)
              VALUES (?, ?, ?)`,
             [user_id, latitude, longitude]
           );
-        }
+        // }
 
         io.emit("staffLocationUpdate", data);
 

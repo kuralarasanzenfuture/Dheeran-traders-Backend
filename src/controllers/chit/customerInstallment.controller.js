@@ -3,14 +3,27 @@ import db from "../../config/db.js";
 
 // 1️⃣ Create Installments (Bulk)
 export const createInstallments = async (req, res) => {
+  const connection = await db.getConnection();
+
   try {
+    await connection.beginTransaction();
+
     const { subscription_id, installments } = req.body;
 
     if (!subscription_id || !installments?.length) {
-      return res.status(400).json({
-        success: false,
-        message: "subscription_id and installments required",
-      });
+      throw new Error("subscription_id and installments required");
+    }
+
+    // 🚫 Prevent duplicate generation
+    const [[existing]] = await connection.query(
+      `SELECT COUNT(*) as count 
+       FROM chit_customer_installments 
+       WHERE subscription_id = ?`,
+      [subscription_id]
+    );
+
+    if (existing.count > 0) {
+      throw new Error("Installments already exist for this subscription");
     }
 
     const values = installments.map((inst) => [
@@ -20,19 +33,28 @@ export const createInstallments = async (req, res) => {
       inst.installment_amount,
     ]);
 
-    await db.query(
+    await connection.query(
       `INSERT INTO chit_customer_installments 
-      (subscription_id, installment_number, due_date, installment_amount)
-      VALUES ?`,
+       (subscription_id, installment_number, due_date, installment_amount)
+       VALUES ?`,
       [values]
     );
+
+    await connection.commit();
 
     res.json({
       success: true,
       message: "Installments created successfully",
     });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    await connection.rollback();
+    res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  } finally {
+    connection.release();
   }
 };
 

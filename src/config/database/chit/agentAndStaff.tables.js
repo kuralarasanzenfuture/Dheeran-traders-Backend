@@ -5,7 +5,7 @@ export const createAgentAndStaffTables = async (db) => {
                         name VARCHAR(100) NOT NULL,
                         phone VARCHAR(20) NOT NULL UNIQUE,
                         reference_mode VARCHAR(100) NOT NULL,
-                        no_of_referals VARCHAR(100),
+                        no_of_referals INT DEFAULT 0,
                         status ENUM('active','inactive') DEFAULT 'active',
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

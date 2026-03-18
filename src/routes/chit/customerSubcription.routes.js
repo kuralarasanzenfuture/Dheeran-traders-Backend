@@ -6,7 +6,10 @@ import {
   deleteCustomerSubscription,
   getCustomerSubscriptions,
   getCustomerSubscriptionById,
-  getCustomerFullDetails
+  getCustomerFullDetails,
+  getBatchSummary,
+  getPlanSummary,
+  getBatchDetails
 } from "../../controllers/chit/customerSubcription.controller.js";
 
 const router = express.Router();
@@ -16,6 +19,13 @@ router.post("/create", createCustomerSubscription);
 
 /* GET ALL */
 router.get("/", getCustomerSubscriptions);
+
+// 📊 DASHBOARD / SUMMARY
+router.get("/batch-summary", getBatchSummary);
+router.get("/plan-summary", getPlanSummary);
+
+// 📊 SPECIFIC BATCH DETAILS
+router.get("/batch-details/:batch_id", getBatchDetails);
 
 /* CUSTOMER FULL DASHBOARD */
 router.get("/customer-details/:id", getCustomerFullDetails);

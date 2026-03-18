@@ -1,4 +1,5 @@
 import db from "../../config/db.js";
+import { generateInstallments } from "../../services/generateInstallment.service.js";
 
 const VALID_REF = ["AGENT", "STAFF", "OFFICE"];
 
@@ -682,8 +683,6 @@ export const createCustomerSubscription = async (req, res) => {
       );
     }
 
-    
-
     /* =========================
        AGENT / STAFF VALIDATION
     ========================= */
@@ -739,29 +738,51 @@ export const createCustomerSubscription = async (req, res) => {
 
     const subscriptionId = result.insertId;
 
+    if (agent_staff_id) {
+      await connection.query(
+        `UPDATE chit_agent_and_staff 
+     SET no_of_referals = (
+       SELECT COUNT(*) 
+       FROM chit_customer_subscriptions 
+       WHERE agent_staff_id = ?
+     )
+     WHERE id = ?`,
+        [agent_staff_id, agent_staff_id],
+      );
+    }
+
     /* =========================
        GENERATE INSTALLMENTS (BULK SAFE)
     ========================= */
 
     let dueDate = new Date(start);
-    const installmentRows = [];
+    // const installmentRows = [];
 
-    for (let i = 1; i <= totalInstallments; i++) {
-      installmentRows.push([
-        subscriptionId,
-        i,
-        new Date(dueDate),
-        installment_amount,
-      ]);
+    // for (let i = 1; i <= totalInstallments; i++) {
+    //   installmentRows.push([
+    //     subscriptionId,
+    //     i,
+    //     new Date(dueDate),
+    //     installment_amount,
+    //   ]);
 
-      if (collectionType === "DAILY") {
-        dueDate.setDate(dueDate.getDate() + 1);
-      } else if (collectionType === "WEEKLY") {
-        dueDate.setDate(dueDate.getDate() + 7);
-      } else if (collectionType === "MONTHLY") {
-        dueDate.setMonth(dueDate.getMonth() + 1);
-      }
-    }
+    //   if (collectionType === "DAILY") {
+    //     dueDate.setDate(dueDate.getDate() + 1);
+    //   } else if (collectionType === "WEEKLY") {
+    //     dueDate.setDate(dueDate.getDate() + 7);
+    //   } else if (collectionType === "MONTHLY") {
+    //     dueDate.setMonth(dueDate.getMonth() + 1);
+    //   }
+    // }
+
+    const installmentRows = generateInstallments({
+      subscriptionId,
+      // startDate: start,
+      startDate: dueDate,
+      totalInstallments,
+      collectionType,
+      installmentAmount: installment_amount,
+    });
 
     await connection.query(
       `INSERT INTO chit_customer_installments
@@ -1328,49 +1349,141 @@ export const updateCustomerSubscription = async (req, res) => {
 //   }
 // };
 
+// export const deleteCustomerSubscription = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     /* 1️⃣ CHECK SUBSCRIPTION */
+
+//     const [existing] = await db.query(
+//       "SELECT * FROM chit_customer_subscriptions WHERE id=?",
+//       [id],
+//     );
+
+//     if (existing.length === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Subscription not found",
+//       });
+//     }
+
+//     /* 2️⃣ CHECK INSTALLMENTS EXIST */
+
+//     const [installments] = await db.query(
+//       "SELECT COUNT(*) as count FROM chit_customer_installments WHERE subscription_id=?",
+//       [id],
+//     );
+
+//     /* 3️⃣ CHECK PAYMENTS EXIST */
+
+//     let paymentCount = 0;
+
+//     try {
+//       const [payments] = await db.query(
+//         "SELECT COUNT(*) as count FROM chit_collections WHERE subscription_id=?",
+//         [id],
+//       );
+//       paymentCount = payments[0].count;
+//     } catch (err) {
+//       // table might not exist yet
+//       paymentCount = 0;
+//     }
+
+//     /* 🚨 BLOCK DELETE IF PAYMENTS EXIST */
+
+//     if (paymentCount > 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "Cannot delete subscription. Payments already exist. Use deactivate instead.",
+//       });
+//     }
+
+//     /* 4️⃣ DELETE (CASCADE WILL HANDLE CHILD TABLES) */
+
+//     await db.query("DELETE FROM chit_customer_subscriptions WHERE id=?", [id]);
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Subscription deleted successfully",
+//       deleted_data: existing[0],
+//       deleted_installments: installments[0].count,
+//       deleted_payments: paymentCount,
+//     });
+//   } catch (error) {
+//     console.error(error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error",
+//     });
+//   }
+// };
+
 export const deleteCustomerSubscription = async (req, res) => {
+  const connection = await db.getConnection();
+
   try {
+    await connection.beginTransaction();
+
     const { id } = req.params;
 
     /* 1️⃣ CHECK SUBSCRIPTION */
 
-    const [existing] = await db.query(
+    const [[subscription]] = await connection.query(
       "SELECT * FROM chit_customer_subscriptions WHERE id=?",
       [id],
     );
 
-    if (existing.length === 0) {
+    if (!subscription) {
+      await connection.rollback();
       return res.status(404).json({
         success: false,
         message: "Subscription not found",
       });
     }
 
-    /* 2️⃣ CHECK INSTALLMENTS EXIST */
+    const agent_staff_id = subscription.agent_staff_id;
 
-    const [installments] = await db.query(
-      "SELECT COUNT(*) as count FROM chit_customer_installments WHERE subscription_id=?",
+    /* 2️⃣ CHECK INSTALLMENTS */
+
+    const [[installments]] = await connection.query(
+      `SELECT COUNT(*) as total,
+              SUM(CASE WHEN paid_amount > 0 THEN 1 ELSE 0 END) as paid_count
+       FROM chit_customer_installments
+       WHERE subscription_id=?`,
       [id],
     );
 
-    /* 3️⃣ CHECK PAYMENTS EXIST */
+    /* 🚨 BLOCK DELETE IF ANY INSTALLMENT PAID */
+
+    if (installments.paid_count > 0) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message:
+          "Cannot delete subscription. Some installments are already paid.",
+      });
+    }
+
+    /* 3️⃣ CHECK PAYMENTS TABLE */
 
     let paymentCount = 0;
 
     try {
-      const [payments] = await db.query(
+      const [[payments]] = await connection.query(
         "SELECT COUNT(*) as count FROM chit_collections WHERE subscription_id=?",
         [id],
       );
-      paymentCount = payments[0].count;
+      paymentCount = payments.count;
     } catch (err) {
-      // table might not exist yet
       paymentCount = 0;
     }
 
     /* 🚨 BLOCK DELETE IF PAYMENTS EXIST */
 
     if (paymentCount > 0) {
+      await connection.rollback();
       return res.status(400).json({
         success: false,
         message:
@@ -1378,24 +1491,49 @@ export const deleteCustomerSubscription = async (req, res) => {
       });
     }
 
-    /* 4️⃣ DELETE (CASCADE WILL HANDLE CHILD TABLES) */
+    /* 4️⃣ DELETE SUBSCRIPTION (CASCADE INSTALLMENTS) */
 
-    await db.query("DELETE FROM chit_customer_subscriptions WHERE id=?", [id]);
+    await connection.query(
+      "DELETE FROM chit_customer_subscriptions WHERE id=?",
+      [id],
+    );
+
+    /* 5️⃣ UPDATE REFERRAL COUNT */
+
+    if (agent_staff_id) {
+      await connection.query(
+        `UPDATE chit_agent_and_staff 
+         SET no_of_referals = (
+           SELECT COUNT(*) 
+           FROM chit_customer_subscriptions 
+           WHERE agent_staff_id = ?
+         )
+         WHERE id = ?`,
+        [agent_staff_id, agent_staff_id],
+      );
+    }
+
+    await connection.commit();
 
     res.status(200).json({
       success: true,
       message: "Subscription deleted successfully",
-      deleted_data: existing[0],
-      deleted_installments: installments[0].count,
-      deleted_payments: paymentCount,
+      deleted_data: subscription,
+      total_installments: installments.total,
+      paid_installments: installments.paid_count,
+      payment_records: paymentCount,
     });
   } catch (error) {
+    await connection.rollback();
+
     console.error(error);
 
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: error.message || "Server error",
     });
+  } finally {
+    connection.release();
   }
 };
 
@@ -1814,5 +1952,90 @@ export const getCustomerFullDetails = async (req, res) => {
       success: false,
       message: "Server error",
     });
+  }
+};
+
+export const getBatchSummary = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        b.id AS batch_id,
+        b.batch_name,
+
+        COUNT(DISTINCT s.customer_id) AS total_customers,
+        COUNT(s.id) AS total_subscriptions,
+
+        COUNT(DISTINCT s.plan_id) AS total_plans
+
+      FROM batches b
+      LEFT JOIN chit_customer_subscriptions s 
+        ON s.batch_id = b.id
+
+      GROUP BY b.id
+      ORDER BY b.id DESC
+    `);
+
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getPlanSummary = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        p.id AS plan_id,
+        p.plan_name,
+
+        COUNT(s.id) AS total_subscriptions,
+        COUNT(DISTINCT s.customer_id) AS total_customers,
+
+        SUM(s.investment_amount) AS total_investment
+
+      FROM plans p
+      LEFT JOIN chit_customer_subscriptions s 
+        ON s.plan_id = p.id
+
+      GROUP BY p.id
+      ORDER BY p.id DESC
+    `);
+
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getBatchDetails = async (req, res) => {
+  try {
+    const { batch_id } = req.params;
+
+    const [rows] = await db.query(
+      `
+      SELECT 
+        s.id AS subscription_id,
+        c.name AS customer_name,
+        c.phone,
+
+        p.plan_name,
+        s.investment_amount,
+        s.installment_amount,
+        s.start_date,
+        s.end_date
+
+      FROM chit_customer_subscriptions s
+      LEFT JOIN chit_customers c ON c.id = s.customer_id
+      LEFT JOIN plans p ON p.id = s.plan_id
+
+      WHERE s.batch_id = ?
+      ORDER BY s.id DESC
+    `,
+      [batch_id],
+    );
+
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };

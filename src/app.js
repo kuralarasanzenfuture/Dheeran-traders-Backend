@@ -31,6 +31,8 @@ import batchPlanRoutes from "./routes/chit/batchPlan.routes.js";
 import chitCustomersRoutes from "./routes/chit/chitCustomer.routes.js";
 import chitAgentsAndStaffRoutes from "./routes/chit/agentAndStaff.routes.js";
 import chitCustomerSubscriptionsRoutes from "./routes/chit/customerSubcription.routes.js";
+import collectionPaymentRoutes from "./routes/chit/collectionPayment.routes.js";
+import customerInstallmentRoutes from "./routes/chit/customerInstallment.routes.js";
 
 import locationRoutes from "./routes/chit/location.routes.js";
 
@@ -99,6 +101,8 @@ app.use("/api/batch-plans", batchPlanRoutes);
 app.use("/api/chit-customers", chitCustomersRoutes);
 app.use("/api/chit-agent-staff", chitAgentsAndStaffRoutes);
 app.use("/api/customer-subscriptions", chitCustomerSubscriptionsRoutes);
+app.use("/api/chit/payment", collectionPaymentRoutes);
+app.use("/api/installments", customerInstallmentRoutes);
 
 
 app.use("/api/locations", locationRoutes);

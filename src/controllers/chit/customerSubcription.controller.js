@@ -280,8 +280,277 @@ const checkExists = async (table, id) => {
 //   }
 // };
 
+// export const createCustomerSubscription = async (req, res) => {
+//   try {
+//     let {
+//       customer_id,
+//       nominee_name,
+//       nominee_phone,
+//       batch_id,
+//       plan_id,
+//       installment_amount,
+//       investment_amount,
+//       start_date,
+//       duration,
+//       end_date,
+//       reference_mode,
+//       agent_staff_id,
+//     } = req.body;
+
+//     /* REQUIRED VALIDATION */
+
+//     if (
+//       !customer_id ||
+//       !batch_id ||
+//       !plan_id ||
+//       !investment_amount ||
+//       !start_date ||
+//       !duration ||
+//       !end_date ||
+//       !reference_mode
+//     ) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Required fields missing",
+//       });
+//     }
+
+//     /* NUMBER VALIDATION */
+
+//     if (isNaN(investment_amount) || investment_amount <= 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid investment_amount",
+//       });
+//     }
+
+//     if (isNaN(duration) || duration <= 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid duration",
+//       });
+//     }
+
+//     /* DATE VALIDATION */
+
+//     const start = new Date(start_date);
+//     const end = new Date(end_date);
+
+//     if (start >= end) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Start date must be before end date",
+//       });
+//     }
+
+//     /* REFERENCE MODE */
+
+//     reference_mode = reference_mode.toUpperCase().trim();
+
+//     if (!VALID_REF.includes(reference_mode)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Reference mode must be AGENT, STAFF or OFFICE",
+//       });
+//     }
+
+//     /* FOREIGN KEY VALIDATION */
+
+//     if (!(await checkExists("chit_customers", customer_id))) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid customer_id",
+//       });
+//     }
+
+//     if (!(await checkExists("batches", batch_id))) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid batch_id",
+//       });
+//     }
+
+//     if (!(await checkExists("plans", plan_id))) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid plan_id",
+//       });
+//     }
+
+//     /* AGENT / STAFF VALIDATION */
+
+//     if (reference_mode === "AGENT" || reference_mode === "STAFF") {
+//       if (!agent_staff_id) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "agent_staff_id required",
+//         });
+//       }
+
+//       if (!(await checkExists("chit_agent_and_staff", agent_staff_id))) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "Invalid agent_staff_id",
+//         });
+//       }
+//     } else {
+//       agent_staff_id = null;
+//     }
+
+//     /* INSERT DATA */
+
+//     const [result] = await db.query(
+//       `INSERT INTO chit_customer_subscriptions
+//       (
+//         customer_id,
+//         nominee_name,
+//         nominee_phone,
+//         batch_id,
+//         plan_id,
+//         installment_amount,
+//         investment_amount,
+//         start_date,
+//         duration,
+//         end_date,
+//         reference_mode,
+//         agent_staff_id
+//       )
+//       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+//       [
+//         customer_id,
+//         nominee_name || null,
+//         nominee_phone || null,
+//         batch_id,
+//         plan_id,
+//         installment_amount,
+//         investment_amount,
+//         start_date,
+//         duration,
+//         end_date,
+//         reference_mode,
+//         agent_staff_id,
+//       ],
+//     );
+
+//     const subscriptionId = result.insertId;
+
+//     const [plan] = await db.query(
+//       `SELECT total_installments, collection_type
+//    FROM plans WHERE id=?`,
+//       [plan_id],
+//     );
+
+//     const totalInstallments = plan[0].total_installments;
+//     const collectionType = plan[0].collection_type;
+
+//     const generateInstallments = async (
+//       subscriptionId,
+//       start_date,
+//       totalInstallments,
+//       installmentAmount,
+//       collectionType,
+//     ) => {
+//       let dueDate = new Date(start_date);
+
+//       for (let i = 1; i <= totalInstallments; i++) {
+//         await db.query(
+//           `INSERT INTO chit_customer_installments
+//        (subscription_id,installment_number,due_date,installment_amount)
+//        VALUES (?,?,?,?)`,
+//           [subscriptionId, i, dueDate, installmentAmount],
+//         );
+
+//         if (collectionType === "DAILY") dueDate.setDate(dueDate.getDate() + 1);
+
+//         if (collectionType === "WEEKLY") dueDate.setDate(dueDate.getDate() + 7);
+
+//         if (collectionType === "MONTHLY")
+//           dueDate.setMonth(dueDate.getMonth() + 1);
+//       }
+//     };
+
+//     await generateInstallments(
+//       subscriptionId,
+//       start_date,
+//       totalInstallments,
+//       installment_amount,
+//       collectionType,
+//     );
+
+//     /* RETURN FULL DETAILS */
+
+//     const [data] = await db.query(
+//       `
+//       SELECT
+//         s.id,
+
+//         c.name AS customer_name,
+//         c.phone,
+
+//         s.nominee_name,
+//         s.nominee_phone,
+
+//         b.batch_name,
+//         b.start_date AS batch_start,
+//         b.end_date AS batch_end,
+
+//         p.plan_name,
+//         p.collection_type,
+//         p.total_installments,
+
+//         s.installment_amount,
+//         s.investment_amount,
+//         s.start_date,
+//         s.duration,
+//         s.end_date,
+
+//         s.reference_mode,
+
+//         a.name AS agent_staff_name,
+
+//         s.created_at
+
+//       FROM chit_customer_subscriptions s
+
+//       LEFT JOIN chit_customers c
+//       ON c.id = s.customer_id
+
+//       LEFT JOIN batches b
+//       ON b.id = s.batch_id
+
+//       LEFT JOIN plans p
+//       ON p.id = s.plan_id
+
+//       LEFT JOIN chit_agent_and_staff a
+//       ON a.id = s.agent_staff_id
+
+//       WHERE s.id = ?
+//     `,
+//       [result.insertId],
+//     );
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Customer subscription created successfully",
+//       data: data[0],
+//     });
+//   } catch (error) {
+//     console.error(error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error",
+//     });
+//   }
+// };
+
+//  validation start date must be batch start date and end date must be batch end date
 export const createCustomerSubscription = async (req, res) => {
+  const connection = await db.getConnection();
+
   try {
+    await connection.beginTransaction();
+
     let {
       customer_id,
       nominee_name,
@@ -292,12 +561,13 @@ export const createCustomerSubscription = async (req, res) => {
       investment_amount,
       start_date,
       duration,
-      end_date,
       reference_mode,
       agent_staff_id,
     } = req.body;
 
-    /* REQUIRED VALIDATION */
+    /* =========================
+       REQUIRED VALIDATION
+    ========================= */
 
     if (
       !customer_id ||
@@ -306,100 +576,135 @@ export const createCustomerSubscription = async (req, res) => {
       !investment_amount ||
       !start_date ||
       !duration ||
-      !end_date ||
       !reference_mode
     ) {
-      return res.status(400).json({
-        success: false,
-        message: "Required fields missing",
-      });
+      throw new Error("Required fields missing");
     }
 
-    /* NUMBER VALIDATION */
+    /* =========================
+       NUMBER VALIDATION
+    ========================= */
 
     if (isNaN(investment_amount) || investment_amount <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid investment_amount",
-      });
+      throw new Error("Invalid investment_amount");
     }
 
     if (isNaN(duration) || duration <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid duration",
-      });
+      throw new Error("Invalid duration");
     }
 
-    /* DATE VALIDATION */
+    if (installment_amount && installment_amount < 0) {
+      throw new Error("Invalid installment_amount");
+    }
+
+    /* =========================
+       DATE PARSE
+    ========================= */
 
     const start = new Date(start_date);
-    const end = new Date(end_date);
+    if (isNaN(start)) throw new Error("Invalid start_date");
 
-    if (start >= end) {
-      return res.status(400).json({
-        success: false,
-        message: "Start date must be before end date",
-      });
-    }
-
-    /* REFERENCE MODE */
+    /* =========================
+       REFERENCE MODE
+    ========================= */
 
     reference_mode = reference_mode.toUpperCase().trim();
 
     if (!VALID_REF.includes(reference_mode)) {
-      return res.status(400).json({
-        success: false,
-        message: "Reference mode must be AGENT, STAFF or OFFICE",
-      });
+      throw new Error("Reference mode must be AGENT, STAFF or OFFICE");
     }
 
-    /* FOREIGN KEY VALIDATION */
+    /* =========================
+       FOREIGN KEY VALIDATION
+    ========================= */
 
     if (!(await checkExists("chit_customers", customer_id))) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid customer_id",
-      });
+      throw new Error("Invalid customer_id");
     }
 
     if (!(await checkExists("batches", batch_id))) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid batch_id",
-      });
+      throw new Error("Invalid batch_id");
     }
 
     if (!(await checkExists("plans", plan_id))) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid plan_id",
-      });
+      throw new Error("Invalid plan_id");
     }
 
-    /* AGENT / STAFF VALIDATION */
+    /* =========================
+       FETCH PLAN + BATCH
+    ========================= */
+
+    const [[plan]] = await connection.query(
+      `SELECT total_installments, collection_type 
+       FROM plans WHERE id=?`,
+      [plan_id],
+    );
+
+    const [[batch]] = await connection.query(
+      `SELECT start_date, end_date 
+       FROM batches WHERE id=?`,
+      [batch_id],
+    );
+
+    const totalInstallments = plan.total_installments;
+    const collectionType = plan.collection_type;
+
+    const batchStart = new Date(batch.start_date);
+    const batchEnd = new Date(batch.end_date);
+
+    /* =========================
+       CALCULATE END DATE (DO NOT TRUST USER)
+    ========================= */
+
+    let calculatedEnd = new Date(start);
+
+    for (let i = 1; i < totalInstallments; i++) {
+      if (collectionType === "DAILY") {
+        calculatedEnd.setDate(calculatedEnd.getDate() + 1);
+      } else if (collectionType === "WEEKLY") {
+        calculatedEnd.setDate(calculatedEnd.getDate() + 7);
+      } else if (collectionType === "MONTHLY") {
+        calculatedEnd.setMonth(calculatedEnd.getMonth() + 1);
+      }
+    }
+
+    /* =========================
+       DATE VALIDATION
+    ========================= */
+
+    const formatDate = (date) => {
+      return date.toISOString().split("T")[0];
+    };
+
+    if (start < batchStart || start > batchEnd) {
+      throw new Error(
+        `Start date must be within batch period (${formatDate(batchStart)} to ${formatDate(batchEnd)})`,
+      );
+    }
+
+    
+
+    /* =========================
+       AGENT / STAFF VALIDATION
+    ========================= */
 
     if (reference_mode === "AGENT" || reference_mode === "STAFF") {
       if (!agent_staff_id) {
-        return res.status(400).json({
-          success: false,
-          message: "agent_staff_id required",
-        });
+        throw new Error("agent_staff_id required");
       }
 
       if (!(await checkExists("chit_agent_and_staff", agent_staff_id))) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid agent_staff_id",
-        });
+        throw new Error("Invalid agent_staff_id");
       }
     } else {
       agent_staff_id = null;
     }
 
-    /* INSERT DATA */
+    /* =========================
+       INSERT SUBSCRIPTION
+    ========================= */
 
-    const [result] = await db.query(
+    const [result] = await connection.query(
       `INSERT INTO chit_customer_subscriptions
       (
         customer_id,
@@ -424,78 +729,99 @@ export const createCustomerSubscription = async (req, res) => {
         plan_id,
         installment_amount,
         investment_amount,
-        start_date,
+        start,
         duration,
-        end_date,
+        calculatedEnd,
         reference_mode,
         agent_staff_id,
       ],
     );
 
-    /* RETURN FULL DETAILS */
+    const subscriptionId = result.insertId;
 
-    const [data] = await db.query(
+    /* =========================
+       GENERATE INSTALLMENTS (BULK SAFE)
+    ========================= */
+
+    let dueDate = new Date(start);
+    const installmentRows = [];
+
+    for (let i = 1; i <= totalInstallments; i++) {
+      installmentRows.push([
+        subscriptionId,
+        i,
+        new Date(dueDate),
+        installment_amount,
+      ]);
+
+      if (collectionType === "DAILY") {
+        dueDate.setDate(dueDate.getDate() + 1);
+      } else if (collectionType === "WEEKLY") {
+        dueDate.setDate(dueDate.getDate() + 7);
+      } else if (collectionType === "MONTHLY") {
+        dueDate.setMonth(dueDate.getMonth() + 1);
+      }
+    }
+
+    await connection.query(
+      `INSERT INTO chit_customer_installments
+      (subscription_id, installment_number, due_date, installment_amount)
+      VALUES ?`,
+      [installmentRows],
+    );
+
+    /* =========================
+       FETCH FINAL DATA
+    ========================= */
+
+    const [[data]] = await connection.query(
       `
       SELECT 
         s.id,
-
         c.name AS customer_name,
         c.phone,
-
         s.nominee_name,
         s.nominee_phone,
-
         b.batch_name,
         b.start_date AS batch_start,
         b.end_date AS batch_end,
-
         p.plan_name,
         p.collection_type,
         p.total_installments,
-
         s.installment_amount,
         s.investment_amount,
         s.start_date,
         s.duration,
         s.end_date,
-
         s.reference_mode,
-
         a.name AS agent_staff_name,
-
         s.created_at
-
       FROM chit_customer_subscriptions s
-
-      LEFT JOIN chit_customers c 
-      ON c.id = s.customer_id
-
-      LEFT JOIN batches b 
-      ON b.id = s.batch_id
-
-      LEFT JOIN plans p 
-      ON p.id = s.plan_id
-
-      LEFT JOIN chit_agent_and_staff a
-      ON a.id = s.agent_staff_id
-
+      LEFT JOIN chit_customers c ON c.id = s.customer_id
+      LEFT JOIN batches b ON b.id = s.batch_id
+      LEFT JOIN plans p ON p.id = s.plan_id
+      LEFT JOIN chit_agent_and_staff a ON a.id = s.agent_staff_id
       WHERE s.id = ?
-    `,
-      [result.insertId],
+      `,
+      [subscriptionId],
     );
+
+    await connection.commit();
 
     res.status(201).json({
       success: true,
       message: "Customer subscription created successfully",
-      data: data[0],
+      data,
     });
   } catch (error) {
-    console.error(error);
+    await connection.rollback();
 
-    res.status(500).json({
+    res.status(400).json({
       success: false,
-      message: "Server error",
+      message: error.message || "Server error",
     });
+  } finally {
+    connection.release();
   }
 };
 
@@ -971,9 +1297,42 @@ export const updateCustomerSubscription = async (req, res) => {
 //   }
 // };
 
+// export const deleteCustomerSubscription = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const [existing] = await db.query(
+//       "SELECT * FROM chit_customer_subscriptions WHERE id=?",
+//       [id],
+//     );
+
+//     if (existing.length === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Subscription not found",
+//       });
+//     }
+
+//     await db.query("DELETE FROM chit_customer_subscriptions WHERE id=?", [id]);
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Subscription deleted successfully",
+//       deleted_data: existing[0],
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error",
+//     });
+//   }
+// };
+
 export const deleteCustomerSubscription = async (req, res) => {
   try {
     const { id } = req.params;
+
+    /* 1️⃣ CHECK SUBSCRIPTION */
 
     const [existing] = await db.query(
       "SELECT * FROM chit_customer_subscriptions WHERE id=?",
@@ -987,14 +1346,52 @@ export const deleteCustomerSubscription = async (req, res) => {
       });
     }
 
+    /* 2️⃣ CHECK INSTALLMENTS EXIST */
+
+    const [installments] = await db.query(
+      "SELECT COUNT(*) as count FROM chit_customer_installments WHERE subscription_id=?",
+      [id],
+    );
+
+    /* 3️⃣ CHECK PAYMENTS EXIST */
+
+    let paymentCount = 0;
+
+    try {
+      const [payments] = await db.query(
+        "SELECT COUNT(*) as count FROM chit_collections WHERE subscription_id=?",
+        [id],
+      );
+      paymentCount = payments[0].count;
+    } catch (err) {
+      // table might not exist yet
+      paymentCount = 0;
+    }
+
+    /* 🚨 BLOCK DELETE IF PAYMENTS EXIST */
+
+    if (paymentCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Cannot delete subscription. Payments already exist. Use deactivate instead.",
+      });
+    }
+
+    /* 4️⃣ DELETE (CASCADE WILL HANDLE CHILD TABLES) */
+
     await db.query("DELETE FROM chit_customer_subscriptions WHERE id=?", [id]);
 
     res.status(200).json({
       success: true,
       message: "Subscription deleted successfully",
       deleted_data: existing[0],
+      deleted_installments: installments[0].count,
+      deleted_payments: paymentCount,
     });
   } catch (error) {
+    console.error(error);
+
     res.status(500).json({
       success: false,
       message: "Server error",
@@ -1308,7 +1705,6 @@ ORDER BY s.id DESC
   }
 };
 
-
 export const getCustomerFullDetails = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1317,19 +1713,20 @@ export const getCustomerFullDetails = async (req, res) => {
 
     const [customer] = await db.query(
       `SELECT * FROM chit_customers WHERE id=?`,
-      [id]
+      [id],
     );
 
     if (customer.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Customer not found"
+        message: "Customer not found",
       });
     }
 
     /* SUBSCRIPTIONS + PLAN + BATCH + AGENT */
 
-    const [subscriptions] = await db.query(`
+    const [subscriptions] = await db.query(
+      `
       SELECT
         s.id as subscription_id,
 
@@ -1367,7 +1764,9 @@ export const getCustomerFullDetails = async (req, res) => {
       WHERE s.customer_id = ?
 
       ORDER BY s.start_date DESC
-    `,[id]);
+    `,
+      [id],
+    );
 
     /* TOTAL INVESTMENT */
 
@@ -1375,7 +1774,7 @@ export const getCustomerFullDetails = async (req, res) => {
       `SELECT SUM(investment_amount) as total_investment
        FROM chit_customer_subscriptions
        WHERE customer_id=?`,
-      [id]
+      [id],
     );
 
     /* ACTIVE BATCH COUNT */
@@ -1385,7 +1784,7 @@ export const getCustomerFullDetails = async (req, res) => {
        FROM chit_customer_subscriptions
        WHERE customer_id=? 
        AND CURDATE() BETWEEN start_date AND end_date`,
-      [id]
+      [id],
     );
 
     /* ACTIVE PLAN COUNT */
@@ -1395,7 +1794,7 @@ export const getCustomerFullDetails = async (req, res) => {
        FROM chit_customer_subscriptions
        WHERE customer_id=? 
        AND CURDATE() BETWEEN start_date AND end_date`,
-      [id]
+      [id],
     );
 
     res.status(200).json({
@@ -1405,18 +1804,15 @@ export const getCustomerFullDetails = async (req, res) => {
         total_investment: investment[0].total_investment || 0,
         active_batches: activeBatch[0].active_batches,
         active_plans: activePlan[0].active_plans,
-        subscriptions
-      }
+        subscriptions,
+      },
     });
-
   } catch (error) {
-
     console.error(error);
 
     res.status(500).json({
-      success:false,
-      message:"Server error"
+      success: false,
+      message: "Server error",
     });
-
   }
 };

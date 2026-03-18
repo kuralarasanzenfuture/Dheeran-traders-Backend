@@ -23,6 +23,8 @@ import { createLoginHistoryTables } from "./database/roles/login_history.tables.
 import { createUserRolesTables } from "./database/roles/user_roles.tables.js";
 import { createRefeshTokensTable } from "./database/roles/refresh_tokens.tables.js";
 import { createEmployeeDetailsTables } from "./database/roles/employees_details.tables.js";
+import { createCustomerInstallments } from "./database/chit/customerInstallments.js";
+import { createCollectionPaymentTables } from "./database/chit/collectionPayment.tables.js";
 
 export const initDatabase = async () => {
   try {
@@ -79,6 +81,10 @@ export const initDatabase = async () => {
     await createAgentAndStaffTables(db);
 
     await createCustomerSubcriptionTables(db);
+
+    await createCustomerInstallments(db);
+
+    await createCollectionPaymentTables(db);
 
     await createLocationTable(db);
 

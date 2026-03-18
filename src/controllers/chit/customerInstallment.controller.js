@@ -1,0 +1,298 @@
+import db from "../../config/db.js";
+
+
+// 1️⃣ Create Installments (Bulk)
+export const createInstallments = async (req, res) => {
+  try {
+    const { subscription_id, installments } = req.body;
+
+    if (!subscription_id || !installments?.length) {
+      return res.status(400).json({
+        success: false,
+        message: "subscription_id and installments required",
+      });
+    }
+
+    const values = installments.map((inst) => [
+      subscription_id,
+      inst.installment_number,
+      inst.due_date,
+      inst.installment_amount,
+    ]);
+
+    await db.query(
+      `INSERT INTO chit_customer_installments 
+      (subscription_id, installment_number, due_date, installment_amount)
+      VALUES ?`,
+      [values]
+    );
+
+    res.json({
+      success: true,
+      message: "Installments created successfully",
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+// 2️⃣ Get All Installments
+export const getAllInstallments = async (req, res) => {
+  try {
+    const { status, subscription_id } = req.query;
+
+    let query = `SELECT * FROM chit_customer_installments WHERE 1=1`;
+    let params = [];
+
+    if (status) {
+      query += ` AND status = ?`;
+      params.push(status);
+    }
+
+    if (subscription_id) {
+      query += ` AND subscription_id = ?`;
+      params.push(subscription_id);
+    }
+
+    query += ` ORDER BY installment_number ASC`;
+
+    const [rows] = await db.query(query, params);
+
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+// 3️⃣ Get Installments by Subscription
+export const getInstallmentsBySubscription = async (req, res) => {
+  try {
+    const { subscription_id } = req.params;
+
+    const [rows] = await db.query(
+      `SELECT * FROM chit_customer_installments 
+       WHERE subscription_id = ?
+       ORDER BY installment_number ASC`,
+      [subscription_id]
+    );
+
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+// 4️⃣ Get Single Installment
+export const getInstallmentById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [rows] = await db.query(
+      `SELECT * FROM chit_customer_installments WHERE id = ?`,
+      [id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Installment not found",
+      });
+    }
+
+    res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+// 5️⃣ Update Installment
+export const updateInstallment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { due_date, installment_amount, status } = req.body;
+
+    const [result] = await db.query(
+      `UPDATE chit_customer_installments
+       SET due_date = ?, installment_amount = ?, status = ?
+       WHERE id = ?`,
+      [due_date, installment_amount, status, id]
+    );
+
+    res.json({
+      success: true,
+      message: "Installment updated",
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+// 6️⃣ Delete Installment
+export const deleteInstallment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await db.query(
+      `DELETE FROM chit_customer_installments WHERE id = ?`,
+      [id]
+    );
+
+    res.json({
+      success: true,
+      message: "Installment deleted",
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+// 7️⃣ Pay Installment (CORE LOGIC)
+// export const payInstallment = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { amount } = req.body;
+
+//     const [[installment]] = await db.query(
+//       `SELECT * FROM chit_customer_installments WHERE id = ?`,
+//       [id]
+//     );
+
+//     if (!installment) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Installment not found",
+//       });
+//     }
+
+//     let newPaid = parseFloat(installment.paid_amount) + parseFloat(amount);
+
+//     let newStatus = "PENDING";
+
+//     if (newPaid === installment.installment_amount) {
+//       newStatus = "PAID";
+//     } else if (newPaid < installment.installment_amount) {
+//       newStatus = "PARTIAL";
+//     } else {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Overpayment not allowed",
+//       });
+//     }
+
+//     await db.query(
+//       `UPDATE chit_customer_installments
+//        SET paid_amount = ?, status = ?
+//        WHERE id = ?`,
+//       [newPaid, newStatus, id]
+//     );
+
+//     res.json({
+//       success: true,
+//       message: "Payment updated",
+//     });
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+export const payInstallment = async (req, res) => {
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const { id } = req.params;
+    let { amount } = req.body;
+
+    // 🔒 Basic validation
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid payment amount is required",
+      });
+    }
+
+    amount = Number(parseFloat(amount).toFixed(2));
+
+    // 🔒 Lock row to prevent concurrent updates
+    const [[installment]] = await connection.query(
+      `SELECT * FROM chit_customer_installments WHERE id = ? FOR UPDATE`,
+      [id]
+    );
+
+    if (!installment) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Installment not found",
+      });
+    }
+
+    const installmentAmount = Number(installment.installment_amount);
+    const paidAmount = Number(installment.paid_amount);
+
+    // 🚫 Already fully paid
+    if (paidAmount >= installmentAmount) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Installment already fully paid",
+      });
+    }
+
+    // ➕ Add payment safely
+    let newPaid = Number((paidAmount + amount).toFixed(2));
+
+    // 🚫 Overpayment check
+    if (newPaid > installmentAmount) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Overpayment not allowed",
+      });
+    }
+
+    // 🎯 Status logic
+    let newStatus = "PARTIAL";
+
+    if (Math.abs(newPaid - installmentAmount) < 0.01) {
+      newPaid = installmentAmount; // normalize
+      newStatus = "PAID";
+    }
+
+    // 💾 Update installment
+    await connection.query(
+      `UPDATE chit_customer_installments
+       SET paid_amount = ?, status = ?
+       WHERE id = ?`,
+      [newPaid, newStatus, id]
+    );
+
+    await connection.commit();
+
+    return res.json({
+      success: true,
+      message: "Payment updated successfully",
+      data: {
+        installment_id: id,
+        paid_amount: newPaid,
+        status: newStatus,
+      },
+    });
+
+  } catch (err) {
+    await connection.rollback();
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  } finally {
+    connection.release();
+  }
+};

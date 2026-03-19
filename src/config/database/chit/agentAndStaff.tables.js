@@ -1,5 +1,5 @@
 export const createAgentAndStaffTables = async (db) => {
-    await db.query(`
+  await db.query(`
                 CREATE TABLE IF NOT EXISTS chit_agent_and_staff (
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         name VARCHAR(100) NOT NULL,
@@ -11,4 +11,21 @@ export const createAgentAndStaffTables = async (db) => {
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                 )
         `);
+
+  await db.query(`
+                INSERT IGNORE INTO chit_agent_and_staff (
+    name, phone, reference_mode, status
+) VALUES
+(
+    'Suresh Kumar',
+    '9012345678',
+    'AGENT',
+    'active'
+),
+(
+    'Manikandan R',
+    '9098765432',
+    'STAFF',
+    'active'
+);`);
 };

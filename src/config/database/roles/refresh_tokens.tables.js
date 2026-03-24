@@ -3,31 +3,79 @@ export const createRefeshTokensTable = async (db) => {
   // logout → delete token
   // token theft → revoke token
   // multiple devices → track tokens
-//   await db.query(`
-//               CREATE TABLE IF NOT EXISTS refresh_tokens (
-//                   id INT AUTO_INCREMENT PRIMARY KEY,
-//                   user_id INT NOT NULL,
-//                   token VARCHAR(500) NOT NULL,
-//                   expires_at DATETIME,
-//                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-//                   FOREIGN KEY (user_id) REFERENCES users_roles(id) ON DELETE CASCADE
-//               )
-//               `);
+  //   await db.query(`
+  //               CREATE TABLE IF NOT EXISTS refresh_tokens (
+  //                   id INT AUTO_INCREMENT PRIMARY KEY,
+  //                   user_id INT NOT NULL,
+  //                   token VARCHAR(500) NOT NULL,
+  //                   expires_at DATETIME,
+  //                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  //                   FOREIGN KEY (user_id) REFERENCES users_roles(id) ON DELETE CASCADE
+  //               )
+  //               `);
 
-            //   Refresh Token Storage
+  //   Refresh Token Storage
 
-  await db.query(`
+  // await db.query(`
+  //               CREATE TABLE IF NOT EXISTS user_refresh_tokens (
+  //                   id INT AUTO_INCREMENT PRIMARY KEY,
+  //                   user_id INT NOT NULL,
+  //                   refresh_token TEXT NOT NULL,
+  //                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  //                   expires_at DATETIME,
+  //                   revoked BOOLEAN DEFAULT FALSE,
+
+  //                   FOREIGN KEY (user_id) REFERENCES users_roles(id) ON DELETE CASCADE
+  //               )
+  //               `);
+
+  // Login Attempt Blocking
+
+  // await db.query(`
+  //               CREATE TABLE IF NOT EXISTS user_refresh_tokens (
+  //                   id INT AUTO_INCREMENT PRIMARY KEY,
+  //                   user_id INT NOT NULL,
+
+  //                   refresh_token VARCHAR(500) NOT NULL,
+
+  //                   ip_address VARCHAR(45),
+  //                   user_agent TEXT,
+
+  //                   is_active BOOLEAN DEFAULT TRUE,
+
+  //                   expires_at DATETIME NOT NULL,
+  //                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  //                   FOREIGN KEY (user_id) REFERENCES users_roles(id) ON DELETE CASCADE,
+
+  //                   INDEX(user_id),
+  //                   UNIQUE(refresh_token)
+  //               )
+  //               `);
+
+await db.query(`
                 CREATE TABLE IF NOT EXISTS user_refresh_tokens (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id INT NOT NULL,
-                    refresh_token TEXT NOT NULL,
+                    session_id VARCHAR(255) NOT NULL,
+                  
+                    refresh_token VARCHAR(500) NOT NULL,
+                  
+                    ip_address VARCHAR(45),
+                    user_agent TEXT,
+                  
+                    is_active BOOLEAN DEFAULT TRUE,
+                  
+                    expires_at DATETIME NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    expires_at DATETIME,
-                    revoked BOOLEAN DEFAULT FALSE,
-                    
-                    FOREIGN KEY (user_id) REFERENCES users_roles(id) ON DELETE CASCADE
+                  
+                    FOREIGN KEY (user_id) REFERENCES users_roles(id) ON DELETE CASCADE,
+                  
+                    INDEX(user_id),
+                    UNIQUE(refresh_token),
+                    INDEX(session_id)
                 )
                 `);
 
-                // Login Attempt Blocking
+
 };

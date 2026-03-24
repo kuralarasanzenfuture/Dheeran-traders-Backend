@@ -1,11 +1,10 @@
-
+import db from "./db.js";
 import { createCompanyBankDetailsTables } from "./database/billing/companyBankDetails.tables.js";
 import { createCompanyDetailsTables } from "./database/billing/companydetails.tables.js";
 import { createCustomerBillingTables } from "./database/billing/customerBilling.tables.js";
 import { createCustomerTables } from "./database/billing/customers.tables.js";
 import { createEmployeeTables } from "./database/billing/employee.tables.js";
-import { createMasterTables } from "./database/billing/master.tables.js";
-import { createProductTables } from "./database/billing/product.tables.js";
+import { createMasterTables } from "./database/billing/products/master.tables.js";
 import { createRoleBasedTables } from "./database/roles/roleBased.tables.js";
 import { createUserTables } from "./database/billing/user.tables.js";
 import { createVendorTables } from "./database/billing/vendor.tables.js";
@@ -18,13 +17,15 @@ import { createCustomerSubcriptionTables } from "./database/chit/customerSubcrip
 import { createLocationTable } from "./database/chit/location.tables.js";
 import { createPlanTables } from "./database/chit/plan.tables.js";
 import { createPlanRulesTables } from "./database/chit/planRules.tables.js";
-import db from "./db.js";
+
 import { createLoginHistoryTables } from "./database/roles/login_history.tables.js";
 import { createUserRolesTables } from "./database/roles/user_roles.tables.js";
 import { createRefeshTokensTable } from "./database/roles/refresh_tokens.tables.js";
 import { createEmployeeDetailsTables } from "./database/roles/employees_details.tables.js";
 import { createCustomerInstallments } from "./database/chit/customerInstallments.js";
 import { createCollectionPaymentTables } from "./database/chit/collectionPayment.tables.js";
+import { createAdminTriggers } from "./triggers/admin.trigger.js";
+import { createPermissionsTable } from "./database/roles/permissions/permissions.tables.js";
 
 export const initDatabase = async () => {
   try {
@@ -38,6 +39,11 @@ export const initDatabase = async () => {
 
     await createUserRolesTables(db);
 
+    await createPermissionsTable(db);
+
+    // 🔥 MUST be after tables
+    await createAdminTriggers(db);
+
     await createLoginHistoryTables(db);
 
     await createRefeshTokensTable(db);
@@ -47,10 +53,8 @@ export const initDatabase = async () => {
     // 3️⃣ USERS TABLE
     await createUserTables(db);
 
+    // 4️⃣ MASTER TABLE like BRANDS, CATEGORIES, QUANTITY and PRODUCT
     await createMasterTables(db);
-
-    // 4️⃣ PRODUCTS TABLE
-    await createProductTables(db);
 
     await createVendorTables(db);
 

@@ -26,6 +26,7 @@ import app from "./app.js";
 import { initDatabase } from "./config/initDb.js";
 import { locationSocket } from "./sockets/location.socket.js";
 
+
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {

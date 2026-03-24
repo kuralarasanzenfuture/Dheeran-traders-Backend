@@ -8,6 +8,8 @@ import { fileURLToPath } from "url";
 import roleRoutes from "./routes/roles/roleBased.routes.js";
 import userRolesRoutes from "./routes/roles/user.routes.js";
 import employeeDetailsRoutes from "./routes/roles/employees-details.routes.js";
+import rolePermissionsRoutes from "./routes/roles/permissions/rolePermission.routes.js";
+import userPermissionRoutes from "./routes/roles/permissions/userPermission.routes.js";
 
 import userRoutes from "./routes/billing/user.routes.js";
 import productRoutes from "./routes/billing/product.routes.js";
@@ -39,10 +41,19 @@ import locationRoutes from "./routes/chit/location.routes.js";
 // Middlewares
 import { errorHandler } from "./middlewares/error.middleware.js";
 
+import cookieParser from "cookie-parser";
+import { startCleanupJob } from "./jobs/cleanupTokens.job.js";
+
+// app.use(cookieParser());
+
 // ------------------------------------------------------------------
 // App & dirname setup (IMPORTANT for ES Modules)
 // ------------------------------------------------------------------
 const app = express();
+
+// start cron job ONCE
+startCleanupJob();
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,6 +79,11 @@ app.use(
   express.static(path.join(__dirname, "uploads"))
 );
 
+// import { attachDb } from "./middleware/dbMiddleware.js";
+
+// app.use(attachDb);
+// router.get("/:role_id", attachDb, getRolePermissions);
+
 // ------------------------------------------------------------------
 // API Routes
 // ------------------------------------------------------------------
@@ -75,6 +91,8 @@ app.use(
 app.use("/api/roles", roleRoutes);
 app.use("/api/users-roles", userRolesRoutes);
 app.use("/api/employees-details", employeeDetailsRoutes);
+app.use("/api/role-permissions", rolePermissionsRoutes);
+app.use("/api/user-permissions", userPermissionRoutes);
 
 app.use("/api/users", userRoutes);
 app.use("/api/employees", employeeRoutes);

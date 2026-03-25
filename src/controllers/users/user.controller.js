@@ -353,9 +353,9 @@ export const createUser = async (req, res) => {
   try {
     let { username, email, phone, password, role_id } = req.body;
 
-    if (!username || !password || !role_id) {
+    if (!username || !phone || !password || !role_id) {
       return res.status(400).json({
-        message: "Username, password and role required",
+        message: "Username, phone, password and role required",
       });
     }
 
@@ -1091,6 +1091,172 @@ LOGIN USER
 // };
 
 // implementation Load all permissions once
+// export const loginUser = async (req, res) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     let { login_id, password } = req.body;
+
+//     if (!login_id || !password) {
+//       return res.status(400).json({ message: "Required fields missing" });
+//     }
+
+//     login_id = login_id.trim().toLowerCase();
+
+//     /* =========================
+//        1️⃣ GET USER
+//     ========================= */
+//     const [users] = await connection.query(
+//       `SELECT * FROM users_roles
+//        WHERE LOWER(username)=? OR LOWER(email)=? OR phone=?`,
+//       [login_id, login_id, login_id],
+//     );
+
+//     if (!users.length) {
+//       return res.status(401).json({ message: "Invalid credentials" });
+//     }
+
+//     const user = users[0];
+
+//     if (user.status !== "active") {
+//       return res.status(403).json({
+//         message: "User is inactive",
+//       });
+//     }
+
+//     /* =========================
+//        2️⃣ PASSWORD CHECK
+//     ========================= */
+//     const valid = await bcrypt.compare(password, user.password);
+
+//     if (!valid) {
+//       return res.status(401).json({ message: "Invalid credentials" });
+//     }
+
+//     /* =========================
+//    6.5️⃣ LOAD PERMISSIONS 🔥
+// ========================= */
+//     const [permRows] = await connection.query(
+//       `
+//   SELECT
+//     m.code AS module_code,
+//     ma.action_code,
+//     COALESCE(up.is_allowed, rp.is_allowed, FALSE) AS is_allowed
+//   FROM modules m
+//   JOIN module_actions ma ON ma.module_id = m.id
+
+//   LEFT JOIN role_permissions rp
+//     ON rp.module_id = m.id
+//     AND rp.action_id = ma.id
+//     AND rp.role_id = ?
+
+//   LEFT JOIN user_permissions up
+//     ON up.module_id = m.id
+//     AND up.action_id = ma.id
+//     AND up.user_id = ?
+// `,
+//       [user.role_id, user.id],
+//     );
+
+//     // const permissions = {};
+//     // for (const row of permRows) {
+//     //   const { module_code, action_code, is_allowed } = row;
+//     //   if (!permissions[module_code]) permissions[module_code] = {};
+//     //   permissions[module_code][action_code] = is_allowed;
+//     // }
+
+//     const permissions = {};
+
+//     permRows.forEach((p) => {
+//       const key = `${p.module_code}_${p.action_code}`;
+//       permissions[key] = p.is_allowed === 1;
+//     });
+
+//     /* =========================
+//        3️⃣ TOKEN GENERATION
+//     ========================= */
+//     const sessionId = uuidv4();
+
+//     const accessToken = jwt.sign(
+//       {
+//         id: user.id,
+//         role_id: user.role_id,
+//         session_id: sessionId,
+//         permissions,
+//       },
+//       process.env.JWT_ACCESS_SECRET,
+//       // { expiresIn: "15m" }
+//       { expiresIn: process.env.ACCESS_TOKEN_EXPIRES },
+//     );
+
+//     const refreshToken = jwt.sign(
+//       { id: user.id, session_id: sessionId },
+//       process.env.JWT_REFRESH_SECRET,
+//       // { expiresIn: "7d" }
+//       { expiresIn: process.env.REFRESH_TOKEN_EXPIRES },
+//     );
+
+//     await connection.beginTransaction();
+
+//     /* =========================
+//        4️⃣ STORE REFRESH TOKEN
+//     ========================= */
+//     await connection.query(
+//       `INSERT INTO user_refresh_tokens
+//        (user_id, session_id, refresh_token, ip_address, user_agent, expires_at)
+//        VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
+//       [
+//         user.id,
+//         sessionId,
+//         refreshToken,
+//         req.ip,
+//         req.headers["user-agent"] || "unknown",
+//       ],
+//     );
+
+//     /* =========================
+//        5️⃣ LOGIN HISTORY
+//     ========================= */
+//     await connection.query(
+//       `INSERT INTO login_history
+//        (user_id, session_id, ip_address, user_agent)
+//        VALUES (?, ?, ?, ?)`,
+//       [user.id, sessionId, req.ip, req.headers["user-agent"] || "unknown"],
+//     );
+
+//     /* =========================
+//        6️⃣ UPDATE LAST LOGIN 🔥
+//     ========================= */
+//     await connection.query(
+//       `UPDATE users_roles
+//        SET last_login_at = NOW()
+//        WHERE id = ?`,
+//       [user.id],
+//     );
+
+//     await connection.commit();
+
+//     /* =========================
+//        7️⃣ RESPONSE
+//     ========================= */
+//     return res.json({
+//       message: "Login success",
+//       accessToken,
+//       refreshToken,
+//       sessionId,
+//       permissions,
+//       last_login_at: new Date(), // optional
+//     });
+//   } catch (error) {
+//     await connection.rollback();
+
+//     console.error(error);
+//     res.status(500).json({ message: "Internal server error" });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
 export const loginUser = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -1098,26 +1264,41 @@ export const loginUser = async (req, res) => {
     let { login_id, password } = req.body;
 
     if (!login_id || !password) {
-      return res.status(400).json({ message: "Required fields missing" });
+      return res.status(400).json({
+        message: "Required fields missing",
+      });
     }
 
     login_id = login_id.trim().toLowerCase();
 
     /* =========================
-       1️⃣ GET USER
+       1️⃣ GET USER + ROLE
     ========================= */
     const [users] = await connection.query(
-      `SELECT * FROM users_roles
-       WHERE LOWER(username)=? OR LOWER(email)=? OR phone=?`,
+      `
+      SELECT 
+        u.*, 
+        r.status AS role_status
+      FROM users_roles u
+      JOIN role_based r ON u.role_id = r.id
+      WHERE LOWER(u.username)=? 
+         OR LOWER(u.email)=? 
+         OR u.phone=?
+      `,
       [login_id, login_id, login_id],
     );
 
     if (!users.length) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({
+        message: "Invalid credentials",
+      });
     }
 
     const user = users[0];
 
+    /* =========================
+       2️⃣ USER STATUS CHECK
+    ========================= */
     if (user.status !== "active") {
       return res.status(403).json({
         message: "User is inactive",
@@ -1125,86 +1306,104 @@ export const loginUser = async (req, res) => {
     }
 
     /* =========================
-       2️⃣ PASSWORD CHECK
+       3️⃣ ROLE STATUS CHECK 🔥
+    ========================= */
+    if (user.role_status !== "active") {
+      return res.status(403).json({
+        message: "Your role is inactive. Contact admin.",
+      });
+    }
+
+    /* =========================
+       4️⃣ PASSWORD CHECK
     ========================= */
     const valid = await bcrypt.compare(password, user.password);
 
     if (!valid) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({
+        message: "Invalid credentials",
+      });
     }
 
     /* =========================
-   6.5️⃣ LOAD PERMISSIONS 🔥
-========================= */
+       5️⃣ LOAD PERMISSIONS
+    ========================= */
     const [permRows] = await connection.query(
       `
-  SELECT 
-    m.code AS module_code,
-    ma.action_code,
-    COALESCE(up.is_allowed, rp.is_allowed, FALSE) AS is_allowed
-  FROM modules m
-  JOIN module_actions ma ON ma.module_id = m.id
+      SELECT 
+        m.code AS module_code,
+        ma.action_code,
+        COALESCE(up.is_allowed, rp.is_allowed, FALSE) AS is_allowed
+      FROM modules m
+      JOIN module_actions ma ON ma.module_id = m.id
 
-  LEFT JOIN role_permissions rp 
-    ON rp.module_id = m.id 
-    AND rp.action_id = ma.id 
-    AND rp.role_id = ?
+      LEFT JOIN role_permissions rp 
+        ON rp.module_id = m.id 
+        AND rp.action_id = ma.id 
+        AND rp.role_id = ?
 
-  LEFT JOIN user_permissions up
-    ON up.module_id = m.id 
-    AND up.action_id = ma.id 
-    AND up.user_id = ?
-`,
+      LEFT JOIN user_permissions up
+        ON up.module_id = m.id 
+        AND up.action_id = ma.id 
+        AND up.user_id = ?
+      `,
       [user.role_id, user.id],
     );
 
-    // const permissions = {};
-    // for (const row of permRows) {
-    //   const { module_code, action_code, is_allowed } = row;
-    //   if (!permissions[module_code]) permissions[module_code] = {};
-    //   permissions[module_code][action_code] = is_allowed;
-    // }
-
     const permissions = {};
-
     permRows.forEach((p) => {
       const key = `${p.module_code}_${p.action_code}`;
       permissions[key] = p.is_allowed === 1;
     });
 
     /* =========================
-       3️⃣ TOKEN GENERATION
+       6️⃣ TOKEN GENERATION
     ========================= */
     const sessionId = uuidv4();
+
+    // const accessToken = jwt.sign(
+    //   {
+    //     id: user.id,
+    //     role_id: user.role_id,
+    //     session_id: sessionId,
+    //     permissions,
+    //   },
+    //   process.env.JWT_ACCESS_SECRET,
+    //   { expiresIn: process.env.ACCESS_TOKEN_EXPIRES }
+    // );
 
     const accessToken = jwt.sign(
       {
         id: user.id,
         role_id: user.role_id,
         session_id: sessionId,
+        token_version: user.token_version, // 🔥 ADD THIS
         permissions,
       },
       process.env.JWT_ACCESS_SECRET,
-      // { expiresIn: "15m" }
       { expiresIn: process.env.ACCESS_TOKEN_EXPIRES },
     );
 
     const refreshToken = jwt.sign(
-      { id: user.id, session_id: sessionId },
+      {
+        id: user.id,
+        session_id: sessionId,
+      },
       process.env.JWT_REFRESH_SECRET,
-      // { expiresIn: "7d" }
       { expiresIn: process.env.REFRESH_TOKEN_EXPIRES },
     );
 
     await connection.beginTransaction();
 
     /* =========================
-       4️⃣ STORE REFRESH TOKEN
+       7️⃣ STORE REFRESH TOKEN
     ========================= */
     await connection.query(
-      `INSERT INTO user_refresh_tokens
-       (user_id, session_id, refresh_token, ip_address, user_agent, expires_at)
-       VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
+      `
+      INSERT INTO user_refresh_tokens
+      (user_id, session_id, refresh_token, ip_address, user_agent, expires_at)
+      VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))
+      `,
       [
         user.id,
         sessionId,
@@ -1215,30 +1414,33 @@ export const loginUser = async (req, res) => {
     );
 
     /* =========================
-       5️⃣ LOGIN HISTORY
+       8️⃣ LOGIN HISTORY
     ========================= */
     await connection.query(
-      `INSERT INTO login_history
-       (user_id, session_id, ip_address, user_agent)
-       VALUES (?, ?, ?, ?)`,
+      `
+      INSERT INTO login_history
+      (user_id, session_id, ip_address, user_agent)
+      VALUES (?, ?, ?, ?)
+      `,
       [user.id, sessionId, req.ip, req.headers["user-agent"] || "unknown"],
     );
 
     /* =========================
-       6️⃣ UPDATE LAST LOGIN 🔥
+       9️⃣ UPDATE LAST LOGIN
     ========================= */
     await connection.query(
-      `UPDATE users_roles 
-       SET last_login_at = NOW() 
-       WHERE id = ?`,
+      `
+      UPDATE users_roles 
+      SET last_login_at = NOW() 
+      WHERE id = ?
+      `,
       [user.id],
     );
 
     await connection.commit();
-    
 
     /* =========================
-       7️⃣ RESPONSE
+       🔟 RESPONSE
     ========================= */
     return res.json({
       message: "Login success",
@@ -1246,13 +1448,15 @@ export const loginUser = async (req, res) => {
       refreshToken,
       sessionId,
       permissions,
-      last_login_at: new Date(), // optional
+      last_login_at: new Date(),
     });
   } catch (error) {
     await connection.rollback();
-
     console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+
+    res.status(500).json({
+      message: "Internal server error",
+    });
   } finally {
     connection.release();
   }

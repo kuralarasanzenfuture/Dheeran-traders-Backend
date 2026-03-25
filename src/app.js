@@ -3,40 +3,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// Routes
-
-import roleRoutes from "./routes/roles/roles.routes.js";
-import userRolesRoutes from "./routes/roles/user.routes.js";
-import employeeDetailsRoutes from "./routes/roles/employees-details.routes.js";
-import rolePermissionsRoutes from "./routes/roles/permissions/rolePermission.routes.js";
-import userPermissionRoutes from "./routes/roles/permissions/userPermission.routes.js";
-
-import userRoutes from "./routes/billing/user.routes.js";
-import productRoutes from "./routes/billing/product.routes.js";
-import categoryRoutes from "./routes/billing/category.routes.js";
-import brandRoutes from "./routes/billing/brand.routes.js";
-import customerRoutes from "./routes/billing/customer.routes.js";
-import vendorRoutes from "./routes/billing/vendor.routes.js";
-import quantityRoutes from "./routes/billing/quantity.routes.js";
-import employeeRoutes from "./routes/billing/employee.routes.js";
-import companyBankRoutes from "./routes/billing/companyBank.routes.js";
-import vendorStockRoutes from "./routes/billing/vendorStock.routes.js";
-import customerBillingRoutes from "./routes/billing/customerBilling.routes.js";
-import customerPaymentRoutes from "./routes/billing/customerPayment.routes.js";
-import companyDetailsRoutes from "./routes/billing/companyDetails.routes.js";
-
-// chit api end points
-import planRoutes from "./routes/chit/plan.routes.js";
-import planRulesRoutes from "./routes/chit/planRules.routes.js";
-import batchRoutes from "./routes/chit/batch.routes.js";
-import batchPlanRoutes from "./routes/chit/batchPlan.routes.js";
-import chitCustomersRoutes from "./routes/chit/chitCustomer.routes.js";
-import chitAgentsAndStaffRoutes from "./routes/chit/agentAndStaff.routes.js";
-import chitCustomerSubscriptionsRoutes from "./routes/chit/customerSubcription.routes.js";
-import collectionPaymentRoutes from "./routes/chit/collectionPayment.routes.js";
-import customerInstallmentRoutes from "./routes/chit/customerInstallment.routes.js";
-
-import locationRoutes from "./routes/chit/location.routes.js";
+import routes from "./routes/indexroutes.js";
 
 // Middlewares
 import { errorHandler } from "./middlewares/error.middleware.js";
@@ -88,42 +55,8 @@ app.use(
 // API Routes
 // ------------------------------------------------------------------
 
-app.use("/api/roles", roleRoutes);
-app.use("/api/users-roles", userRolesRoutes);
-app.use("/api/employees-details", employeeDetailsRoutes);
-app.use("/api/role-permissions", rolePermissionsRoutes);
-app.use("/api/user-permissions", userPermissionRoutes);
+app.use("/api", routes);
 
-app.use("/api/users", userRoutes);
-app.use("/api/employees", employeeRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/categories", categoryRoutes);
-app.use("/api/brands", brandRoutes);
-app.use("/api/customers", customerRoutes);
-app.use("/api/vendors", vendorRoutes);
-app.use("/api/quantities", quantityRoutes);
-app.use("/api/company-bank", companyBankRoutes);
-app.use("/api/vendor-stocks", vendorStockRoutes);
-
-app.use("/api/customer-billing", customerBillingRoutes);
-app.use("/api/customer-payments", customerPaymentRoutes);
-
-app.use("/api/company-details", companyDetailsRoutes);
-
-
-// chit api end points
-app.use("/api/plans", planRoutes);
-app.use("/api/plan-rules", planRulesRoutes);
-app.use("/api/batches", batchRoutes);
-app.use("/api/batch-plans", batchPlanRoutes);
-app.use("/api/chit-customers", chitCustomersRoutes);
-app.use("/api/chit-agent-staff", chitAgentsAndStaffRoutes);
-app.use("/api/customer-subscriptions", chitCustomerSubscriptionsRoutes);
-app.use("/api/chit/payment", collectionPaymentRoutes);
-app.use("/api/installments", customerInstallmentRoutes);
-
-
-app.use("/api/locations", locationRoutes);
 
 // ------------------------------------------------------------------
 // Health Check (optional but recommended)

@@ -279,12 +279,84 @@ export const deleteRole = async (req, res) => {
   }
 };
 
+// export const updateRoleStatus = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     let { status } = req.body;
+
+//     // 🔴 Required validation
+//     if (!status) {
+//       return res.status(400).json({
+//         message: "status is required",
+//       });
+//     }
+
+//     status = status.toLowerCase().trim();
+
+//     // 🔴 Strict validation
+//     const allowedStatus = ["active", "inactive"];
+//     if (!allowedStatus.includes(status)) {
+//       return res.status(400).json({
+//         message: "status must be active or inactive",
+//       });
+//     }
+
+//     // 🔍 Get role
+//     const [[role]] = await db.query(
+//       "SELECT id, role_name, status FROM role_based WHERE id = ?",
+//       [id]
+//     );
+
+//     if (!role) {
+//       return res.status(404).json({
+//         message: "Role not found",
+//       });
+//     }
+
+//     // 🔴 Protect system role
+//     if (role.role_name === "ADMIN") {
+//       return res.status(403).json({
+//         message: "ADMIN role status cannot be changed",
+//       });
+//     }
+
+//     // ⚠️ Prevent unnecessary DB hit
+//     if (role.status === status) {
+//       return res.status(200).json({
+//         message: `Role already ${status}`,
+//       });
+//     }
+
+//     // ✅ Update
+//     await db.query(
+//       "UPDATE role_based SET status = ? WHERE id = ?",
+//       [status, id]
+//     );
+
+//     res.json({
+//       message: `Role ${status} successfully`,
+//     });
+
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({
+//       message: "Server error",
+//     });
+//   }
+// };
+
+
+// Uses transaction (important)
+// Updates role
+// Updates users
+// Invalidates sessions
 export const updateRoleStatus = async (req, res) => {
+  const connection = await db.getConnection();
+
   try {
     const { id } = req.params;
     let { status } = req.body;
 
-    // 🔴 Required validation
     if (!status) {
       return res.status(400).json({
         message: "status is required",
@@ -293,54 +365,145 @@ export const updateRoleStatus = async (req, res) => {
 
     status = status.toLowerCase().trim();
 
-    // 🔴 Strict validation
-    const allowedStatus = ["active", "inactive"];
-    if (!allowedStatus.includes(status)) {
+    if (!["active", "inactive"].includes(status)) {
       return res.status(400).json({
         message: "status must be active or inactive",
       });
     }
 
-    // 🔍 Get role
-    const [[role]] = await db.query(
+    await connection.beginTransaction();
+
+    /* =========================
+       1️⃣ GET ROLE
+    ========================= */
+    const [[role]] = await connection.query(
       "SELECT id, role_name, status FROM role_based WHERE id = ?",
       [id]
     );
 
     if (!role) {
+      await connection.rollback();
       return res.status(404).json({
         message: "Role not found",
       });
     }
 
-    // 🔴 Protect system role
+    // 🔴 Protect ADMIN
     if (role.role_name === "ADMIN") {
+      await connection.rollback();
       return res.status(403).json({
-        message: "ADMIN role status cannot be changed",
+        message: "ADMIN role cannot be modified",
       });
     }
 
-    // ⚠️ Prevent unnecessary DB hit
+    // No change
     if (role.status === status) {
-      return res.status(200).json({
+      await connection.rollback();
+      return res.json({
         message: `Role already ${status}`,
       });
     }
 
-    // ✅ Update
-    await db.query(
+    /* =========================
+       2️⃣ UPDATE ROLE
+    ========================= */
+    await connection.query(
       "UPDATE role_based SET status = ? WHERE id = ?",
       [status, id]
     );
 
+    /* =========================
+       3️⃣ UPDATE USERS 🔥
+    ========================= */
+    await connection.query(
+      "UPDATE users_roles SET status = ? WHERE role_id = ?",
+      [status, id]
+    );
+
+    /* =========================
+       4️⃣ FORCE LOGOUT 🔥🔥
+    ========================= */
+    await connection.query(
+      `
+      UPDATE users_roles 
+      SET token_version = token_version + 1
+      WHERE role_id = ?
+      `,
+      [id]
+    );
+
+    await connection.commit();
+
     res.json({
-      message: `Role ${status} successfully`,
+      message: `Role and all users ${status} successfully`,
     });
 
   } catch (err) {
+    await connection.rollback();
     console.error(err);
+
     res.status(500).json({
       message: "Server error",
     });
+
+  } finally {
+    connection.release();
   }
 };
+
+// export const updateRoleStatus = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     let { status } = req.body;
+
+//     status = status?.toLowerCase();
+
+//     if (!["active", "inactive"].includes(status)) {
+//       return res.status(400).json({
+//         message: "Invalid status",
+//       });
+//     }
+
+//     const [[role]] = await db.query(
+//       "SELECT * FROM role_based WHERE id = ?",
+//       [id]
+//     );
+
+//     if (!role) {
+//       return res.status(404).json({
+//         message: "Role not found",
+//       });
+//     }
+
+//     if (role.role_name === "ADMIN") {
+//       return res.status(403).json({
+//         message: "ADMIN role cannot be modified",
+//       });
+//     }
+
+//     await db.query(
+//       "UPDATE role_based SET status = ? WHERE id = ?",
+//       [status, id]
+//     );
+
+//     // 🔴 Kill all sessions of users under this role
+//     if (status === "inactive") {
+//       await db.query(`
+//         UPDATE users_roles 
+//         SET token_version = token_version + 1
+//         WHERE role_id = ?
+//       `, [id]);
+//     }
+
+//     res.json({
+//       message: `Role ${status} successfully`,
+//     });
+
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({
+//       message: "Server error",
+//     });
+//   }
+// };
+

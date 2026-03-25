@@ -1,0 +1,91 @@
+PRODUCTION FOLDER STRUCTURE
+
+
+src/
+│
+├── config/
+│   ├── db.js
+│   ├── env.js
+│   └── constants.js
+│
+├── controllers/
+│   ├── auth/
+│   │   └── auth.controller.js
+│   │
+│   ├── roles/
+│   │   ├── roles.controller.js
+│   │   ├── roleStatus.controller.js
+│   │   └── permissions.controller.js
+│   │
+│   ├── users/
+│   │   └── users.controller.js
+│   │
+│   ├── billing/
+│   │   ├── product.controller.js
+│   │   ├── category.controller.js
+│   │   ├── brand.controller.js
+│   │   ├── customer.controller.js
+│   │   ├── vendor.controller.js
+│   │   ├── billing.controller.js
+│   │   └── payment.controller.js
+│   │
+│   ├── chit/
+│   │   ├── plan.controller.js
+│   │   ├── batch.controller.js
+│   │   ├── subscription.controller.js
+│   │   ├── installment.controller.js
+│   │   └── collection.controller.js
+│
+├── routes/
+│   ├── index.js              🔥 (main router)
+│   │
+│   ├── auth.routes.js        (PUBLIC)
+│   │
+│   ├── roles.routes.js
+│   ├── users.routes.js
+│   ├── permissions.routes.js
+│   │
+│   ├── billing/
+│   │   ├── product.routes.js
+│   │   ├── category.routes.js
+│   │   ├── brand.routes.js
+│   │   ├── customer.routes.js
+│   │   ├── vendor.routes.js
+│   │   ├── billing.routes.js
+│   │   └── payment.routes.js
+│   │
+│   ├── chit/
+│   │   ├── plan.routes.js
+│   │   ├── batch.routes.js
+│   │   ├── subscription.routes.js
+│   │   ├── installment.routes.js
+│   │   └── collection.routes.js
+│
+├── middlewares/
+│   ├── auth.middleware.js
+│   ├── session.middleware.js
+│   ├── permission.middleware.js
+│   ├── error.middleware.js
+│   └── validation.middleware.js
+│
+├── services/                 🔥 (business logic)
+│   ├── auth.service.js
+│   ├── user.service.js
+│   ├── role.service.js
+│   ├── permission.service.js
+│
+├── repositories/             🔥 (DB queries layer)
+│   ├── user.repository.js
+│   ├── role.repository.js
+│   ├── permission.repository.js
+│
+├── utils/
+│   ├── jwt.js
+│   ├── logger.js
+│   └── helpers.js
+│
+├── jobs/
+│   └── cleanupTokens.job.js
+│
+├── app.js
+└── server.js

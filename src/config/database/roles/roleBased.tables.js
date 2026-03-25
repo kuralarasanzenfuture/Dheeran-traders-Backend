@@ -21,6 +21,7 @@ export const createRoleBasedTables = async (db) => {
             id INT AUTO_INCREMENT PRIMARY KEY,
             role_name VARCHAR(100) UNIQUE NOT NULL,
             role_description TEXT,
+            status ENUM('active', 'inactive') DEFAULT 'active',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
         `);

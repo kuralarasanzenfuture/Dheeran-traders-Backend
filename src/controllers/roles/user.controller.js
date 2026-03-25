@@ -355,7 +355,7 @@ export const createUser = async (req, res) => {
 
     if (!username || !password || !role_id) {
       return res.status(400).json({
-        message: "Username, password and role required"
+        message: "Username, password and role required",
       });
     }
 
@@ -365,7 +365,7 @@ export const createUser = async (req, res) => {
     // check role
     const [role] = await db.query(
       `SELECT role_name FROM role_based WHERE id=?`,
-      [role_id]
+      [role_id],
     );
 
     if (!role.length) {
@@ -374,18 +374,16 @@ export const createUser = async (req, res) => {
 
     // only one admin allowed
     if (role[0].role_name === "ADMIN") {
-
       const [admin] = await db.query(
         `SELECT id FROM users_roles WHERE role_id=?`,
-        [role_id]
+        [role_id],
       );
 
       if (admin.length > 0) {
         return res.status(400).json({
-          message: "Only one ADMIN allowed"
+          message: "Only one ADMIN allowed",
         });
       }
-
     }
 
     const errors = {};
@@ -393,7 +391,7 @@ export const createUser = async (req, res) => {
     // username check
     const [usernameExists] = await db.query(
       `SELECT id FROM users_roles WHERE LOWER(username)=?`,
-      [username]
+      [username],
     );
 
     if (usernameExists.length) {
@@ -404,7 +402,7 @@ export const createUser = async (req, res) => {
     if (email) {
       const [emailExists] = await db.query(
         `SELECT id FROM users_roles WHERE LOWER(email)=?`,
-        [email]
+        [email],
       );
 
       if (emailExists.length) {
@@ -416,7 +414,7 @@ export const createUser = async (req, res) => {
     if (phone) {
       const [phoneExists] = await db.query(
         `SELECT id FROM users_roles WHERE phone=?`,
-        [phone]
+        [phone],
       );
 
       if (phoneExists.length) {
@@ -434,7 +432,7 @@ export const createUser = async (req, res) => {
       `INSERT INTO users_roles
        (username,email,phone,password,role_id)
        VALUES (?,?,?,?,?)`,
-      [username, email, phone, hash, role_id]
+      [username, email, phone, hash, role_id],
     );
 
     res.json({
@@ -443,15 +441,12 @@ export const createUser = async (req, res) => {
       username,
       email,
       phone,
-      role: role[0].role_name
+      role: role[0].role_name,
     });
-
   } catch (error) {
-
     res.status(500).json({
-      message: error.message
+      message: error.message,
     });
-
   }
 };
 
@@ -838,8 +833,8 @@ LOGIN USER
 
 //     // ❗ OPTIONAL: single session (remove if multi-device allowed)
 //     await db.query(
-//       `UPDATE user_refresh_tokens 
-//        SET is_active=0 
+//       `UPDATE user_refresh_tokens
+//        SET is_active=0
 //        WHERE user_id=?`,
 //       [user.id]
 //     );
@@ -967,6 +962,135 @@ LOGIN USER
 //   }
 // };
 
+// export const loginUser = async (req, res) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     let { login_id, password } = req.body;
+
+//     if (!login_id || !password) {
+//       return res.status(400).json({ message: "Required fields missing" });
+//     }
+
+//     login_id = login_id.trim().toLowerCase();
+
+//     /* =========================
+//        1️⃣ GET USER
+//     ========================= */
+//     const [users] = await connection.query(
+//       `SELECT * FROM users_roles
+//        WHERE LOWER(username)=? OR LOWER(email)=? OR phone=?`,
+//       [login_id, login_id, login_id]
+//     );
+
+//     if (!users.length) {
+//       return res.status(401).json({ message: "Invalid credentials" });
+//     }
+
+//     const user = users[0];
+
+//     if (user.status !== "active") {
+//       return res.status(403).json({
+//         message: "User is inactive"
+//       });
+//     }
+
+//     /* =========================
+//        2️⃣ PASSWORD CHECK
+//     ========================= */
+//     const valid = await bcrypt.compare(password, user.password);
+
+//     if (!valid) {
+//       return res.status(401).json({ message: "Invalid credentials" });
+//     }
+
+//     /* =========================
+//        3️⃣ TOKEN GENERATION
+//     ========================= */
+//     const sessionId = uuidv4();
+
+//     const accessToken = jwt.sign(
+//       { id: user.id, role_id: user.role_id, session_id: sessionId },
+//       process.env.JWT_ACCESS_SECRET,
+//       // { expiresIn: "15m" }
+//       { expiresIn: process.env.ACCESS_TOKEN_EXPIRES }
+//     );
+
+//     const refreshToken = jwt.sign(
+//       { id: user.id, session_id: sessionId },
+//       process.env.JWT_REFRESH_SECRET,
+//       // { expiresIn: "7d" }
+//       { expiresIn: process.env.REFRESH_TOKEN_EXPIRES }
+//     );
+
+//     await connection.beginTransaction();
+
+//     /* =========================
+//        4️⃣ STORE REFRESH TOKEN
+//     ========================= */
+//     await connection.query(
+//       `INSERT INTO user_refresh_tokens
+//        (user_id, session_id, refresh_token, ip_address, user_agent, expires_at)
+//        VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
+//       [
+//         user.id,
+//         sessionId,
+//         refreshToken,
+//         req.ip,
+//         req.headers["user-agent"] || "unknown",
+//       ]
+//     );
+
+//     /* =========================
+//        5️⃣ LOGIN HISTORY
+//     ========================= */
+//     await connection.query(
+//       `INSERT INTO login_history
+//        (user_id, session_id, ip_address, user_agent)
+//        VALUES (?, ?, ?, ?)`,
+//       [
+//         user.id,
+//         sessionId,
+//         req.ip,
+//         req.headers["user-agent"] || "unknown",
+//       ]
+//     );
+
+//     /* =========================
+//        6️⃣ UPDATE LAST LOGIN 🔥
+//     ========================= */
+//     await connection.query(
+//       `UPDATE users_roles
+//        SET last_login_at = NOW()
+//        WHERE id = ?`,
+//       [user.id]
+//     );
+
+//     await connection.commit();
+
+//     /* =========================
+//        7️⃣ RESPONSE
+//     ========================= */
+//     return res.json({
+//       message: "Login success",
+//       accessToken,
+//       refreshToken,
+//       sessionId,
+//       last_login_at: new Date() // optional
+//     });
+
+//   } catch (error) {
+//     await connection.rollback();
+
+//     console.error(error);
+//     res.status(500).json({ message: "Internal server error" });
+
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+// implementation Load all permissions once
 export const loginUser = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -985,7 +1109,7 @@ export const loginUser = async (req, res) => {
     const [users] = await connection.query(
       `SELECT * FROM users_roles
        WHERE LOWER(username)=? OR LOWER(email)=? OR phone=?`,
-      [login_id, login_id, login_id]
+      [login_id, login_id, login_id],
     );
 
     if (!users.length) {
@@ -996,7 +1120,7 @@ export const loginUser = async (req, res) => {
 
     if (user.status !== "active") {
       return res.status(403).json({
-        message: "User is inactive"
+        message: "User is inactive",
       });
     }
 
@@ -1010,22 +1134,66 @@ export const loginUser = async (req, res) => {
     }
 
     /* =========================
+   6.5️⃣ LOAD PERMISSIONS 🔥
+========================= */
+    const [permRows] = await connection.query(
+      `
+  SELECT 
+    m.code AS module_code,
+    ma.action_code,
+    COALESCE(up.is_allowed, rp.is_allowed, FALSE) AS is_allowed
+  FROM modules m
+  JOIN module_actions ma ON ma.module_id = m.id
+
+  LEFT JOIN role_permissions rp 
+    ON rp.module_id = m.id 
+    AND rp.action_id = ma.id 
+    AND rp.role_id = ?
+
+  LEFT JOIN user_permissions up
+    ON up.module_id = m.id 
+    AND up.action_id = ma.id 
+    AND up.user_id = ?
+`,
+      [user.role_id, user.id],
+    );
+
+    // const permissions = {};
+    // for (const row of permRows) {
+    //   const { module_code, action_code, is_allowed } = row;
+    //   if (!permissions[module_code]) permissions[module_code] = {};
+    //   permissions[module_code][action_code] = is_allowed;
+    // }
+
+    const permissions = {};
+
+    permRows.forEach((p) => {
+      const key = `${p.module_code}_${p.action_code}`;
+      permissions[key] = p.is_allowed === 1;
+    });
+
+    /* =========================
        3️⃣ TOKEN GENERATION
     ========================= */
     const sessionId = uuidv4();
 
     const accessToken = jwt.sign(
-      { id: user.id, role_id: user.role_id, session_id: sessionId },
+      {
+        id: user.id,
+        role_id: user.role_id,
+        session_id: sessionId,
+        permissions,
+      },
       process.env.JWT_ACCESS_SECRET,
       // { expiresIn: "15m" }
-      { expiresIn: process.env.ACCESS_TOKEN_EXPIRES }
+      { expiresIn: process.env.ACCESS_TOKEN_EXPIRES },
     );
 
     const refreshToken = jwt.sign(
       { id: user.id, session_id: sessionId },
       process.env.JWT_REFRESH_SECRET,
       // { expiresIn: "7d" }
-      { expiresIn: process.env.REFRESH_TOKEN_EXPIRES }
+      { expiresIn: process.env.REFRESH_TOKEN_EXPIRES },
     );
 
     await connection.beginTransaction();
@@ -1043,7 +1211,7 @@ export const loginUser = async (req, res) => {
         refreshToken,
         req.ip,
         req.headers["user-agent"] || "unknown",
-      ]
+      ],
     );
 
     /* =========================
@@ -1053,12 +1221,7 @@ export const loginUser = async (req, res) => {
       `INSERT INTO login_history
        (user_id, session_id, ip_address, user_agent)
        VALUES (?, ?, ?, ?)`,
-      [
-        user.id,
-        sessionId,
-        req.ip,
-        req.headers["user-agent"] || "unknown",
-      ]
+      [user.id, sessionId, req.ip, req.headers["user-agent"] || "unknown"],
     );
 
     /* =========================
@@ -1068,10 +1231,11 @@ export const loginUser = async (req, res) => {
       `UPDATE users_roles 
        SET last_login_at = NOW() 
        WHERE id = ?`,
-      [user.id]
+      [user.id],
     );
 
     await connection.commit();
+    
 
     /* =========================
        7️⃣ RESPONSE
@@ -1081,15 +1245,14 @@ export const loginUser = async (req, res) => {
       accessToken,
       refreshToken,
       sessionId,
-      last_login_at: new Date() // optional
+      permissions,
+      last_login_at: new Date(), // optional
     });
-
   } catch (error) {
     await connection.rollback();
 
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
-
   } finally {
     connection.release();
   }
@@ -1194,8 +1357,8 @@ REFRESH TOKEN
 //     // check in DB + expiry + not revoked
 //     const [rows] = await db.query(
 //       `SELECT * FROM user_refresh_tokens
-//        WHERE refresh_token=? 
-//        AND revoked=0 
+//        WHERE refresh_token=?
+//        AND revoked=0
 //        AND expires_at > NOW()`,
 //       [refreshToken]
 //     );
@@ -1276,8 +1439,8 @@ REFRESH TOKEN
 
 //     const [rows] = await db.query(
 //       `SELECT * FROM user_refresh_tokens
-//        WHERE refresh_token=? 
-//        AND revoked=0 
+//        WHERE refresh_token=?
+//        AND revoked=0
 //        AND expires_at > NOW()`,
 //       [token]
 //     );
@@ -1357,7 +1520,7 @@ REFRESH TOKEN
 
 //     // 🔍 CHECK DB FIRST
 //     const [rows] = await db.query(
-//       `SELECT * FROM user_refresh_tokens 
+//       `SELECT * FROM user_refresh_tokens
 //        WHERE refresh_token=?`,
 //       [refreshToken]
 //     );
@@ -1374,8 +1537,8 @@ REFRESH TOKEN
 //     if (!tokenData.is_active) {
 //       // kill all sessions
 //       await db.query(
-//         `UPDATE user_refresh_tokens 
-//          SET is_active=0 
+//         `UPDATE user_refresh_tokens
+//          SET is_active=0
 //          WHERE user_id=?`,
 //         [tokenData.user_id]
 //       );
@@ -1431,8 +1594,8 @@ REFRESH TOKEN
 
 //     // ❌ deactivate old
 //     await db.query(
-//       `UPDATE user_refresh_tokens 
-//        SET is_active=0 
+//       `UPDATE user_refresh_tokens
+//        SET is_active=0
 //        WHERE refresh_token=?`,
 //       [refreshToken]
 //     );
@@ -1463,6 +1626,98 @@ REFRESH TOKEN
 //   }
 // };
 
+// export const refreshToken = async (req, res) => {
+//   try {
+//     const { refreshToken } = req.body;
+
+//     if (!refreshToken) {
+//       return res.status(401).json({ message: "Token required" });
+//     }
+
+//     const decoded = jwt.verify(refreshToken, REFRESH_SECRET);
+
+//     const [rows] = await db.query(
+//       `SELECT * FROM user_refresh_tokens
+//        WHERE refresh_token=? AND is_active=1`,
+//       [refreshToken]
+//     );
+
+//     if (!rows.length) {
+//       return res.status(403).json({ message: "Invalid token" });
+//     }
+
+//     const tokenData = rows[0];
+
+//     // 🚨 IMPORTANT: session match
+//     if (tokenData.session_id !== decoded.session_id) {
+//       return res.status(403).json({ message: "Session mismatch" });
+//     }
+
+//     const newRefreshToken = jwt.sign(
+//       { id: decoded.id, session_id: decoded.session_id },
+//       REFRESH_SECRET,
+//       { expiresIn: "7d" }
+//     );
+
+//     const newAccessToken = jwt.sign(
+//       { id: decoded.id, session_id: decoded.session_id },
+//       ACCESS_SECRET,
+//       { expiresIn: "15m" }
+//     );
+
+//     // rotate ONLY this session
+//     await db.query(
+//       `UPDATE user_refresh_tokens
+//        SET is_active=0
+//        WHERE refresh_token=?`,
+//       [refreshToken]
+//     );
+
+//     await db.query(
+//       `INSERT INTO user_refresh_tokens
+//        (user_id, session_id, refresh_token, ip_address, user_agent, expires_at)
+//        VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
+//       [
+//         decoded.id,
+//         decoded.session_id,
+//         newRefreshToken,
+//         req.ip,
+//         req.headers["user-agent"],
+//       ]
+//     );
+
+//     res.json({
+//       accessToken: newAccessToken,
+//       refreshToken: newRefreshToken
+//     });
+
+//   } catch (err) {
+//     res.status(403).json({ message: "Invalid token" });
+//   }
+// };
+
+// FINAL REFRESH TOKEN WITH PERMISSIONS
+// | Problem                  | Solution               |
+// | ------------------------ | ---------------------- |
+// | Permission changed in DB | ✅ Reflected on refresh |
+// | User role changed        | ✅ Updated instantly    |
+// | No re-login needed       | ✅ Done                 |
+// | Old token stale          | ❌ Removed              |
+
+// FLOW NOW
+
+// LOGIN → load permissions → token issued
+
+// Later...
+
+// ADMIN changes permission
+
+// User calls refreshToken →
+
+// → reload permissions
+// → new accessToken
+// → updated access instantly ✅
+
 export const refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
@@ -1471,12 +1726,14 @@ export const refreshToken = async (req, res) => {
       return res.status(401).json({ message: "Token required" });
     }
 
+    // ✅ Verify token
     const decoded = jwt.verify(refreshToken, REFRESH_SECRET);
 
+    // ✅ Check DB token
     const [rows] = await db.query(
       `SELECT * FROM user_refresh_tokens 
        WHERE refresh_token=? AND is_active=1`,
-      [refreshToken]
+      [refreshToken],
     );
 
     if (!rows.length) {
@@ -1485,29 +1742,83 @@ export const refreshToken = async (req, res) => {
 
     const tokenData = rows[0];
 
-    // 🚨 IMPORTANT: session match
+    // ✅ Session validation
     if (tokenData.session_id !== decoded.session_id) {
       return res.status(403).json({ message: "Session mismatch" });
     }
 
+    // ====================================================
+    // 🔥 NEW: LOAD USER + PERMISSIONS (IMPORTANT)
+    // ====================================================
+
+    const [[user]] = await db.query(
+      `SELECT id, role_id, status FROM users_roles WHERE id=?`,
+      [decoded.id],
+    );
+
+    if (!user || user.status !== "active") {
+      return res.status(403).json({ message: "User inactive" });
+    }
+
+    // 🔥 Load permissions
+    const [permRows] = await db.query(
+      `
+      SELECT 
+        m.code AS module_code,
+        ma.action_code,
+        COALESCE(up.is_allowed, rp.is_allowed, FALSE) AS is_allowed
+      FROM modules m
+      JOIN module_actions ma ON ma.module_id = m.id
+
+      LEFT JOIN role_permissions rp 
+        ON rp.module_id = m.id 
+        AND rp.action_id = ma.id 
+        AND rp.role_id = ?
+
+      LEFT JOIN user_permissions up
+        ON up.module_id = m.id 
+        AND up.action_id = ma.id 
+        AND up.user_id = ?
+    `,
+      [user.role_id, user.id],
+    );
+
+    // 🔥 Convert to map
+    const permissions = {};
+    permRows.forEach((p) => {
+      permissions[`${p.module_code}_${p.action_code}`] = p.is_allowed === 1;
+    });
+
+    // ====================================================
+    // 🔄 TOKEN ROTATION
+    // ====================================================
+
     const newRefreshToken = jwt.sign(
-      { id: decoded.id, session_id: decoded.session_id },
+      { id: user.id, session_id: decoded.session_id },
       REFRESH_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: process.env.REFRESH_TOKEN_EXPIRES },
     );
 
     const newAccessToken = jwt.sign(
-      { id: decoded.id, session_id: decoded.session_id },
+      {
+        id: user.id,
+        role_id: user.role_id,
+        session_id: decoded.session_id,
+        permissions, // 🔥 updated permissions
+      },
       ACCESS_SECRET,
-      { expiresIn: "15m" }
+      { expiresIn: process.env.ACCESS_TOKEN_EXPIRES },
     );
 
-    // rotate ONLY this session
+    // ====================================================
+    // 🔄 UPDATE TOKENS (ROTATION)
+    // ====================================================
+
     await db.query(
       `UPDATE user_refresh_tokens 
        SET is_active=0 
        WHERE refresh_token=?`,
-      [refreshToken]
+      [refreshToken],
     );
 
     await db.query(
@@ -1515,20 +1826,26 @@ export const refreshToken = async (req, res) => {
        (user_id, session_id, refresh_token, ip_address, user_agent, expires_at)
        VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
       [
-        decoded.id,
+        user.id,
         decoded.session_id,
         newRefreshToken,
         req.ip,
-        req.headers["user-agent"],
-      ]
+        req.headers["user-agent"] || "unknown",
+      ],
     );
 
-    res.json({
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken
-    });
+    // ====================================================
+    // ✅ RESPONSE
+    // ====================================================
 
+    res.json({
+      message: "Token refreshed",
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      permissions, // 🔥 optional (frontend update)
+    });
   } catch (err) {
+    console.error(err);
     res.status(403).json({ message: "Invalid token" });
   }
 };
@@ -1631,7 +1948,6 @@ LOGOUT USER
 //   res.json({ message: "Logged out" });
 // };
 
-
 // export const logoutUser = async (req, res) => {
 //   try {
 //     const { refreshToken } = req.body;
@@ -1644,7 +1960,7 @@ LOGOUT USER
 
 //     // 🔍 GET TOKEN DATA
 //     const [rows] = await db.query(
-//       `SELECT * FROM user_refresh_tokens 
+//       `SELECT * FROM user_refresh_tokens
 //        WHERE refresh_token=?`,
 //       [refreshToken]
 //     );
@@ -1659,8 +1975,8 @@ LOGOUT USER
 
 //     // ❌ deactivate token
 //     await db.query(
-//       `UPDATE user_refresh_tokens 
-//        SET is_active=0 
+//       `UPDATE user_refresh_tokens
+//        SET is_active=0
 //        WHERE refresh_token=?`,
 //       [refreshToken]
 //     );
@@ -1669,7 +1985,7 @@ LOGOUT USER
 //     await db.query(
 //       `UPDATE login_history
 //        SET logout_time=NOW()
-//        WHERE user_id=? 
+//        WHERE user_id=?
 //        AND logout_time IS NULL
 //        ORDER BY login_time DESC
 //        LIMIT 1`,
@@ -1698,7 +2014,7 @@ export const logoutUser = async (req, res) => {
 
     const [rows] = await db.query(
       `SELECT * FROM user_refresh_tokens WHERE refresh_token=?`,
-      [refreshToken]
+      [refreshToken],
     );
 
     if (!rows.length) {
@@ -1713,7 +2029,7 @@ export const logoutUser = async (req, res) => {
       `UPDATE user_refresh_tokens 
        SET is_active=0 
        WHERE session_id=?`,
-      [sessionId]
+      [sessionId],
     );
 
     // 📜 update logout
@@ -1721,11 +2037,10 @@ export const logoutUser = async (req, res) => {
       `UPDATE login_history
        SET logout_time=NOW()
        WHERE session_id=? AND logout_time IS NULL`,
-      [sessionId]
+      [sessionId],
     );
 
     res.json({ message: "Logged out from this device" });
-
   } catch (err) {
     res.status(500).json({ message: "Internal server error" });
   }
@@ -1800,14 +2115,14 @@ export const logoutAllDevices = async (req, res) => {
     `UPDATE user_refresh_tokens 
      SET is_active=0 
      WHERE user_id=?`,
-    [userId]
+    [userId],
   );
 
   await db.query(
     `UPDATE login_history
      SET logout_time=NOW()
      WHERE user_id=? AND logout_time IS NULL`,
-    [userId]
+    [userId],
   );
 
   res.json({ message: "Logged out from all devices" });
@@ -1893,10 +2208,9 @@ export const checkPhone = async (req, res) => {
       });
     }
 
-    const [rows] = await db.query(
-      `SELECT id FROM users_roles WHERE phone=?`,
-      [phone],
-    );
+    const [rows] = await db.query(`SELECT id FROM users_roles WHERE phone=?`, [
+      phone,
+    ]);
 
     if (rows.length > 0) {
       return res.json({
@@ -1915,8 +2229,6 @@ export const checkPhone = async (req, res) => {
     });
   }
 };
-
-
 
 // export const updateUser = async (req, res) => {
 //   try {
@@ -1987,7 +2299,7 @@ export const checkPhone = async (req, res) => {
 //         // only one admin allowed
 //         if (role[0].role_name === "ADMIN") {
 //           const [admin] = await db.query(
-//             `SELECT id FROM users_roles 
+//             `SELECT id FROM users_roles
 //              WHERE role_id=? AND id != ?`,
 //             [role_id, userId]
 //           );
@@ -2012,7 +2324,7 @@ export const checkPhone = async (req, res) => {
 //     const errors = {};
 
 //     const [usernameExists] = await db.query(
-//       `SELECT id FROM users_roles 
+//       `SELECT id FROM users_roles
 //        WHERE LOWER(username)=? AND id != ?`,
 //       [username, userId]
 //     );
@@ -2023,7 +2335,7 @@ export const checkPhone = async (req, res) => {
 
 //     if (email) {
 //       const [emailExists] = await db.query(
-//         `SELECT id FROM users_roles 
+//         `SELECT id FROM users_roles
 //          WHERE LOWER(email)=? AND id != ?`,
 //         [email, userId]
 //       );
@@ -2035,7 +2347,7 @@ export const checkPhone = async (req, res) => {
 
 //     if (phone) {
 //       const [phoneExists] = await db.query(
-//         `SELECT id FROM users_roles 
+//         `SELECT id FROM users_roles
 //          WHERE phone=? AND id != ?`,
 //         [phone, userId]
 //       );
@@ -2064,8 +2376,8 @@ export const checkPhone = async (req, res) => {
 //     ========================= */
 
 //     await db.query(
-//       `UPDATE users_roles 
-//        SET username=?, email=?, phone=?, password=?, role_id=?, status=? 
+//       `UPDATE users_roles
+//        SET username=?, email=?, phone=?, password=?, role_id=?, status=?
 //        WHERE id=?`,
 //       [
 //         username,
@@ -2104,7 +2416,7 @@ export const updateUser = async (req, res) => {
     ========================= */
     if (!req.user || req.user.role_id !== 1) {
       return res.status(403).json({
-        message: "Only admin can update users"
+        message: "Only admin can update users",
       });
     }
 
@@ -2113,7 +2425,7 @@ export const updateUser = async (req, res) => {
     ========================= */
     if (!username) {
       return res.status(400).json({
-        message: "Username required"
+        message: "Username required",
       });
     }
 
@@ -2122,13 +2434,13 @@ export const updateUser = async (req, res) => {
 
     if (phone && !/^[0-9]{10}$/.test(phone)) {
       return res.status(400).json({
-        message: "Invalid phone number"
+        message: "Invalid phone number",
       });
     }
 
     if (status !== undefined && !["active", "inactive"].includes(status)) {
       return res.status(400).json({
-        message: "Invalid status"
+        message: "Invalid status",
       });
     }
 
@@ -2137,7 +2449,7 @@ export const updateUser = async (req, res) => {
     ========================= */
     const [userArr] = await connection.query(
       `SELECT * FROM users_roles WHERE id=? FOR UPDATE`,
-      [userId]
+      [userId],
     );
 
     if (!userArr.length) {
@@ -2151,7 +2463,7 @@ export const updateUser = async (req, res) => {
        3️⃣ GET ADMIN ROLE ID
     ========================= */
     const [adminRoleRow] = await connection.query(
-      `SELECT id FROM role_based WHERE UPPER(role_name)='ADMIN' LIMIT 1`
+      `SELECT id FROM role_based WHERE UPPER(role_name)='ADMIN' LIMIT 1`,
     );
 
     const adminRoleId = adminRoleRow[0]?.id;
@@ -2169,13 +2481,13 @@ export const updateUser = async (req, res) => {
     // validate role
     const [role] = await connection.query(
       `SELECT role_name FROM role_based WHERE id=?`,
-      [role_id]
+      [role_id],
     );
 
     if (!role.length) {
       await connection.rollback();
       return res.status(400).json({
-        message: "Invalid role"
+        message: "Invalid role",
       });
     }
 
@@ -2190,7 +2502,7 @@ export const updateUser = async (req, res) => {
       if (role_id !== existingUser.role_id) {
         await connection.rollback();
         return res.status(400).json({
-          message: "Cannot change ADMIN role"
+          message: "Cannot change ADMIN role",
         });
       }
 
@@ -2198,7 +2510,7 @@ export const updateUser = async (req, res) => {
       if (status === "inactive") {
         await connection.rollback();
         return res.status(400).json({
-          message: "Cannot deactivate ADMIN"
+          message: "Cannot deactivate ADMIN",
         });
       }
     }
@@ -2207,13 +2519,13 @@ export const updateUser = async (req, res) => {
     if (newRoleName === "ADMIN" && role_id !== existingUser.role_id) {
       const [adminCheck] = await connection.query(
         `SELECT COUNT(*) as count FROM users_roles WHERE role_id=?`,
-        [adminRoleId]
+        [adminRoleId],
       );
 
       if (adminCheck[0].count > 0) {
         await connection.rollback();
         return res.status(400).json({
-          message: "Only one ADMIN allowed"
+          message: "Only one ADMIN allowed",
         });
       }
     }
@@ -2225,14 +2537,14 @@ export const updateUser = async (req, res) => {
 
     const [u1] = await connection.query(
       `SELECT id FROM users_roles WHERE LOWER(username)=? AND id != ?`,
-      [username, userId]
+      [username, userId],
     );
     if (u1.length) errors.username = "Username already exists";
 
     if (email) {
       const [u2] = await connection.query(
         `SELECT id FROM users_roles WHERE LOWER(email)=? AND id != ?`,
-        [email, userId]
+        [email, userId],
       );
       if (u2.length) errors.email = "Email already exists";
     }
@@ -2240,7 +2552,7 @@ export const updateUser = async (req, res) => {
     if (phone) {
       const [u3] = await connection.query(
         `SELECT id FROM users_roles WHERE phone=? AND id != ?`,
-        [phone, userId]
+        [phone, userId],
       );
       if (u3.length) errors.phone = "Phone already exists";
     }
@@ -2266,28 +2578,19 @@ export const updateUser = async (req, res) => {
       `UPDATE users_roles 
        SET username=?, email=?, phone=?, password=?, role_id=?, status=? 
        WHERE id=?`,
-      [
-        username,
-        email,
-        phone,
-        hashedPassword,
-        role_id,
-        status,
-        userId
-      ]
+      [username, email, phone, hashedPassword, role_id, status, userId],
     );
 
     await connection.commit();
 
     res.json({
-      message: "User updated successfully"
+      message: "User updated successfully",
     });
-
   } catch (error) {
     await connection.rollback();
 
     res.status(500).json({
-      message: error.message
+      message: error.message,
     });
   } finally {
     connection.release();
@@ -2316,7 +2619,7 @@ export const updateUserStrict = async (req, res) => {
     ========================= */
     if (!username || !password || !role_id || !status) {
       return res.status(400).json({
-        message: "username, password, role_id, status required"
+        message: "username, password, role_id, status required",
       });
     }
 
@@ -2336,7 +2639,7 @@ export const updateUserStrict = async (req, res) => {
     ========================= */
     const [userArr] = await connection.query(
       `SELECT * FROM users_roles WHERE id=? FOR UPDATE`,
-      [userId]
+      [userId],
     );
 
     if (!userArr.length) {
@@ -2351,7 +2654,7 @@ export const updateUserStrict = async (req, res) => {
     ========================= */
     const [role] = await connection.query(
       `SELECT role_name FROM role_based WHERE id=?`,
-      [role_id]
+      [role_id],
     );
 
     if (!role.length) {
@@ -2362,26 +2665,25 @@ export const updateUserStrict = async (req, res) => {
     /* =========================
        ADMIN PROTECTION
     ========================= */
-    const isAdmin =
-      role[0].role_name.toUpperCase() === "ADMIN";
+    const isAdmin = role[0].role_name.toUpperCase() === "ADMIN";
 
     if (isAdmin) {
       const [admin] = await connection.query(
         `SELECT id FROM users_roles WHERE role_id=? AND id != ?`,
-        [role_id, userId]
+        [role_id, userId],
       );
 
       if (admin.length) {
         await connection.rollback();
         return res.status(400).json({
-          message: "Only one ADMIN allowed"
+          message: "Only one ADMIN allowed",
         });
       }
 
       if (status === "inactive") {
         await connection.rollback();
         return res.status(400).json({
-          message: "Cannot deactivate ADMIN"
+          message: "Cannot deactivate ADMIN",
         });
       }
     }
@@ -2393,14 +2695,14 @@ export const updateUserStrict = async (req, res) => {
 
     const [u1] = await connection.query(
       `SELECT id FROM users_roles WHERE LOWER(username)=? AND id != ?`,
-      [username, userId]
+      [username, userId],
     );
     if (u1.length) errors.username = "Username exists";
 
     if (email) {
       const [u2] = await connection.query(
         `SELECT id FROM users_roles WHERE LOWER(email)=? AND id != ?`,
-        [email, userId]
+        [email, userId],
       );
       if (u2.length) errors.email = "Email exists";
     }
@@ -2408,7 +2710,7 @@ export const updateUserStrict = async (req, res) => {
     if (phone) {
       const [u3] = await connection.query(
         `SELECT id FROM users_roles WHERE phone=? AND id != ?`,
-        [phone, userId]
+        [phone, userId],
       );
       if (u3.length) errors.phone = "Phone exists";
     }
@@ -2427,13 +2729,12 @@ export const updateUserStrict = async (req, res) => {
       `UPDATE users_roles 
        SET username=?, email=?, phone=?, password=?, role_id=?, status=? 
        WHERE id=?`,
-      [username, email, phone, hash, role_id, status, userId]
+      [username, email, phone, hash, role_id, status, userId],
     );
 
     await connection.commit();
 
     res.json({ message: "User updated (STRICT)" });
-
   } catch (err) {
     await connection.rollback();
     res.status(500).json({ message: err.message });
@@ -2468,13 +2769,13 @@ export const updateUserPatch = async (req, res) => {
       status === undefined
     ) {
       return res.status(400).json({
-        message: "At least one field required"
+        message: "At least one field required",
       });
     }
 
     const [userArr] = await connection.query(
       `SELECT * FROM users_roles WHERE id=? FOR UPDATE`,
-      [userId]
+      [userId],
     );
 
     if (!userArr.length) {
@@ -2487,13 +2788,14 @@ export const updateUserPatch = async (req, res) => {
     /* =========================
        NORMALIZE INPUT
     ========================= */
-    username = username
-      ? username.trim().toLowerCase()
-      : existingUser.username;
+    username = username ? username.trim().toLowerCase() : existingUser.username;
 
-    email = email !== undefined
-      ? (email ? email.trim().toLowerCase() : null)
-      : existingUser.email;
+    email =
+      email !== undefined
+        ? email
+          ? email.trim().toLowerCase()
+          : null
+        : existingUser.email;
 
     phone = phone !== undefined ? phone : existingUser.phone;
 
@@ -2504,11 +2806,9 @@ export const updateUserPatch = async (req, res) => {
     /* =========================
        ROLE + STATUS
     ========================= */
-    role_id =
-      role_id !== undefined ? role_id : existingUser.role_id;
+    role_id = role_id !== undefined ? role_id : existingUser.role_id;
 
-    status =
-      status !== undefined ? status : existingUser.status;
+    status = status !== undefined ? status : existingUser.status;
 
     if (status && !["active", "inactive"].includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
@@ -2519,31 +2819,30 @@ export const updateUserPatch = async (req, res) => {
     ========================= */
     const [role] = await connection.query(
       `SELECT role_name FROM role_based WHERE id=?`,
-      [role_id]
+      [role_id],
     );
 
     if (!role.length) {
       return res.status(400).json({ message: "Invalid role" });
     }
 
-    const isAdmin =
-      role[0].role_name.toUpperCase() === "ADMIN";
+    const isAdmin = role[0].role_name.toUpperCase() === "ADMIN";
 
     if (isAdmin) {
       const [admin] = await connection.query(
         `SELECT id FROM users_roles WHERE role_id=? AND id != ?`,
-        [role_id, userId]
+        [role_id, userId],
       );
 
       if (admin.length) {
         return res.status(400).json({
-          message: "Only one ADMIN allowed"
+          message: "Only one ADMIN allowed",
         });
       }
 
       if (status === "inactive") {
         return res.status(400).json({
-          message: "Cannot deactivate ADMIN"
+          message: "Cannot deactivate ADMIN",
         });
       }
     }
@@ -2555,14 +2854,14 @@ export const updateUserPatch = async (req, res) => {
 
     const [u1] = await connection.query(
       `SELECT id FROM users_roles WHERE LOWER(username)=? AND id != ?`,
-      [username, userId]
+      [username, userId],
     );
     if (u1.length) errors.username = "Username exists";
 
     if (email) {
       const [u2] = await connection.query(
         `SELECT id FROM users_roles WHERE LOWER(email)=? AND id != ?`,
-        [email, userId]
+        [email, userId],
       );
       if (u2.length) errors.email = "Email exists";
     }
@@ -2570,7 +2869,7 @@ export const updateUserPatch = async (req, res) => {
     if (phone) {
       const [u3] = await connection.query(
         `SELECT id FROM users_roles WHERE phone=? AND id != ?`,
-        [phone, userId]
+        [phone, userId],
       );
       if (u3.length) errors.phone = "Phone exists";
     }
@@ -2595,13 +2894,12 @@ export const updateUserPatch = async (req, res) => {
       `UPDATE users_roles 
        SET username=?, email=?, phone=?, password=?, role_id=?, status=? 
        WHERE id=?`,
-      [username, email, phone, hash, role_id, status, userId]
+      [username, email, phone, hash, role_id, status, userId],
     );
 
     await connection.commit();
 
     res.json({ message: "User updated (PATCH)" });
-
   } catch (err) {
     await connection.rollback();
     res.status(500).json({ message: err.message });
@@ -2609,4 +2907,3 @@ export const updateUserPatch = async (req, res) => {
     connection.release();
   }
 };
-

@@ -24,6 +24,7 @@ router.put("/update/:id", verifyToken, updateUser);
 router.get("/check-username/:username", checkUsername);
 router.get("/check-email/:email", checkEmail);
 router.get("/check-phone/:phone", checkPhone);
+
 router.delete("/delete/:id", deleteUser);
 
 export default router;

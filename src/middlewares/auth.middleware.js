@@ -92,7 +92,7 @@ export const verifyToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, ACCESS_SECRET);
 
-    req.user = decoded;
+    req.user = decoded; // includes permission
     next();
 
   } catch (error) {

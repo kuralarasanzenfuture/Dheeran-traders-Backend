@@ -10,8 +10,11 @@ import {
 
 import { protect, adminOnly } from "../../middlewares/auth.middleware.js";
 import { verifyAdminPassword } from "../../middlewares/verifyAdminPassword.js";
+import { autoCheckPermission } from "../../middlewares/permission.middleware.js";
 
 const router = express.Router();
+
+router.use(autoCheckPermission()); // runs every api call
 
 router.post("/", protect, createProduct);
 router.get("/", protect, getProducts);

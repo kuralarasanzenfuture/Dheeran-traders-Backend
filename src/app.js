@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 
 // Routes
 
-import roleRoutes from "./routes/roles/roleBased.routes.js";
+import roleRoutes from "./routes/roles/roles.routes.js";
 import userRolesRoutes from "./routes/roles/user.routes.js";
 import employeeDetailsRoutes from "./routes/roles/employees-details.routes.js";
 import rolePermissionsRoutes from "./routes/roles/permissions/rolePermission.routes.js";

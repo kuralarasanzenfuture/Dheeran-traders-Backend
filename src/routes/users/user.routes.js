@@ -4,7 +4,7 @@ import { verifyToken } from "../../middlewares/auth.middleware.js";
 
 import { createUser } from "../../controllers/users/register.controller.js";
 import { loginUser } from "../../controllers/users/login.controller.js";
-import { updateUser } from "../../controllers/users/update.controller.js";
+import { updateUser, updateUserStatus } from "../../controllers/users/update.controller.js";
 import { deleteUser } from "../../controllers/users/delete.controller.js";
 
 import {
@@ -43,8 +43,13 @@ router.post("/logout-all", verifyToken, logoutAllDevices);
 router.get("/", getAllUsers);
 router.get("/:id", getUserById);
 
-router.put("/update/:id", verifyToken, updateUser);
-router.delete("/delete/:id", verifyToken, deleteUser);
+// router.put("/update/:id", verifyToken, updateUser);
+// router.patch("/status/:id", verifyToken, updateUserStatus);
+// router.delete("/delete/:id", verifyToken, deleteUser);
+
+router.put("/update/:id", updateUser);
+router.patch("/status/:id", updateUserStatus);
+router.delete("/delete/:id", deleteUser);
 
 /* =========================
    VALIDATION

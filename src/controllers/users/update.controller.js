@@ -202,3 +202,118 @@ export const updateUser = async (req, res) => {
     connection.release();
   }
 };
+
+export const updateUserStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!id || !status) {
+      return res.status(400).json({
+        message: "User ID and status required",
+      });
+    }
+
+    if (!["active", "inactive"].includes(status)) {
+      return res.status(400).json({
+        message: "Invalid status value",
+      });
+    }
+
+    /* =========================
+       1️⃣ GET USER + ROLE
+    ========================= */
+    const [users] = await db.query(
+      `
+      SELECT 
+        u.id,
+        u.status,
+        u.role_id,
+        r.status AS role_status,
+        r.role_name
+      FROM users_roles u
+      JOIN role_based r ON u.role_id = r.id
+      WHERE u.id = ?
+      `,
+      [id]
+    );
+
+    if (!users.length) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const user = users[0];
+
+    /* =========================
+       2️⃣ BLOCK ACTIVATION IF ROLE INACTIVE
+    ========================= */
+    if (status === "active" && user.role_status !== "active") {
+      return res.status(403).json({
+        message: "Cannot activate user. Role is inactive.",
+      });
+    }
+
+    /* =========================
+       3️⃣ OPTIONAL: PRE-CHECK ADMIN (avoid DB error)
+    ========================= */
+    if (user.role_name === "ADMIN" && status === "inactive") {
+      return res.status(403).json({
+        message: "ADMIN user cannot be deactivated",
+      });
+    }
+
+    /* =========================
+       4️⃣ UPDATE USER STATUS
+    ========================= */
+    await db.query(
+      `UPDATE users_roles SET status = ? WHERE id = ?`,
+      [status, id]
+    );
+
+    /* =========================
+       5️⃣ FORCE LOGOUT IF INACTIVE
+    ========================= */
+    if (status === "inactive") {
+      await db.query(`
+        UPDATE users_roles
+        SET token_version = token_version + 1
+        WHERE id = ?
+      `, [id]);
+
+      await db.query(`
+        UPDATE user_refresh_tokens
+        SET is_active = 0
+        WHERE user_id = ?
+      `, [id]);
+
+      await db.query(`
+        UPDATE login_history
+        SET logout_time = NOW()
+        WHERE user_id = ?
+        AND logout_time IS NULL
+      `, [id]);
+    }
+
+    return res.json({
+      message: `User ${status} successfully`,
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    /* =========================
+       🔥 HANDLE DB SIGNAL ERROR
+    ========================= */
+    if (error.code === "ER_SIGNAL_EXCEPTION") {
+      return res.status(400).json({
+        message: error.sqlMessage || "Operation not allowed",
+      });
+    }
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};

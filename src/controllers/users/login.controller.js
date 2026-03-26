@@ -815,6 +815,211 @@ LOGIN USER
 //   }
 // };
 
+// export const loginUser = async (req, res) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     let { login_id, password } = req.body;
+
+//     if (!login_id || !password) {
+//       return res.status(400).json({
+//         message: "Required fields missing",
+//       });
+//     }
+
+//     login_id = login_id.trim().toLowerCase();
+
+//     /* =========================
+//        1️⃣ GET USER + ROLE
+//     ========================= */
+//     const [users] = await connection.query(
+//       `
+//       SELECT 
+//         u.*, 
+//         r.status AS role_status
+//       FROM users_roles u
+//       JOIN role_based r ON u.role_id = r.id
+//       WHERE LOWER(u.username)=? 
+//          OR LOWER(u.email)=? 
+//          OR u.phone=?
+//       `,
+//       [login_id, login_id, login_id],
+//     );
+
+//     if (!users.length) {
+//       return res.status(401).json({
+//         message: "Invalid credentials",
+//       });
+//     }
+
+//     const user = users[0];
+
+//     /* =========================
+//        2️⃣ USER STATUS CHECK
+//     ========================= */
+//     if (user.status !== "active") {
+//       return res.status(403).json({
+//         message: "User is inactive",
+//       });
+//     }
+
+//     /* =========================
+//        3️⃣ ROLE STATUS CHECK 🔥
+//     ========================= */
+//     if (user.role_status !== "active") {
+//       return res.status(403).json({
+//         message: "Your role is inactive. Contact admin.",
+//       });
+//     }
+
+//     /* =========================
+//        4️⃣ PASSWORD CHECK
+//     ========================= */
+//     const valid = await bcrypt.compare(password, user.password);
+
+//     if (!valid) {
+//       return res.status(401).json({
+//         message: "Invalid credentials",
+//       });
+//     }
+
+//     /* =========================
+//        5️⃣ LOAD PERMISSIONS
+//     ========================= */
+//     const [permRows] = await connection.query(
+//       `
+//       SELECT 
+//         m.code AS module_code,
+//         ma.action_code,
+//         COALESCE(up.is_allowed, rp.is_allowed, FALSE) AS is_allowed
+//       FROM modules m
+//       JOIN module_actions ma ON ma.module_id = m.id
+
+//       LEFT JOIN role_permissions rp 
+//         ON rp.module_id = m.id 
+//         AND rp.action_id = ma.id 
+//         AND rp.role_id = ?
+
+//       LEFT JOIN user_permissions up
+//         ON up.module_id = m.id 
+//         AND up.action_id = ma.id 
+//         AND up.user_id = ?
+//       `,
+//       [user.role_id, user.id],
+//     );
+
+//     const permissions = {};
+//     permRows.forEach((p) => {
+//       const key = `${p.module_code}_${p.action_code}`;
+//       permissions[key] = p.is_allowed === 1;
+//     });
+
+//     /* =========================
+//        6️⃣ TOKEN GENERATION
+//     ========================= */
+//     const sessionId = uuidv4();
+
+//     // const accessToken = jwt.sign(
+//     //   {
+//     //     id: user.id,
+//     //     role_id: user.role_id,
+//     //     session_id: sessionId,
+//     //     permissions,
+//     //   },
+//     //   process.env.JWT_ACCESS_SECRET,
+//     //   { expiresIn: process.env.ACCESS_TOKEN_EXPIRES }
+//     // );
+
+//     const accessToken = jwt.sign(
+//       {
+//         id: user.id,
+//         role_id: user.role_id,
+//         session_id: sessionId,
+//         token_version: user.token_version, // 🔥 ADD THIS
+//         permissions,
+//       },
+//       process.env.JWT_ACCESS_SECRET,
+//       { expiresIn: process.env.ACCESS_TOKEN_EXPIRES },
+//     );
+
+//     const refreshToken = jwt.sign(
+//       {
+//         id: user.id,
+//         session_id: sessionId,
+//       },
+//       process.env.JWT_REFRESH_SECRET,
+//       { expiresIn: process.env.REFRESH_TOKEN_EXPIRES },
+//     );
+
+//     await connection.beginTransaction();
+
+//     /* =========================
+//        7️⃣ STORE REFRESH TOKEN
+//     ========================= */
+//     await connection.query(
+//       `
+//       INSERT INTO user_refresh_tokens
+//       (user_id, session_id, refresh_token, ip_address, user_agent, expires_at)
+//       VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))
+//       `,
+//       [
+//         user.id,
+//         sessionId,
+//         refreshToken,
+//         req.ip,
+//         req.headers["user-agent"] || "unknown",
+//       ],
+//     );
+
+//     /* =========================
+//        8️⃣ LOGIN HISTORY
+//     ========================= */
+//     await connection.query(
+//       `
+//       INSERT INTO login_history
+//       (user_id, session_id, ip_address, user_agent)
+//       VALUES (?, ?, ?, ?)
+//       `,
+//       [user.id, sessionId, req.ip, req.headers["user-agent"] || "unknown"],
+//     );
+
+//     /* =========================
+//        9️⃣ UPDATE LAST LOGIN
+//     ========================= */
+//     await connection.query(
+//       `
+//       UPDATE users_roles 
+//       SET last_login_at = NOW() 
+//       WHERE id = ?
+//       `,
+//       [user.id],
+//     );
+
+//     await connection.commit();
+
+//     /* =========================
+//        🔟 RESPONSE
+//     ========================= */
+//     return res.json({
+//       message: "Login success",
+//       accessToken,
+//       refreshToken,
+//       sessionId,
+//       permissions,
+//       last_login_at: new Date(),
+//     });
+//   } catch (error) {
+//     await connection.rollback();
+//     console.error(error);
+
+//     res.status(500).json({
+//       message: "Internal server error",
+//     });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
 export const loginUser = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -835,15 +1040,27 @@ export const loginUser = async (req, res) => {
     const [users] = await connection.query(
       `
       SELECT 
-        u.*, 
+        u.id,
+        u.username,
+        u.email,
+        u.phone,
+        u.password,
+        u.role_id,
+        u.status,
+        u.token_version,
+        u.last_login_at,
+
+        r.role_name,
         r.status AS role_status
+
       FROM users_roles u
       JOIN role_based r ON u.role_id = r.id
+
       WHERE LOWER(u.username)=? 
          OR LOWER(u.email)=? 
          OR u.phone=?
       `,
-      [login_id, login_id, login_id],
+      [login_id, login_id, login_id]
     );
 
     if (!users.length) {
@@ -905,7 +1122,7 @@ export const loginUser = async (req, res) => {
         AND up.action_id = ma.id 
         AND up.user_id = ?
       `,
-      [user.role_id, user.id],
+      [user.role_id, user.id]
     );
 
     const permissions = {};
@@ -919,27 +1136,16 @@ export const loginUser = async (req, res) => {
     ========================= */
     const sessionId = uuidv4();
 
-    // const accessToken = jwt.sign(
-    //   {
-    //     id: user.id,
-    //     role_id: user.role_id,
-    //     session_id: sessionId,
-    //     permissions,
-    //   },
-    //   process.env.JWT_ACCESS_SECRET,
-    //   { expiresIn: process.env.ACCESS_TOKEN_EXPIRES }
-    // );
-
     const accessToken = jwt.sign(
       {
         id: user.id,
         role_id: user.role_id,
         session_id: sessionId,
-        token_version: user.token_version, // 🔥 ADD THIS
+        token_version: user.token_version, // 🔥 critical
         permissions,
       },
       process.env.JWT_ACCESS_SECRET,
-      { expiresIn: process.env.ACCESS_TOKEN_EXPIRES },
+      { expiresIn: process.env.ACCESS_TOKEN_EXPIRES }
     );
 
     const refreshToken = jwt.sign(
@@ -948,7 +1154,7 @@ export const loginUser = async (req, res) => {
         session_id: sessionId,
       },
       process.env.JWT_REFRESH_SECRET,
-      { expiresIn: process.env.REFRESH_TOKEN_EXPIRES },
+      { expiresIn: process.env.REFRESH_TOKEN_EXPIRES }
     );
 
     await connection.beginTransaction();
@@ -968,7 +1174,7 @@ export const loginUser = async (req, res) => {
         refreshToken,
         req.ip,
         req.headers["user-agent"] || "unknown",
-      ],
+      ]
     );
 
     /* =========================
@@ -980,7 +1186,7 @@ export const loginUser = async (req, res) => {
       (user_id, session_id, ip_address, user_agent)
       VALUES (?, ?, ?, ?)
       `,
-      [user.id, sessionId, req.ip, req.headers["user-agent"] || "unknown"],
+      [user.id, sessionId, req.ip, req.headers["user-agent"] || "unknown"]
     );
 
     /* =========================
@@ -992,30 +1198,45 @@ export const loginUser = async (req, res) => {
       SET last_login_at = NOW() 
       WHERE id = ?
       `,
-      [user.id],
+      [user.id]
     );
 
     await connection.commit();
 
     /* =========================
-       🔟 RESPONSE
+       🔟 CLEAN RESPONSE
     ========================= */
     return res.json({
       message: "Login success",
+
       accessToken,
       refreshToken,
       sessionId,
+
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        role_id: user.role_id,
+        role_name: user.role_name,
+      },
+
       permissions,
+
       last_login_at: new Date(),
     });
+
   } catch (error) {
     await connection.rollback();
     console.error(error);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Internal server error",
     });
+
   } finally {
     connection.release();
   }
 };
+

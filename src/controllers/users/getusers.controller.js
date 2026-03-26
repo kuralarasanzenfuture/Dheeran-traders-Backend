@@ -160,19 +160,46 @@ export const checkPhone = async (req, res) => {
 //   }
 // };
 
+// export const getAllUsers = async (req, res) => {
+//   try {
+//     const [users] = await db.query(`
+//       SELECT 
+//         id,
+//         username,
+//         email,
+//         phone,
+//         role_id,
+//         status,
+//         created_at
+//       FROM users_roles
+//       ORDER BY id DESC
+//     `);
+
+//     res.json(users);
+
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({
+//       message: "Internal server error"
+//     });
+//   }
+// };
+
 export const getAllUsers = async (req, res) => {
   try {
     const [users] = await db.query(`
       SELECT 
-        id,
-        username,
-        email,
-        phone,
-        role_id,
-        status,
-        created_at
-      FROM users_roles
-      ORDER BY id DESC
+        u.id,
+        u.username,
+        u.email,
+        u.phone,
+        u.role_id,
+        r.role_name AS role_name,
+        u.status,
+        u.created_at
+      FROM users_roles u
+      JOIN role_based r ON u.role_id = r.id
+      ORDER BY u.id DESC
     `);
 
     res.json(users);

@@ -44,7 +44,7 @@ const router = express.Router();
 
 // 🔴 login / auth should be here
 router.use("/users-roles", userRolesRoutes);
-
+router.use("/users", userRoutes);
 /* =========================
    PROTECTED ROUTES 🔥
 ========================= */
@@ -59,7 +59,7 @@ router.use("/role-permissions", rolePermissionsRoutes);
 router.use("/user-permissions", userPermissionRoutes);
 
 // billing
-router.use("/users", userRoutes);
+
 router.use("/employees", employeeRoutes);
 router.use("/products", productRoutes);
 router.use("/categories", categoryRoutes);

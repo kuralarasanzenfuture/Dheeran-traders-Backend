@@ -3,7 +3,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import routes from "./routes/indexroutes.js";
+import routes from "./routes/indexRoutes.js";
 
 // Middlewares
 import { errorHandler } from "./middlewares/error.middleware.js";
@@ -11,12 +11,13 @@ import { errorHandler } from "./middlewares/error.middleware.js";
 import cookieParser from "cookie-parser";
 import { startCleanupJob } from "./jobs/cleanupTokens.job.js";
 
-// app.use(cookieParser());
 
 // ------------------------------------------------------------------
 // App & dirname setup (IMPORTANT for ES Modules)
 // ------------------------------------------------------------------
 const app = express();
+
+app.use(cookieParser());
 
 // start cron job ONCE
 startCleanupJob();
@@ -71,3 +72,5 @@ app.get("/health", (req, res) => {
 app.use(errorHandler);
 
 export default app;
+
+

@@ -1048,7 +1048,7 @@ export const createEmployee = async (req, res) => {
       return res.status(400).json({ error });
     }
 
-    data = value;
+    const data = value;
 
     console.log(data);
 

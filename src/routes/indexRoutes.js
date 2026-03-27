@@ -64,7 +64,7 @@ router.use("/employees", employeeRoutes);
 router.use("/products", productRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/brands", brandRoutes);
-router.use("/customers", customerRoutes);
+ router.use("/customers", customerRoutes);
 router.use("/vendors", vendorRoutes);
 router.use("/quantities", quantityRoutes);
 router.use("/company-bank", companyBankRoutes);

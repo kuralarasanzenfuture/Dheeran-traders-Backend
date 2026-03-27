@@ -218,7 +218,7 @@ const generateInvoiceNumber = async () => {
 //     /* 🔥 FETCH FULL INVOICE */
 //     const [[billing]] = await connection.query(
 //       `
-//       SELECT 
+//       SELECT
 //         b.*,
 //         CONCAT(c.first_name,' ',c.last_name) AS customer_master_name,
 //         c.phone AS customer_master_phone,
@@ -291,7 +291,7 @@ export const createCustomerBilling = async (req, res) => {
 
     const [[bank]] = await connection.query(
       `SELECT id FROM company_bank_details WHERE id=? AND status='active'`,
-      [bank_id]
+      [bank_id],
     );
     if (!bank) throw new Error("Invalid bank");
 
@@ -308,7 +308,7 @@ export const createCustomerBilling = async (req, res) => {
 
       const [[product]] = await connection.query(
         `SELECT stock, product_name, price FROM products WHERE id=? FOR UPDATE`,
-        [product_id]
+        [product_id],
       );
 
       if (!product) throw new Error("Product not found");
@@ -365,7 +365,7 @@ export const createCustomerBilling = async (req, res) => {
         upi_amount,
         cheque_amount,
         upi_reference,
-      ]
+      ],
     );
 
     const billing_id = billResult.insertId;
@@ -385,7 +385,7 @@ export const createCustomerBilling = async (req, res) => {
 
       const [[product]] = await connection.query(
         `SELECT product_name, brand, category, quantity, price FROM products WHERE id=?`,
-        [product_id]
+        [product_id],
       );
 
       const rate = Number(product.price);
@@ -441,18 +441,18 @@ export const createCustomerBilling = async (req, res) => {
           rate,
           applied_rate,
           total,
-        ]
+        ],
       );
 
       await connection.query(
         `UPDATE products SET stock = stock - ? WHERE id=?`,
-        [qty, product_id]
+        [qty, product_id],
       );
     }
 
     await connection.query(
       `UPDATE customerBilling SET grand_total=?, balance_due=? WHERE id=?`,
-      [grand_total, grand_total - advance_paid, billing_id]
+      [grand_total, grand_total - advance_paid, billing_id],
     );
 
     const [[billing]] = await connection.query(
@@ -467,12 +467,12 @@ export const createCustomerBilling = async (req, res) => {
       JOIN company_bank_details cb ON b.bank_id = cb.id
       WHERE b.id = ?
       `,
-      [billing_id]
+      [billing_id],
     );
 
     const [productsData] = await connection.query(
       `SELECT * FROM customerBillingProducts WHERE billing_id = ?`,
-      [billing_id]
+      [billing_id],
     );
 
     await connection.commit();
@@ -499,7 +499,7 @@ export const getAllCustomerBillings = async (req, res) => {
         cb.id,
         cb.invoice_number,
         cb.invoice_date,
-
+        cb.company_gst_number,
         cb.customer_id,
         cb.customer_name,
         cb.phone_number,
@@ -1003,10 +1003,11 @@ export const getLastInvoiceNumber = async (req, res) => {
     return res.json({
       lastInvoiceNumber: rows[0].invoice_number,
     });
-
   } catch (error) {
     console.error("Error fetching last invoice:", error);
-    return res.status(500).json({ message: "Failed to get last invoice number" });
+    return res
+      .status(500)
+      .json({ message: "Failed to get last invoice number" });
   }
 };
 
@@ -1049,9 +1050,10 @@ export const getNextInvoiceNumber = async (req, res) => {
     return res.json({
       nextInvoiceNumber: nextInvoice,
     });
-
   } catch (error) {
     console.error("Error generating next invoice:", error);
-    return res.status(500).json({ message: "Failed to generate next invoice number" });
+    return res
+      .status(500)
+      .json({ message: "Failed to generate next invoice number" });
   }
 };

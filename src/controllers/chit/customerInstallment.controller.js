@@ -100,7 +100,18 @@ export const getInstallmentsBySubscription = async (req, res) => {
       [subscription_id]
     );
 
-    res.json({ success: true, data: rows });
+    const formatDate = (date) => {
+      const d = new Date(date);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+
+    const formattedData = rows.map((item) => ({
+      ...item,
+      due_date: item.due_date ? formatDate(item.due_date) : null,
+    }));
+
+    // ✅ send formatted data
+    res.json({ success: true, data: formattedData });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

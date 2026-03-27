@@ -89,18 +89,18 @@ export const autoCheckPermission = () => {
 
 // FINAL MIDDLEWARE
 
-export const checkPermission = (module, action) => {
-  return (req, res, next) => {
+// export const checkPermission = (module, action) => {
+//   return (req, res, next) => {
 
-    const allowed = req.user.permissions?.[`${module}_${action}`];
+//     const allowed = req.user.permissions?.[`${module}_${action}`];
 
-    if (!allowed) {
-      return res.status(403).json({ message: "Access denied" });
-    }
+//     if (!allowed) {
+//       return res.status(403).json({ message: "Access denied" });
+//     }
 
-    next();
-  };
-};
+//     next();
+//   };
+// };
 
 
 // | Feature            | Before             | After     |

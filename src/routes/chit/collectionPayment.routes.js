@@ -15,16 +15,17 @@ import {
   collectPaymentByInstallment,
   collectPayment
 } from "../../controllers/chit/collectionPayment.controller.js";
-import { verifyToken } from "../../middlewares/auth.middleware.js";
+import { protect, verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
 router.post("/collect",verifyToken, collectPayment);
 
 // 🔥 Smart payment (recommended)
-router.post("/collect/subscription", verifyToken, collectPaymentBySubscription);
+router.post("/collect/subscription",protect, collectPaymentBySubscription);
 
 // 🔧 Manual payment (specific installment)
-router.post("/collect/installment", verifyToken, collectPaymentByInstallment);
+// router.post("/collect/installment", verifyToken, collectPaymentByInstallment);
+router.post("/collect/installment", protect, collectPaymentByInstallment);
 
 export default router;

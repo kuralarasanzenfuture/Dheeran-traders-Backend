@@ -59,6 +59,7 @@ export const register = async (req, res, next) => {
 
 export const login = async (req, res, next) => {
   try {
+    console.log("LOGIN START");
     const { identifier, password } = req.body;
     // identifier = email OR username
 
@@ -89,7 +90,7 @@ export const login = async (req, res, next) => {
     ]);
 
     delete user.password;
-
+    console.log("LOGIN success");
     res.json({
       token: generateToken({ id: user.id }),
       user,

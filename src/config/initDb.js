@@ -19,9 +19,10 @@ import { createPlanTables } from "./database/chit/plan.tables.js";
 import { createPlanRulesTables } from "./database/chit/planRules.tables.js";
 
 import { createLoginHistoryTables } from "./database/roles/login_history.tables.js";
-import { createUserRolesTables } from "./database/roles/user_roles.tables.js";
+import { createUserRolesTables } from "./database/users/user_roles.tables.js";
+import { createEmployeeDetailsTables } from "./database/users/employees_details.tables.js";
 import { createRefeshTokensTable } from "./database/roles/refresh_tokens.tables.js";
-import { createEmployeeDetailsTables } from "./database/roles/employees_details.tables.js";
+
 import { createCustomerInstallments } from "./database/chit/customerInstallments.js";
 import { createCollectionPaymentTables } from "./database/chit/collectionPayment.tables.js";
 import { createAdminTriggers } from "./triggers/admin.trigger.js";

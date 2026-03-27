@@ -50,5 +50,13 @@ await db.query(`
     )
     `)
 
+    await db.query(`
+    INSERT IGNORE INTO role_based (role_name, role_description)
+    SELECT 'COLLECTION', 'Allows limited access to the system'
+    WHERE NOT EXISTS (
+      SELECT 1 FROM role_based WHERE role_name = 'COLLECTION'
+    )
+    `)
+
 };
 

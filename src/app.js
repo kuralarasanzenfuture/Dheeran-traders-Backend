@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-
+import { attachDb } from "./middlewares/dbMiddleware.js";
 import routes from "./routes/indexRoutes.js";
 
 // Middlewares
@@ -20,7 +20,7 @@ const app = express();
 app.use(cookieParser());
 
 // start cron job ONCE
-startCleanupJob();
+// startCleanupJob();
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -47,9 +47,9 @@ app.use(
   express.static(path.join(__dirname, "uploads"))
 );
 
-// import { attachDb } from "./middleware/dbMiddleware.js";
+app.use(attachDb);
 
-// app.use(attachDb);
+
 // router.get("/:role_id", attachDb, getRolePermissions);
 
 // ------------------------------------------------------------------

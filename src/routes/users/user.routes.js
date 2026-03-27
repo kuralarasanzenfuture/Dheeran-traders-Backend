@@ -35,7 +35,7 @@ router.post("/refresh-token", refreshToken);
    LOGOUT
 ========================= */
 router.post("/logout", logoutUser);
-router.post("/logout-all", verifyToken, logoutAllDevices);
+router.post("/logout-all",  logoutAllDevices);
 
 /* =========================
    USER CRUD

@@ -1,4 +1,5 @@
 import db from "../../config/db.js";
+import formatDate from "../../services/formatDate.service.js";
 
 
 // 1️⃣ Create Installments (Bulk)
@@ -99,11 +100,6 @@ export const getInstallmentsBySubscription = async (req, res) => {
        ORDER BY installment_number ASC`,
       [subscription_id]
     );
-
-    const formatDate = (date) => {
-      const d = new Date(date);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    };
 
     const formattedData = rows.map((item) => ({
       ...item,

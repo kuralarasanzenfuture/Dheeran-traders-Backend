@@ -3,6 +3,7 @@ import {
   createEmployee,
   deleteEmployee,
   getEmployeeById,
+  getEmployeeByUserId,
   getEmployees,
   updateEmployee,
 } from "../../controllers/users/employees-details.controller.js";
@@ -19,6 +20,7 @@ router.post("/", employeeDocsUpload,  createEmployee);
 
 router.get("/", getEmployees);
 
+router.get("/user/:id", getEmployeeByUserId);
 router.get("/:id", getEmployeeById);
 
 router.put("/:id", employeeDocsUpload,validate(updateEmployeeSchema), updateEmployee);

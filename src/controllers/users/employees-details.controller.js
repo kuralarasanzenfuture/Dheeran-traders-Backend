@@ -4,6 +4,7 @@ import path from "path";
 import { validate } from "../../middlewares/validate.middleware.js";
 import { createEmployeeSchema, updateEmployeeSchema } from "../../validations/employee.validation.js";
 import { log } from "console";
+import formatDate from "../../services/formatDate.service.js";
 
 // 🔥 helper
 // const deleteFiles = (files) => {
@@ -1201,51 +1202,79 @@ export const createEmployee = async (req, res) => {
   }
 };
 
+// export const getEmployees = async (req, res) => {
+//   try {
+//     const [rows] = await db.query(
+//       "SELECT * FROM employees_details ORDER BY id DESC",
+//     );
+
+//     res.json({
+//       success: true,
+//       data: rows,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Server Error",
+//     });
+//   }
+// };
+
+// date fixed
 export const getEmployees = async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT * FROM employees_details ORDER BY id DESC",
+      "SELECT * FROM employees_details ORDER BY id DESC"
     );
 
-    res.json({
+    // 🔥 Fix date for all records
+    const formatted = rows.map((emp) => ({
+      ...emp,
+      date_of_birth: formatDate(emp.date_of_birth),
+    }));
+
+    return res.json({
       success: true,
-      data: rows,
+      data: formatted,
     });
+
   } catch (error) {
-    res.status(500).json({
+    console.error("getEmployees error:", error);
+
+    return res.status(500).json({
       success: false,
       message: "Server Error",
     });
   }
 };
 
-export const getEmployeeById = async (req, res) => {
-  try {
-    const { id } = req.params;
+// export const getEmployeeById = async (req, res) => {
+//   try {
+//     const { id } = req.params;
 
-    const [rows] = await db.query(
-      "SELECT * FROM employees_details WHERE id=?",
-      [id],
-    );
+//     const [rows] = await db.query(
+//       "SELECT * FROM employees_details WHERE id=?",
+//       [id],
+//     );
 
-    if (!rows.length) {
-      return res.status(404).json({
-        success: false,
-        message: "Employee not found",
-      });
-    }
+//     if (!rows.length) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Employee not found",
+//       });
+//     }
 
-    res.json({
-      success: true,
-      data: rows[0],
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Server Error",
-    });
-  }
-};
+//     res.json({
+//       success: true,
+//       data: rows[0],
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Server Error",
+//     });
+//   }
+// };
 
 // export const updateEmployee = async (req, res) => {
 //   try {
@@ -1906,6 +1935,49 @@ export const getEmployeeById = async (req, res) => {
 //   }
 // };
 
+export const getEmployeeById = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!id || Number.isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid employee ID",
+      });
+    }
+
+    const [rows] = await db.query(
+      "SELECT * FROM employees_details WHERE id = ?",
+      [id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    const employee = rows[0];
+
+    // 🔥 Fix date
+    employee.date_of_birth = formatDate(employee.date_of_birth);
+
+    return res.json({
+      success: true,
+      data: employee,
+    });
+
+  } catch (error) {
+    console.error("getEmployeeById error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
 export const updateEmployee = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -2375,6 +2447,100 @@ export const deleteEmployee = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Server Error",
+    });
+  }
+};
+
+export const getEmployeeByUserId = async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+
+    // 🔒 Validate ID properly
+    if (!userId || Number.isNaN(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID",
+      });
+    }
+
+    // 🔍 Fetch employee
+    const [rows] = await db.query(
+      `SELECT * FROM employees_details WHERE user_id = ? LIMIT 1`,
+      [userId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    const employee = rows[0];
+
+    // ✅ SAFE DATE HANDLING (no timezone shift, no crash)
+    if (employee.date_of_birth) {
+      if (employee.date_of_birth instanceof Date) {
+        const y = employee.date_of_birth.getFullYear();
+        const m = String(employee.date_of_birth.getMonth() + 1).padStart(2, "0");
+        const d = String(employee.date_of_birth.getDate()).padStart(2, "0");
+        employee.date_of_birth = `${y}-${m}-${d}`;
+      } else if (typeof employee.date_of_birth === "string") {
+        // Already correct format from DB
+        employee.date_of_birth = employee.date_of_birth;
+      }
+    }
+
+    // 🚀 Clean response (optional but better structure)
+    return res.status(200).json({
+      success: true,
+      // data: {
+      //   id: employee.id,
+      //   user_id: employee.user_id,
+      //   employee_code: employee.employee_code,
+      //   employee_name: employee.employee_name,
+      //   email: employee.email,
+      //   phone: employee.phone,
+      //   date_of_birth: employee.date_of_birth,
+      //   gender: employee.gender,
+      //   address: employee.address,
+
+      //   aadhar_number: employee.aadhar_number,
+      //   pan_number: employee.pan_number,
+
+      //   bank_name: employee.bank_name,
+      //   bank_account_number: employee.bank_account_number,
+      //   ifsc_code: employee.ifsc_code,
+
+      //   documents: {
+      //     pan_card_image: employee.pan_card_image,
+      //     aadhar_front_image: employee.aadhar_front_image,
+      //     aadhar_back_image: employee.aadhar_back_image,
+      //     bank_passbook_image: employee.bank_passbook_image,
+      //     marksheet_10_image: employee.marksheet_10_image,
+      //     marksheet_12_image: employee.marksheet_12_image,
+      //     college_marksheet_image: employee.college_marksheet_image,
+      //   },
+
+      //   emergency_contact: {
+      //     name: employee.emergency_contact_name,
+      //     phone: employee.emergency_contact_phone,
+      //     relation: employee.emergency_contact_relation,
+      //   },
+
+      //   status: employee.status,
+      //   created_at: employee.created_at,
+      //   updated_at: employee.updated_at,
+      // },
+      data: employee,
+    });
+
+  } catch (error) {
+    console.error("getEmployeeByUserId error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
     });
   }
 };

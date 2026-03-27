@@ -13,15 +13,17 @@ import { protect } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
+router.use(protect);
+
 // 🔥 STATIC ROUTES FIRST
-router.get("/brand-category", protect, getBrandCategoryDropdown);
-router.get("/brand/:brand_id", protect, getCategoriesByBrand);
+router.get("/brand-category", getBrandCategoryDropdown);
+router.get("/brand/:brand_id", getCategoriesByBrand);
 
 // CRUD
-router.post("/", protect, createCategory);
-router.get("/", protect, getCategories);
-router.get("/:id", protect, getCategoryById);
-router.put("/:id", protect, updateCategory);
-router.delete("/:id", protect, deleteCategory);
+router.post("/", createCategory);
+router.get("/", getCategories);
+router.get("/:id", getCategoryById);
+router.put("/:id", updateCategory);
+router.delete("/:id", deleteCategory);
 
 export default router;

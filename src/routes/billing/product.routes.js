@@ -10,17 +10,17 @@ import {
 
 import { protect, adminOnly } from "../../middlewares/auth.middleware.js";
 import { verifyAdminPassword } from "../../middlewares/verifyAdminPassword.js";
-import { autoCheckPermission } from "../../middlewares/permission.middleware.js";
+
 
 const router = express.Router();
 
-router.use(autoCheckPermission()); // runs every api call
+router.use(protect);
 
-router.post("/", protect, createProduct);
-router.get("/", protect, getProducts);
-router.get("/:id", protect, getProductById);
+router.post("/", createProduct);
+router.get("/", getProducts);
+router.get("/:id", getProductById);
 router.put("/:id",  updateProduct);
-router.delete("/:id", protect, deleteProduct);
+router.delete("/:id", deleteProduct);
 /* 🔥 ONLY STOCK UPDATE */
 router.patch("/update-stock/:id", verifyAdminPassword, updateProductStock);
 

@@ -16,12 +16,15 @@ const router = express.Router();
 /**
  * Vendor Stock Routes
  */
-router.post("/", protect, createVendorStock);
-router.get("/", protect, getVendorStocks);
-router.get("/:id", protect, getVendorStockById);
-router.put("/:id", protect, updateVendorStock);
-router.patch("/:id/add", protect, addVendorStock);
-router.delete("/:id", protect, deleteVendorStock);
-router.delete("/entry/:entry_id", protect, deleteVendorEntry);
+
+router.use(protect);
+
+router.post("/", createVendorStock);
+router.get("/", getVendorStocks);
+router.get("/:id", getVendorStockById);
+router.put("/:id", updateVendorStock);
+router.patch("/:id/add", addVendorStock);
+router.delete("/:id", deleteVendorStock);
+router.delete("/entry/:entry_id", deleteVendorEntry);
 
 export default router;

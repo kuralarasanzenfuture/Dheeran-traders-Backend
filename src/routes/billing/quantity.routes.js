@@ -11,15 +11,16 @@ import { protect } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/", protect, createQuantity);
-router.get("/", protect, getAllQuantities);
+router.use(protect);
+
+router.post("/", createQuantity);
+router.get("/", getAllQuantities);
 router.get(
   "/brand/:brand_id/category/:category_id",
-  protect,
   getQuantitiesByCategory
 );
-router.get("/:id", protect, getQuantityById);
-router.put("/:id", protect, updateQuantity);
-router.delete("/:id", protect, deleteQuantity);
+router.get("/:id", getQuantityById);
+router.put("/:id", updateQuantity);
+router.delete("/:id", deleteQuantity);
 
 export default router;

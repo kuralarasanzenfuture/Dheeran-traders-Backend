@@ -9,7 +9,9 @@ import { protect } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/",protect, addCustomerPayment);
+router.use(protect);
+
+router.post("/", addCustomerPayment);
 
 router.get("/", getAllPayments);
 /* Get invoice + paid + balance */

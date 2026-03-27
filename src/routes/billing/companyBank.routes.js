@@ -11,17 +11,19 @@ import { protect } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
+router.use(protect);
+
 /* CREATE */
 router.post(
   "/",
-  protect,
+  
   uploadBankQR.single("qr_code_image"),
   createCompanyBank,
 );
 
 /* READ */
-router.get("/", protect, getCompanyBanks);
-router.get("/:id", protect, getCompanyBankById);
+router.get("/", getCompanyBanks);
+router.get("/:id", getCompanyBankById);
 
 /* UPDATE */
 router.put(

@@ -10,10 +10,12 @@ import { adminOnly, protect } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/", protect, createEmployee);
+router.use(protect);
+
+router.post("/", createEmployee);
 router.get("/", getEmployees);
 router.get("/:id", getEmployeeById);
-router.put("/:id", protect, adminOnly, updateEmployee);
-router.delete("/:id", protect, adminOnly, deleteEmployee);
+router.put("/:id", adminOnly, updateEmployee);
+router.delete("/:id", adminOnly, deleteEmployee);
 
 export default router;

@@ -20,8 +20,10 @@ import { protect } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
+router.use(protect);
+
 /* CREATE INVOICE */
-router.post("/", protect, createCustomerBilling);
+router.post("/", createCustomerBilling);
 
 router.get("/", getAllCustomerBillings);
 
@@ -40,7 +42,7 @@ router.get("/next-invoice-number", getNextInvoiceNumber);
 
 router.get("/:id", getCustomerBillingById);
 
-router.put("/:id", protect, verifyAdminPassword, updateCustomerBilling);
-router.delete("/:id", protect, verifyAdminPassword,  deleteCustomerBilling);
+router.put("/:id", verifyAdminPassword, updateCustomerBilling);
+router.delete("/:id", verifyAdminPassword,  deleteCustomerBilling);
 
 export default router;

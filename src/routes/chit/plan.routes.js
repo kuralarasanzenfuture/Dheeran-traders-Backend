@@ -7,8 +7,11 @@ import {
   updatePlan,
   deletePlan
 } from "../../controllers/chit/plan.controllers.js";
+import { verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
+
+router.use(verifyToken);
 
 router.post("/create", createPlan);
 router.get("/", getAllPlans);

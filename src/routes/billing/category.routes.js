@@ -9,11 +9,11 @@ import {
   getBrandCategoryDropdown,
 } from "../../controllers/billing/category.controller.js";
 
-import { protect } from "../../middlewares/auth.middleware.js";
+import { protect, verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.use(protect);
+router.use(verifyToken);
 
 // 🔥 STATIC ROUTES FIRST
 router.get("/brand-category", getBrandCategoryDropdown);

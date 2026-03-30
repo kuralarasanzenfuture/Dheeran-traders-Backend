@@ -9,7 +9,7 @@ import {
   deleteVendorEntry,
 } from "../../controllers/billing/vendorStock.controller.js";
 
-import { protect } from "../../middlewares/auth.middleware.js";
+import { protect, verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
@@ -17,7 +17,7 @@ const router = express.Router();
  * Vendor Stock Routes
  */
 
-router.use(protect);
+router.use(verifyToken);
 
 router.post("/", createVendorStock);
 router.get("/", getVendorStocks);

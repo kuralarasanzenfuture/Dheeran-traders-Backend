@@ -6,6 +6,8 @@ import employeeDetailsRoutes from "./users/employees-details.routes.js";
 import rolePermissionsRoutes from "./roles/permissions/rolePermission.routes.js";
 import userPermissionRoutes from "./roles/permissions/userPermission.routes.js";
 
+import moduleRoutes from "./roles/module.routes.js";
+
 import userRoutes from "./billing/user.routes.js";
 import productRoutes from "./billing/product.routes.js";
 import categoryRoutes from "./billing/category.routes.js";
@@ -54,9 +56,11 @@ router.use("/users-roles", userRolesRoutes);
 
 // roles
 router.use("/roles", roleRoutes);
+router.use("/modules", moduleRoutes);
 router.use("/employees-details", employeeDetailsRoutes);
 router.use("/role-permissions", rolePermissionsRoutes);
 router.use("/user-permissions", userPermissionRoutes);
+
 
 // billing
 router.use("/users", userRoutes);

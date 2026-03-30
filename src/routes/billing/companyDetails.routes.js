@@ -6,11 +6,11 @@ import {
   deleteCompanyDetails,
 } from "../../controllers/billing/companyDetails.controller.js";
 
-import { protect, adminOnly } from "../../middlewares/auth.middleware.js";
+import { protect, adminOnly, verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.use(protect);
+router.use(verifyToken);
 
 router.get("/",  getCompanyDetails);
 router.post("/", saveCompanyDetails);

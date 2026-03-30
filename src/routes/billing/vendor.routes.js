@@ -6,11 +6,11 @@ import {
   updateVendor,
   deleteVendor,
 } from "../../controllers/billing/vendor.controller.js";
-import { protect } from "../../middlewares/auth.middleware.js";
+import { protect, verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.use(protect);
+router.use(verifyToken);
 
 router.post("/", createVendor);
 router.get("/", getVendors);

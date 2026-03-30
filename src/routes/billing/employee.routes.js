@@ -6,11 +6,11 @@ import {
   updateEmployee,
   deleteEmployee,
 } from "../../controllers/billing/employeeController.js";
-import { adminOnly, protect } from "../../middlewares/auth.middleware.js";
+import { adminOnly, protect, verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.use(protect);
+router.use(verifyToken);
 
 router.post("/", createEmployee);
 router.get("/", getEmployees);

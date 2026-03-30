@@ -7,11 +7,11 @@ import {
   deleteQuantity,
   getQuantitiesByCategory,
 } from "../../controllers/billing/quantityController.js";
-import { protect } from "../../middlewares/auth.middleware.js";
+import { protect, verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.use(protect);
+router.use(verifyToken);
 
 router.post("/", createQuantity);
 router.get("/", getAllQuantities);

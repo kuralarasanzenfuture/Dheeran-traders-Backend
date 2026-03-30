@@ -7,11 +7,11 @@ import {
   updateCompanyBank,
   deleteCompanyBank,
 } from "../../controllers/billing/companyBankController.js";
-import { protect } from "../../middlewares/auth.middleware.js";
+import { protect, verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.use(protect);
+router.use(verifyToken);
 
 /* CREATE */
 router.post(

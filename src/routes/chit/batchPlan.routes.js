@@ -4,8 +4,11 @@ import {
   getPlansByBatch,
   removePlanFromBatch
 } from "../../controllers/chit/batchPlan.controller.js";
+import { verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
+
+router.use(verifyToken);
 
 // assign plan to batch
 router.post("/", addPlanToBatch);

@@ -7,11 +7,12 @@ import {
   deleteBrand,
 } from "../../controllers/billing/brand.controller.js";
 
-import { protect, adminOnly } from "../../middlewares/auth.middleware.js";
+import { protect, adminOnly, verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.use(protect);
+// router.use(protect);
+router.use(verifyToken);
 
 router.post("/",  createBrand);
 router.get("/", getBrands);

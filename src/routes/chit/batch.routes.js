@@ -7,8 +7,11 @@ import {
   deleteBatch,
   getNextBatchName,
 } from "../../controllers/chit/batch.controllers.js";
+import { verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
+
+router.use(verifyToken);
 
 router.post("/", createBatch);                 // Create batch
 router.get("/next-batch-name", getNextBatchName); // MUST be before :id

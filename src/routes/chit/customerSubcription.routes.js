@@ -9,7 +9,8 @@ import {
   getCustomerFullDetails,
   getBatchSummary,
   getPlanSummary,
-  getBatchDetails
+  getBatchDetails,
+  getBatchSummaryById
 } from "../../controllers/chit/customerSubcription.controller.js";
 import { verifyToken } from "../../middlewares/auth.middleware.js";
 
@@ -25,6 +26,7 @@ router.get("/", getCustomerSubscriptions);
 
 // 📊 DASHBOARD / SUMMARY
 router.get("/batch-summary", getBatchSummary);
+router.get("/batch-summary/:batch_id", getBatchSummaryById);
 router.get("/plan-summary", getPlanSummary);
 
 // 📊 SPECIFIC BATCH DETAILS

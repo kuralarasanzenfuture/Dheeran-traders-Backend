@@ -33,6 +33,7 @@ import chitCustomerSubscriptionsRoutes from "./chit/customerSubcription.routes.j
 import collectionPaymentRoutes from "./chit/collectionPayment.routes.js";
 import customerInstallmentRoutes from "./chit/customerInstallment.routes.js";
 import locationRoutes from "./chit/location.routes.js";
+import userCustomerAssignmentRoutes from "./chit/userCustomerAssignment.routes.js";
 
 // 🔥 middleware
 // import { verifyToken } from "../middlewares/auth.middleware.js";
@@ -88,5 +89,7 @@ router.use("/customer-subscriptions", chitCustomerSubscriptionsRoutes);
 router.use("/chit/payment", collectionPaymentRoutes);
 router.use("/installments", customerInstallmentRoutes);
 router.use("/locations", locationRoutes);
+
+router.use("/assigned-customers", userCustomerAssignmentRoutes);
 
 export default router;

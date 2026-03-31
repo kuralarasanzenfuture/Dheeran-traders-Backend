@@ -27,6 +27,7 @@ import { createCustomerInstallments } from "./database/chit/customerInstallments
 import { createCollectionPaymentTables } from "./database/chit/collectionPayment.tables.js";
 import { createAdminTriggers } from "./triggers/admin.trigger.js";
 import { createPermissionsTable } from "./database/roles/permissions/permissions.tables.js";
+import { createUserAssignedCustomerTable } from "./database/chit/userAssignedCustomer.tables.js";
 
 export const initDatabase = async () => {
   try {
@@ -92,6 +93,8 @@ export const initDatabase = async () => {
     await createCollectionPaymentTables(db);
 
     await createLocationTable(db);
+
+    await createUserAssignedCustomerTable(db);
 
     console.log("✅ Database & tables initialized successfully");
   } catch (error) {

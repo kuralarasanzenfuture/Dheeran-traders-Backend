@@ -57,7 +57,12 @@ export const createCustomerSubcriptionTables = async (db) => {
                         FOREIGN KEY (customer_id) REFERENCES chit_customers(id) ON DELETE RESTRICT,
                         FOREIGN KEY (batch_id) REFERENCES batches(id) ON DELETE RESTRICT,
                         FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE RESTRICT,
-                        FOREIGN KEY (agent_staff_id) REFERENCES chit_agent_and_staff(id) ON DELETE SET NULL
+                        FOREIGN KEY (agent_staff_id) REFERENCES chit_agent_and_staff(id) ON DELETE SET NULL,
+
+                        INDEX customer_id (customer_id),
+                        INDEX batch_id (batch_id),
+                        INDEX plan_id (plan_id),
+                        INDEX agent_staff_id (agent_staff_id)
                 )
                 `);
 

@@ -6,7 +6,7 @@ import { attachDb } from "./middlewares/dbMiddleware.js";
 import routes from "./routes/indexRoutes.js";
 
 // Middlewares
-import { errorHandler } from "./middlewares/error.middleware.js";
+import { errorHandler, globalErrorHandler } from "./middlewares/error.middleware.js";
 
 import cookieParser from "cookie-parser";
 import { startCleanupJob } from "./jobs/cleanupTokens.job.js";
@@ -70,6 +70,7 @@ app.get("/health", (req, res) => {
 // Error Handler (ALWAYS LAST)
 // ------------------------------------------------------------------
 app.use(errorHandler);
+app.use(globalErrorHandler);
 
 export default app;
 

@@ -11,7 +11,7 @@ export const verifyAdminPassword = async (req, res, next) => {
 
     // 🔎 Find ADMIN user only
     const [admins] = await db.query(
-      "SELECT id, password FROM users WHERE role = 'admin'"
+      "SELECT id, password FROM users_roles WHERE role = 'admin'"
     );
 
     if (!admins.length) {

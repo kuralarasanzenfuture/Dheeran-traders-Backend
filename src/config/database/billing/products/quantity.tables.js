@@ -21,4 +21,49 @@ export const createQuantityTable = async (db) => {
   UNIQUE (brand_id, category_id, name)
   ) ENGINE=InnoDB
 `);
+
+    await seedQuantities(db);
+
+};
+
+const seedQuantities = async (db) => {
+  const data = [
+    ['India Gate', 'Basmati Rice', '1kg'],
+    ['India Gate', 'Basmati Rice', '5kg'],
+
+    ['Daawat', 'Premium Basmati Rice', '1kg'],
+    ['Daawat', 'Premium Basmati Rice', '10kg'],
+
+    ['Fortune', 'Sunflower Oil', '1L'],
+    ['Fortune', 'Sunflower Oil', '5L'],
+
+    ['Saffola', 'Refined Oil', '1L'],
+    ['Saffola', 'Refined Oil', '2L'],
+
+    ['Aashirvaad', 'Atta (Wheat Flour)', '1kg'],
+    ['Aashirvaad', 'Atta (Wheat Flour)', '5kg'],
+
+    ['Amul', 'Milk', '500ml'],
+    ['Amul', 'Milk', '1L'],
+
+    ['Britannia', 'Biscuits', '100g'],
+    ['Britannia', 'Biscuits', '200g'],
+
+    ["Haldiram's", 'Namkeen', '200g'],
+    ["Haldiram's", 'Namkeen', '1kg'],
+  ];
+
+  for (const [brand, category, qty] of data) {
+    await db.query(
+      `INSERT IGNORE INTO quantities (brand_id, category_id, name)
+       VALUES (
+         (SELECT id FROM brands WHERE name = ?),
+         (SELECT c.id FROM categories c
+            JOIN brands b ON c.brand_id = b.id
+          WHERE b.name = ? AND c.name = ?),
+         ?
+       )`,
+      [brand, brand, category, qty]
+    );
+  }
 };

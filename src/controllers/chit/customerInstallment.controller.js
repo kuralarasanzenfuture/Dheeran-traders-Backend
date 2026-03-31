@@ -537,30 +537,66 @@ export const getInstallmentById = async (req, res) => {
       });
     }
 
-    // ✅ 2. PAYMENT HISTORY (THIS IS WHAT YOU WERE MISSING)
+    // ✅ 2. PAYMENT HISTORY
+    // const [payments] = await db.query(
+    //   `SELECT
+    //     p.id AS payment_id,
+    //     DATE_FORMAT(p.payment_datetime, '%Y-%m-%d %H:%i:%s') AS payment_datetime,
+
+    //     a.allocated_amount,
+
+    //     p.pay_cash,
+    //     p.pay_upi,
+    //     p.pay_cheque,
+    //     p.pay_upi_reference,
+
+    //     p.total_amount,
+    //     p.remarks
+
+    //   FROM chit_payment_allocations a
+
+    //   INNER JOIN chit_collections_payments p
+    //     ON a.payment_id = p.id
+
+    //   WHERE a.installment_id = ?
+
+    //   ORDER BY p.payment_datetime DESC`,
+    //   [id],
+    // );
+
     const [payments] = await db.query(
       `SELECT 
-        p.id AS payment_id,
-        DATE_FORMAT(p.payment_datetime, '%Y-%m-%d %H:%i:%s') AS payment_datetime,
+    p.id AS payment_id,
 
-        a.allocated_amount,
+    DATE_FORMAT(p.payment_datetime, '%Y-%m-%d %H:%i:%s') AS payment_datetime,
 
-        p.pay_cash,
-        p.pay_upi,
-        p.pay_cheque,
-        p.pay_upi_reference,
+    a.allocated_amount,
 
-        p.total_amount,
-        p.remarks
+    p.pay_cash,
+    p.pay_upi,
+    p.pay_cheque,
+    p.pay_upi_reference,
 
-      FROM chit_payment_allocations a
+    p.total_amount,
+    p.remarks,
 
-      INNER JOIN chit_collections_payments p 
-        ON a.payment_id = p.id
+    -- ✅ COLLECTED BY DETAILS
+    u.id AS collected_by_id,
+    u.username AS collected_by_name,
+    u.email AS collected_by_email,
+    u.phone AS collected_by_phone
 
-      WHERE a.installment_id = ?
+  FROM chit_payment_allocations a
 
-      ORDER BY p.payment_datetime DESC`,
+  INNER JOIN chit_collections_payments p 
+    ON a.payment_id = p.id
+
+  LEFT JOIN users_roles u 
+    ON p.collected_by = u.id
+
+  WHERE a.installment_id = ?
+
+  ORDER BY p.payment_datetime DESC`,
       [id],
     );
 
@@ -571,6 +607,34 @@ export const getInstallmentById = async (req, res) => {
         payments: payments,
       },
     });
+
+    // return res.json({
+    //   success: true,
+    //   data: {
+    //     installment: rows[0],
+    //     payments: payments.map((p) => ({
+    //       payment_id: p.payment_id,
+    //       payment_datetime: p.payment_datetime,
+    //       allocated_amount: p.allocated_amount,
+
+    //       payment_mode: {
+    //         cash: p.pay_cash,
+    //         upi: p.pay_upi,
+    //         cheque: p.pay_cheque,
+    //         upi_reference: p.pay_upi_reference,
+    //       },
+
+    //       total_amount: p.total_amount,
+    //       remarks: p.remarks,
+
+    //       collected_by: {
+    //         id: p.collected_by_id,
+    //         name: p.collected_by_name,
+    //         email: p.collected_by_email,
+    //       },
+    //     })),
+    //   },
+    // });
   } catch (err) {
     return res.status(500).json({
       success: false,

@@ -1061,6 +1061,165 @@ const customer_id = subRows[0].customer_id;
     connection.release();
   }
 };
+// business supports wallet/advance payments.
+// export const collectPaymentAutoAllocate = async (req, res) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const {
+//       subscription_id,
+//       pay_upi = 0,
+//       pay_cheque = 0,
+//       pay_cash = 0,
+//       pay_upi_reference,
+//       remarks,
+//     } = req.body;
+
+//     const collected_by = req.user?.id;
+
+//     if (!subscription_id) throw new Error("subscription_id required");
+//     if (!collected_by) throw new Error("Unauthorized");
+
+//     const upi = Number(pay_upi) || 0;
+//     const cheque = Number(pay_cheque) || 0;
+//     const cash = Number(pay_cash) || 0;
+
+//     const total_amount = upi + cheque + cash;
+
+//     if (total_amount <= 0) throw new Error("Invalid payment");
+
+//     // ✅ UPI validation
+//     if (upi > 0 && !pay_upi_reference) {
+//       throw new Error("UPI reference required");
+//     }
+
+//     // ✅ LOCK INSTALLMENTS (important)
+//     const [installments] = await connection.query(
+//       `SELECT i.*
+//        FROM chit_customer_installments i
+//        WHERE i.subscription_id = ?
+//        ORDER BY i.installment_number
+//        FOR UPDATE`,
+//       [subscription_id],
+//     );
+
+//     if (!installments.length) {
+//       throw new Error("No installments found");
+//     }
+
+//     // ✅ Get already paid per installment
+//     const [paidMapRows] = await connection.query(
+//       `SELECT installment_id, SUM(allocated_amount) AS paid
+//        FROM chit_payment_allocations
+//        WHERE installment_id IN (?)
+//        GROUP BY installment_id`,
+//       [installments.map((i) => i.id)],
+//     );
+
+//     const paidMap = {};
+//     paidMapRows.forEach((r) => {
+//       paidMap[r.installment_id] = Number(r.paid);
+//     });
+
+//     let remaining = total_amount;
+//     const allocations = [];
+
+//     // 🔥 AUTO ALLOCATION LOOP
+//     for (const inst of installments) {
+//       if (remaining <= 0) break;
+
+//       const alreadyPaid = paidMap[inst.id] || 0;
+//       const pending = inst.installment_amount - alreadyPaid;
+
+//       if (pending <= 0) continue;
+
+//       const allocate = Math.min(pending, remaining);
+
+//       allocations.push({
+//         installment_id: inst.id,
+//         amount: allocate,
+//       });
+
+//       remaining -= allocate;
+//     }
+
+//     if (allocations.length === 0) {
+//       throw new Error("All installments already paid");
+//     }
+
+//     // ✅ GET CUSTOMER FROM SUBSCRIPTION
+//     const [subRows] = await connection.query(
+//       `SELECT customer_id 
+//    FROM chit_customer_subscriptions
+//    WHERE id = ?
+//    FOR UPDATE`,
+//       [subscription_id],
+//     );
+
+//     if (!subRows.length) {
+//       throw new Error("Invalid subscription");
+//     }
+
+//     const customer_id = subRows[0].customer_id;
+
+//     // ✅ INSERT PAYMENT
+//     const [paymentResult] = await connection.query(
+//       `INSERT INTO chit_collections_payments
+//       (subscription_id, customer_id, collected_by,
+//        pay_upi, pay_upi_reference, pay_cheque, pay_cash,
+//        total_amount, remarks)
+//       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//       [
+//         subscription_id,
+//         // req.user.customer_id || null,
+//         customer_id,
+//         collected_by,
+//         upi,
+//         pay_upi_reference || null,
+//         cheque,
+//         cash,
+//         total_amount,
+//         remarks || null,
+//       ],
+//     );
+
+//     const payment_id = paymentResult.insertId;
+
+//     // ✅ INSERT ALLOCATIONS
+//     for (const item of allocations) {
+//       await connection.query(
+//         `INSERT INTO chit_payment_allocations
+//          (payment_id, installment_id, allocated_amount)
+//          VALUES (?, ?, ?)`,
+//         [payment_id, item.installment_id, item.amount],
+//       );
+//     }
+
+//     await connection.commit();
+
+//     return res.json({
+//       success: true,
+//       message: "Payment allocated successfully",
+//       data: {
+//         payment_id,
+//         total_paid: total_amount,
+//         allocations,
+//         remaining_unallocated: remaining,
+//       },
+//     });
+//   } catch (err) {
+//     await connection.rollback();
+
+//     return res.status(400).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   } finally {
+//     connection.release();
+//   }
+// };
 
 export const collectPaymentAutoAllocate = async (req, res) => {
   const connection = await db.getConnection();
@@ -1090,32 +1249,66 @@ export const collectPaymentAutoAllocate = async (req, res) => {
 
     if (total_amount <= 0) throw new Error("Invalid payment");
 
-    // ✅ UPI validation
     if (upi > 0 && !pay_upi_reference) {
       throw new Error("UPI reference required");
     }
 
-    // ✅ LOCK INSTALLMENTS (important)
-    const [installments] = await connection.query(
-      `SELECT i.*
-       FROM chit_customer_installments i
-       WHERE i.subscription_id = ?
-       ORDER BY i.installment_number
+    // 🔒 Lock subscription
+    const [subRows] = await connection.query(
+      `SELECT customer_id, investment_amount AS total_amount 
+       FROM chit_customer_subscriptions
+       WHERE id = ?
        FOR UPDATE`,
-      [subscription_id],
+      [subscription_id]
+    );
+
+    if (!subRows.length) throw new Error("Invalid subscription");
+
+    const { customer_id, total_amount: subscription_total } = subRows[0];
+
+    // 🔒 Get total already paid
+    const [paidRows] = await connection.query(
+      `SELECT COALESCE(SUM(total_amount), 0) AS total_paid
+       FROM chit_collections_payments
+       WHERE subscription_id = ?`,
+      [subscription_id]
+    );
+
+    const already_paid = Number(paidRows[0].total_paid);
+    const allowed_remaining = subscription_total - already_paid;
+
+    if (allowed_remaining <= 0) {
+      throw new Error("Subscription already fully paid");
+    }
+
+    // ❌ STRICT: block overpayment
+    if (total_amount > allowed_remaining) {
+      throw new Error(
+        `Payment exceeds remaining balance. Max allowed: ${allowed_remaining}`
+      );
+    }
+
+    // 🔒 Lock installments
+    const [installments] = await connection.query(
+      `SELECT id, installment_amount
+       FROM chit_customer_installments
+       WHERE subscription_id = ?
+       ORDER BY installment_number
+       FOR UPDATE`,
+      [subscription_id]
     );
 
     if (!installments.length) {
       throw new Error("No installments found");
     }
 
-    // ✅ Get already paid per installment
+    // 🔒 Already paid per installment
     const [paidMapRows] = await connection.query(
       `SELECT installment_id, SUM(allocated_amount) AS paid
        FROM chit_payment_allocations
        WHERE installment_id IN (?)
        GROUP BY installment_id`,
-      [installments.map((i) => i.id)],
+      [installments.map((i) => i.id)]
     );
 
     const paidMap = {};
@@ -1126,12 +1319,12 @@ export const collectPaymentAutoAllocate = async (req, res) => {
     let remaining = total_amount;
     const allocations = [];
 
-    // 🔥 AUTO ALLOCATION LOOP
+    // 🔥 AUTO ALLOCATION
     for (const inst of installments) {
       if (remaining <= 0) break;
 
-      const alreadyPaid = paidMap[inst.id] || 0;
-      const pending = inst.installment_amount - alreadyPaid;
+      const alreadyPaidInst = paidMap[inst.id] || 0;
+      const pending = inst.installment_amount - alreadyPaidInst;
 
       if (pending <= 0) continue;
 
@@ -1149,20 +1342,12 @@ export const collectPaymentAutoAllocate = async (req, res) => {
       throw new Error("All installments already paid");
     }
 
-    // ✅ GET CUSTOMER FROM SUBSCRIPTION
-    const [subRows] = await connection.query(
-      `SELECT customer_id 
-   FROM chit_customer_subscriptions
-   WHERE id = ?
-   FOR UPDATE`,
-      [subscription_id],
-    );
-
-    if (!subRows.length) {
-      throw new Error("Invalid subscription");
+    // ❌ STRICT: no leftover allowed
+    if (remaining > 0) {
+      throw new Error(
+        `Payment exceeds pending installments. Extra: ${remaining}`
+      );
     }
-
-    const customer_id = subRows[0].customer_id;
 
     // ✅ INSERT PAYMENT
     const [paymentResult] = await connection.query(
@@ -1173,7 +1358,6 @@ export const collectPaymentAutoAllocate = async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         subscription_id,
-        // req.user.customer_id || null,
         customer_id,
         collected_by,
         upi,
@@ -1182,7 +1366,7 @@ export const collectPaymentAutoAllocate = async (req, res) => {
         cash,
         total_amount,
         remarks || null,
-      ],
+      ]
     );
 
     const payment_id = paymentResult.insertId;
@@ -1193,11 +1377,36 @@ export const collectPaymentAutoAllocate = async (req, res) => {
         `INSERT INTO chit_payment_allocations
          (payment_id, installment_id, allocated_amount)
          VALUES (?, ?, ?)`,
-        [payment_id, item.installment_id, item.amount],
+        [payment_id, item.installment_id, item.amount]
       );
     }
 
     await connection.commit();
+
+
+    const [paymentDetails] = await connection.query(
+  `SELECT 
+      p.id AS payment_id,
+      p.subscription_id,
+      p.total_amount,
+      p.pay_cash,
+      p.pay_upi,
+      p.pay_cheque,
+      p.pay_upi_reference,
+      p.remarks,
+      p.created_at,
+
+      u.id AS collected_by_id,
+      u.username AS collected_by_name,
+      u.email AS collected_by_email,
+      u.phone AS collected_by_phone
+
+   FROM chit_collections_payments p
+   LEFT JOIN users_roles u ON u.id = p.collected_by
+   WHERE p.id = ?`,
+  [payment_id]
+);
+
 
     return res.json({
       success: true,
@@ -1206,9 +1415,10 @@ export const collectPaymentAutoAllocate = async (req, res) => {
         payment_id,
         total_paid: total_amount,
         allocations,
-        remaining_unallocated: remaining,
+        collected_by: {...paymentDetails[0]},
       },
     });
+
   } catch (err) {
     await connection.rollback();
 

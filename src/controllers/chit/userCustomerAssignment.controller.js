@@ -361,6 +361,13 @@ export const getMyCustomers = async (req, res) => {
           c.place,
           c.address,
 
+          c.pan_number,
+          c.door_no,
+          c.aadhar,
+          c.state,
+          c.district,
+          c.pincode,
+
           u.id AS user_id,
           u.username AS user_name,
           u.email AS user_email,
@@ -402,6 +409,13 @@ export const getMyCustomers = async (req, res) => {
         c.phone,
         c.place,
         c.address,
+
+        c.pan_number,
+          c.door_no,
+          c.aadhar,
+          c.state,
+          c.district,
+          c.pincode,
 
         u.id AS user_id,
         u.username AS user_name,

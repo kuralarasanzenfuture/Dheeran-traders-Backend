@@ -1,4 +1,7 @@
-
+import jwt from "jsonwebtoken";
+import db from "../../config/db.js";
+import bcrypt from "bcryptjs";
+import { v4 as uuidv4 } from "uuid";
 
 // REFRESH TOKEN API (Validate from DB)
 
@@ -543,6 +546,6 @@ export const refreshToken = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(403).json({ message: "Invalid token" });
+    res.status(403).json({ message: "Invalid token", error: err.message });
   }
 };

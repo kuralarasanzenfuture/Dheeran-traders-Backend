@@ -1,6 +1,5 @@
 import db from "../../config/db.js";
 
-
 export const checkUsername = async (req, res) => {
   try {
     let { username } = req.params;
@@ -103,7 +102,6 @@ export const checkPhone = async (req, res) => {
   }
 };
 
-
 // export const getAllUsers = async (req, res) => {
 //   try {
 //     let {
@@ -163,7 +161,7 @@ export const checkPhone = async (req, res) => {
 // export const getAllUsers = async (req, res) => {
 //   try {
 //     const [users] = await db.query(`
-//       SELECT 
+//       SELECT
 //         id,
 //         username,
 //         email,
@@ -203,11 +201,11 @@ export const getAllUsers = async (req, res) => {
     `);
 
     res.json(users);
-
   } catch (err) {
     console.error(err);
     res.status(500).json({
-      message: "Internal server error"
+      message: "Internal server error",
+      error: err,
     });
   }
 };
@@ -239,18 +237,17 @@ export const getUserById = async (req, res) => {
       `SELECT id, username, email, phone, role_id, status, created_at
        FROM users_roles
        WHERE id = ?`,
-      [id]
+      [id],
     );
 
     if (!rows.length) {
       return res.status(404).json({
-        message: "User not found"
+        message: "User not found",
       });
     }
 
     res.json(rows[0]);
-
   } catch (err) {
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Internal server error", error: err });
   }
 };

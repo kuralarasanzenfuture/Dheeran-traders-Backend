@@ -1,4 +1,3 @@
-
 import db from "../../config/db.js";
 
 // export const assignUserToCustomer = async (req, res) => {
@@ -37,7 +36,7 @@ import db from "../../config/db.js";
 
 //     // 🔴 CHECK ALREADY ASSIGNED (HANDLE UNIQUE BEFORE DB ERROR)
 //     const [existing] = await connection.query(
-//       `SELECT id, is_active 
+//       `SELECT id, is_active
 //        FROM user_chit_customer_assignments
 //        WHERE user_id = ? AND customer_id = ?`,
 //       [user_id, customer_id]
@@ -108,7 +107,7 @@ import db from "../../config/db.js";
 //     if (!user_id) throw new Error("Unauthorized");
 
 //     const [rows] = await db.query(
-//       `SELECT 
+//       `SELECT
 //         c.id,
 //         c.name,
 //         c.phone,
@@ -191,7 +190,7 @@ export const assignUserToCustomer = async (req, res) => {
     // ❌ ADMIN CANNOT BE ASSIGNED
     const [userRows] = await connection.query(
       `SELECT id, role_id FROM users_roles WHERE id = ?`,
-      [user_id]
+      [user_id],
     );
 
     if (!userRows.length) throw new Error("User not found");
@@ -206,7 +205,7 @@ export const assignUserToCustomer = async (req, res) => {
     // 🔴 CHECK CUSTOMER
     const [customerRows] = await connection.query(
       `SELECT id FROM chit_customers WHERE id = ?`,
-      [customer_id]
+      [customer_id],
     );
 
     if (!customerRows.length) throw new Error("Customer not found");
@@ -216,7 +215,7 @@ export const assignUserToCustomer = async (req, res) => {
       `SELECT id, is_active 
        FROM user_chit_customer_assignments
        WHERE user_id = ? AND customer_id = ?`,
-      [user_id, customer_id]
+      [user_id, customer_id],
     );
 
     if (existing.length) {
@@ -229,7 +228,7 @@ export const assignUserToCustomer = async (req, res) => {
                assigned_by = ?,
                assigned_at = NOW()
            WHERE id = ?`,
-          [assigned_by, existing[0].id]
+          [assigned_by, existing[0].id],
         );
 
         await connection.commit();
@@ -246,7 +245,7 @@ export const assignUserToCustomer = async (req, res) => {
       `INSERT INTO user_chit_customer_assignments
        (user_id, customer_id, assigned_by)
        VALUES (?, ?, ?)`,
-      [user_id, customer_id, assigned_by]
+      [user_id, customer_id, assigned_by],
     );
 
     await connection.commit();
@@ -255,7 +254,6 @@ export const assignUserToCustomer = async (req, res) => {
       success: true,
       message: "User assigned to customer successfully",
     });
-
   } catch (err) {
     await connection.rollback();
 
@@ -298,7 +296,7 @@ export const assignUserToCustomer = async (req, res) => {
 
 //     // ✅ NON-ADMIN → FILTERED
 //     const [rows] = await db.query(
-//       `SELECT 
+//       `SELECT
 //         c.id,
 //         c.name,
 //         c.phone,
@@ -333,12 +331,26 @@ export const assignUserToCustomer = async (req, res) => {
 export const getMyCustomers = async (req, res) => {
   try {
     const user_id = req.user?.id;
-    const role = req.user?.role;
+    // const role = req.user?.role;
+    const [roleRow] = await db.query(
+      `SELECT r.role_name 
+   FROM users_roles u
+   JOIN role_based r ON r.id = u.role_id
+   WHERE u.id = ?`,
+      [user_id],
+    );
+
+    if (!roleRow.length) throw new Error("User role not found");
+
+    const roleName = roleRow[0].role_name;
+
+    // console.log("ROLE NAME:", roleName);
 
     if (!user_id) throw new Error("Unauthorized");
 
     // ✅ ADMIN → GET ALL WITH FULL DETAILS
-    if (role === "admin") {
+    // if (role === "ADMIN") {
+    if (roleName === "ADMIN") {
       const [rows] = await db.query(`
         SELECT 
           uca.id AS assignment_id,
@@ -416,14 +428,13 @@ export const getMyCustomers = async (req, res) => {
 
       ORDER BY uca.assigned_at DESC
       `,
-      [user_id]
+      [user_id],
     );
 
     return res.json({
       success: true,
       data: rows,
     });
-
   } catch (err) {
     return res.status(400).json({
       success: false,
@@ -431,7 +442,6 @@ export const getMyCustomers = async (req, res) => {
     });
   }
 };
-
 
 export const removeUserFromCustomer = async (req, res) => {
   try {
@@ -444,7 +454,7 @@ export const removeUserFromCustomer = async (req, res) => {
     // ❌ PREVENT ADMIN REMOVAL LOGIC
     const [userRows] = await db.query(
       `SELECT role_id FROM users_roles WHERE id = ?`,
-      [user_id]
+      [user_id],
     );
 
     if (!userRows.length) throw new Error("User not found");
@@ -457,7 +467,7 @@ export const removeUserFromCustomer = async (req, res) => {
       `UPDATE user_chit_customer_assignments
        SET is_active = FALSE
        WHERE user_id = ? AND customer_id = ?`,
-      [user_id, customer_id]
+      [user_id, customer_id],
     );
 
     if (result.affectedRows === 0) {
@@ -468,7 +478,6 @@ export const removeUserFromCustomer = async (req, res) => {
       success: true,
       message: "Assignment removed successfully",
     });
-
   } catch (err) {
     return res.status(400).json({
       success: false,
@@ -476,4 +485,3 @@ export const removeUserFromCustomer = async (req, res) => {
     });
   }
 };
-

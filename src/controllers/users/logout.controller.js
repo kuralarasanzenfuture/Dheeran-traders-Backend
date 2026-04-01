@@ -193,7 +193,7 @@ export const logoutUser = async (req, res) => {
 
     res.json({ message: "Logged out from this device" });
   } catch (err) {
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Internal server error", error: err.message });
   }
 };
 
@@ -219,7 +219,8 @@ export const logoutUser = async (req, res) => {
 // };
 
 export const logoutAllDevices = async (req, res) => {
-  const userId = req.user.id;
+  try {
+    const userId = req.user.id;
 
   await db.query(
     `UPDATE user_refresh_tokens 
@@ -236,4 +237,7 @@ export const logoutAllDevices = async (req, res) => {
   );
 
   res.json({ message: "Logged out from all devices" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

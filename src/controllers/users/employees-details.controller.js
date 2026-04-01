@@ -2,7 +2,10 @@ import db from "../../config/db.js";
 import fs from "fs";
 import path from "path";
 import { validate } from "../../middlewares/validate.middleware.js";
-import { createEmployeeSchema, updateEmployeeSchema } from "../../validations/employee.validation.js";
+import {
+  createEmployeeSchema,
+  updateEmployeeSchema,
+} from "../../validations/employee.validation.js";
 import { log } from "console";
 import formatDate from "../../services/formatDate.service.js";
 
@@ -1196,6 +1199,7 @@ export const createEmployee = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server Error",
+      error: error.message,
     });
   } finally {
     connection.release();
@@ -1224,7 +1228,7 @@ export const createEmployee = async (req, res) => {
 export const getEmployees = async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT * FROM employees_details ORDER BY id DESC"
+      "SELECT * FROM employees_details ORDER BY id DESC",
     );
 
     // 🔥 Fix date for all records
@@ -1237,13 +1241,13 @@ export const getEmployees = async (req, res) => {
       success: true,
       data: formatted,
     });
-
   } catch (error) {
     console.error("getEmployees error:", error);
 
     return res.status(500).json({
       success: false,
       message: "Server Error",
+      error: error.message,
     });
   }
 };
@@ -1948,7 +1952,7 @@ export const getEmployeeById = async (req, res) => {
 
     const [rows] = await db.query(
       "SELECT * FROM employees_details WHERE id = ?",
-      [id]
+      [id],
     );
 
     if (!rows.length) {
@@ -1967,13 +1971,13 @@ export const getEmployeeById = async (req, res) => {
       success: true,
       data: employee,
     });
-
   } catch (error) {
     console.error("getEmployeeById error:", error);
 
     return res.status(500).json({
       success: false,
       message: "Server Error",
+      error: error.message,
     });
   }
 };
@@ -1992,7 +1996,7 @@ export const updateEmployee = async (req, res) => {
 
     const [existing] = await connection.query(
       "SELECT * FROM employees_details WHERE id=?",
-      [id]
+      [id],
     );
 
     if (!existing.length) {
@@ -2099,8 +2103,7 @@ export const updateEmployee = async (req, res) => {
        FILE HANDLING (CLEAN)
     ========================= */
 
-    const getFile = (name, old) =>
-      req.files?.[name]?.[0]?.filename || old;
+    const getFile = (name, old) => req.files?.[name]?.[0]?.filename || old;
 
     /* =========================
        MERGE DATA
@@ -2116,41 +2119,27 @@ export const updateEmployee = async (req, res) => {
       aadhar_number: data.aadhar_number ?? emp.aadhar_number,
       pan_number: data.pan_number ?? emp.pan_number,
       bank_name: data.bank_name ?? emp.bank_name,
-      bank_account_number:
-        data.bank_account_number ?? emp.bank_account_number,
+      bank_account_number: data.bank_account_number ?? emp.bank_account_number,
       ifsc_code: data.ifsc_code ?? emp.ifsc_code,
       emergency_contact_name:
         data.emergency_contact_name ?? emp.emergency_contact_name,
       emergency_contact_phone:
         data.emergency_contact_phone ?? emp.emergency_contact_phone,
       emergency_contact_relation:
-        data.emergency_contact_relation ??
-        emp.emergency_contact_relation,
+        data.emergency_contact_relation ?? emp.emergency_contact_relation,
 
       pan_card_image: getFile("pan_card_image", emp.pan_card_image),
-      aadhar_front_image: getFile(
-        "aadhar_front_image",
-        emp.aadhar_front_image
-      ),
-      aadhar_back_image: getFile(
-        "aadhar_back_image",
-        emp.aadhar_back_image
-      ),
+      aadhar_front_image: getFile("aadhar_front_image", emp.aadhar_front_image),
+      aadhar_back_image: getFile("aadhar_back_image", emp.aadhar_back_image),
       bank_passbook_image: getFile(
         "bank_passbook_image",
-        emp.bank_passbook_image
+        emp.bank_passbook_image,
       ),
-      marksheet_10_image: getFile(
-        "marksheet_10_image",
-        emp.marksheet_10_image
-      ),
-      marksheet_12_image: getFile(
-        "marksheet_12_image",
-        emp.marksheet_12_image
-      ),
+      marksheet_10_image: getFile("marksheet_10_image", emp.marksheet_10_image),
+      marksheet_12_image: getFile("marksheet_12_image", emp.marksheet_12_image),
       college_marksheet_image: getFile(
         "college_marksheet_image",
-        emp.college_marksheet_image
+        emp.college_marksheet_image,
       ),
     };
 
@@ -2205,7 +2194,7 @@ export const updateEmployee = async (req, res) => {
         updatedData.emergency_contact_phone,
         updatedData.emergency_contact_relation,
         id,
-      ]
+      ],
     );
 
     await connection.commit();
@@ -2215,7 +2204,6 @@ export const updateEmployee = async (req, res) => {
       message: "Employee updated successfully",
       data: updatedData,
     });
-
   } catch (error) {
     await connection.rollback();
     deleteFiles(req.files);
@@ -2224,7 +2212,6 @@ export const updateEmployee = async (req, res) => {
       success: false,
       message: error.message,
     });
-
   } finally {
     connection.release();
   }
@@ -2466,7 +2453,7 @@ export const getEmployeeByUserId = async (req, res) => {
     // 🔍 Fetch employee
     const [rows] = await db.query(
       `SELECT * FROM employees_details WHERE user_id = ? LIMIT 1`,
-      [userId]
+      [userId],
     );
 
     if (!rows.length) {
@@ -2482,7 +2469,10 @@ export const getEmployeeByUserId = async (req, res) => {
     if (employee.date_of_birth) {
       if (employee.date_of_birth instanceof Date) {
         const y = employee.date_of_birth.getFullYear();
-        const m = String(employee.date_of_birth.getMonth() + 1).padStart(2, "0");
+        const m = String(employee.date_of_birth.getMonth() + 1).padStart(
+          2,
+          "0",
+        );
         const d = String(employee.date_of_birth.getDate()).padStart(2, "0");
         employee.date_of_birth = `${y}-${m}-${d}`;
       } else if (typeof employee.date_of_birth === "string") {
@@ -2534,13 +2524,13 @@ export const getEmployeeByUserId = async (req, res) => {
       // },
       data: employee,
     });
-
   } catch (error) {
     console.error("getEmployeeByUserId error:", error);
 
     return res.status(500).json({
       success: false,
       message: "Internal server error",
+      error: error.message,
     });
   }
 };

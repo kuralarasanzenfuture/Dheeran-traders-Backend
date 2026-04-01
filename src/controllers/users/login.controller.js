@@ -6,8 +6,6 @@ import { v4 as uuidv4 } from "uuid";
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
-
-
 /* ------------------------------------------------
 LOGIN USER
 ------------------------------------------------ */
@@ -834,13 +832,13 @@ LOGIN USER
 //     ========================= */
 //     const [users] = await connection.query(
 //       `
-//       SELECT 
-//         u.*, 
+//       SELECT
+//         u.*,
 //         r.status AS role_status
 //       FROM users_roles u
 //       JOIN role_based r ON u.role_id = r.id
-//       WHERE LOWER(u.username)=? 
-//          OR LOWER(u.email)=? 
+//       WHERE LOWER(u.username)=?
+//          OR LOWER(u.email)=?
 //          OR u.phone=?
 //       `,
 //       [login_id, login_id, login_id],
@@ -888,21 +886,21 @@ LOGIN USER
 //     ========================= */
 //     const [permRows] = await connection.query(
 //       `
-//       SELECT 
+//       SELECT
 //         m.code AS module_code,
 //         ma.action_code,
 //         COALESCE(up.is_allowed, rp.is_allowed, FALSE) AS is_allowed
 //       FROM modules m
 //       JOIN module_actions ma ON ma.module_id = m.id
 
-//       LEFT JOIN role_permissions rp 
-//         ON rp.module_id = m.id 
-//         AND rp.action_id = ma.id 
+//       LEFT JOIN role_permissions rp
+//         ON rp.module_id = m.id
+//         AND rp.action_id = ma.id
 //         AND rp.role_id = ?
 
 //       LEFT JOIN user_permissions up
-//         ON up.module_id = m.id 
-//         AND up.action_id = ma.id 
+//         ON up.module_id = m.id
+//         AND up.action_id = ma.id
 //         AND up.user_id = ?
 //       `,
 //       [user.role_id, user.id],
@@ -988,8 +986,8 @@ LOGIN USER
 //     ========================= */
 //     await connection.query(
 //       `
-//       UPDATE users_roles 
-//       SET last_login_at = NOW() 
+//       UPDATE users_roles
+//       SET last_login_at = NOW()
 //       WHERE id = ?
 //       `,
 //       [user.id],
@@ -1060,7 +1058,7 @@ export const loginUser = async (req, res) => {
          OR LOWER(u.email)=? 
          OR u.phone=?
       `,
-      [login_id, login_id, login_id]
+      [login_id, login_id, login_id],
     );
 
     if (!users.length) {
@@ -1122,7 +1120,7 @@ export const loginUser = async (req, res) => {
         AND up.action_id = ma.id 
         AND up.user_id = ?
       `,
-      [user.role_id, user.id]
+      [user.role_id, user.id],
     );
 
     const permissions = {};
@@ -1145,7 +1143,7 @@ export const loginUser = async (req, res) => {
         permissions,
       },
       process.env.JWT_ACCESS_SECRET,
-      { expiresIn: process.env.ACCESS_TOKEN_EXPIRES }
+      { expiresIn: process.env.ACCESS_TOKEN_EXPIRES },
     );
 
     const refreshToken = jwt.sign(
@@ -1154,7 +1152,7 @@ export const loginUser = async (req, res) => {
         session_id: sessionId,
       },
       process.env.JWT_REFRESH_SECRET,
-      { expiresIn: process.env.REFRESH_TOKEN_EXPIRES }
+      { expiresIn: process.env.REFRESH_TOKEN_EXPIRES },
     );
 
     await connection.beginTransaction();
@@ -1174,7 +1172,7 @@ export const loginUser = async (req, res) => {
         refreshToken,
         req.ip,
         req.headers["user-agent"] || "unknown",
-      ]
+      ],
     );
 
     /* =========================
@@ -1186,7 +1184,7 @@ export const loginUser = async (req, res) => {
       (user_id, session_id, ip_address, user_agent)
       VALUES (?, ?, ?, ?)
       `,
-      [user.id, sessionId, req.ip, req.headers["user-agent"] || "unknown"]
+      [user.id, sessionId, req.ip, req.headers["user-agent"] || "unknown"],
     );
 
     /* =========================
@@ -1198,7 +1196,7 @@ export const loginUser = async (req, res) => {
       SET last_login_at = NOW() 
       WHERE id = ?
       `,
-      [user.id]
+      [user.id],
     );
 
     await connection.commit();
@@ -1226,17 +1224,15 @@ export const loginUser = async (req, res) => {
 
       last_login_at: new Date(),
     });
-
   } catch (error) {
     await connection.rollback();
     console.error(error);
 
     return res.status(500).json({
       message: "Internal server error",
+      error: error.message,
     });
-
   } finally {
     connection.release();
   }
 };
-

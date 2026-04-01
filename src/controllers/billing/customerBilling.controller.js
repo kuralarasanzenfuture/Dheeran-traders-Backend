@@ -1,24 +1,24 @@
 import db from "../../config/db.js";
 
 /* 🔢 AUTO INVOICE NUMBER GENERATOR */
-const generateInvoiceNumber = async () => {
-  const year = new Date().getFullYear();
+// const generateInvoiceNumber = async () => {
+//   const year = new Date().getFullYear();
 
-  const [rows] = await db.query(
-    `SELECT invoice_number 
-     FROM customerBilling 
-     WHERE invoice_number LIKE ? 
-     ORDER BY id DESC LIMIT 1`,
-    [`INV-${year}-%`],
-  );
+//   const [rows] = await db.query(
+//     `SELECT invoice_number 
+//      FROM customerBilling 
+//      WHERE invoice_number LIKE ? 
+//      ORDER BY id DESC LIMIT 1`,
+//     [`INV-${year}-%`],
+//   );
 
-  let next = 1;
-  if (rows.length) {
-    next = parseInt(rows[0].invoice_number.split("-")[2]) + 1;
-  }
+//   let next = 1;
+//   if (rows.length) {
+//     next = parseInt(rows[0].invoice_number.split("-")[2]) + 1;
+//   }
 
-  return `INV-${year}-${String(next).padStart(4, "0")}`;
-};
+//   return `INV-${year}-${String(next).padStart(4, "0")}`;
+// };
 
 // export const createCustomerBilling = async (req, res) => {
 //   const connection = await db.getConnection();
@@ -254,6 +254,103 @@ const generateInvoiceNumber = async () => {
 // };
 
 // problem of sub total error controller
+
+// const generateInvoiceNumber = async () => {
+//   const now = new Date();
+
+//   let startYear = now.getFullYear();
+//   let endYear;
+
+//   // If before April (Jan, Feb, Mar), use previous financial year
+//   if (now.getMonth() < 3) {
+//     startYear = startYear - 1;
+//   }
+
+//   endYear = (startYear + 1).toString().slice(-2);
+
+//   const financialYear = `${startYear}-${endYear}`;
+
+//   const [rows] = await db.query(
+//     `SELECT invoice_number 
+//      FROM customerBilling 
+//      WHERE invoice_number LIKE ? 
+//      ORDER BY id DESC LIMIT 1`,
+//     [`INV-${financialYear}-%`],
+//   );
+
+//   let next = 1;
+
+//   if (rows.length) {
+//     next = parseInt(rows[0].invoice_number.split("-")[2]) + 1;
+//   }
+
+//   return `INV/${financialYear}/${String(next).padStart(4, "0")}`;
+// };
+
+const generateInvoiceNumber = async () => {
+  const now = new Date();
+
+  let startYear = now.getFullYear();
+
+  // Handle financial year (Apr–Mar)
+  if (now.getMonth() < 3) {
+    startYear = startYear - 1;
+  }
+
+  const shortStartYear = startYear.toString().slice(-2); // "26"
+  const shortEndYear = (startYear + 1).toString().slice(-2); // "27"
+
+  const financialYear = `${shortStartYear}-${shortEndYear}`;
+
+  const [rows] = await db.query(
+    `SELECT invoice_number 
+     FROM customerBilling 
+     WHERE invoice_number LIKE ? 
+     ORDER BY id DESC LIMIT 1`,
+    [`INV/${financialYear}/%`],
+  );
+
+  let next = 1;
+
+  if (rows.length) {
+    next = parseInt(rows[0].invoice_number.split("/")[2]) + 1;
+  }
+
+  return `INV/${financialYear}/${String(next).padStart(4, "0")}`;
+};
+
+// const generateInvoiceNumber = async () => {
+//   const now = new Date();
+//   const year = now.getFullYear();
+
+//   // Determine April 1 boundary
+//   let startDate;
+
+//   if (now.getMonth() < 3) {
+//     // Jan–Mar → use previous year's April 1
+//     startDate = new Date(year - 1, 3, 1);
+//   } else {
+//     // Apr–Dec → use current year's April 1
+//     startDate = new Date(year, 3, 1);
+//   }
+
+//   const [rows] = await db.query(
+//     `SELECT invoice_number 
+//      FROM customerBilling 
+//      WHERE created_at >= ?
+//      ORDER BY id DESC LIMIT 1`,
+//     [startDate],
+//   );
+
+//   let next = 1;
+
+//   if (rows.length) {
+//     const lastNumber = parseInt(rows[0].invoice_number.split("-")[2]);
+//     next = lastNumber + 1;
+//   }
+
+//   return `INV-${year}-${String(next).padStart(4, "0")}`;
+// };
 
 export const createCustomerBilling = async (req, res) => {
   const connection = await db.getConnection();
@@ -1011,41 +1108,95 @@ export const getLastInvoiceNumber = async (req, res) => {
   }
 };
 
+// export const getNextInvoiceNumber = async (req, res) => {
+//   try {
+//     const [rows] = await db.query(`
+//       SELECT invoice_number 
+//       FROM customerBilling 
+//       ORDER BY created_at DESC 
+//       LIMIT 1
+//     `);
+
+//     const year = new Date().getFullYear();
+
+//     // No invoices yet
+//     if (rows.length === 0) {
+//       return res.json({
+//         nextInvoiceNumber: `INV-${year}-001`,
+//       });
+//     }
+
+//     const lastInvoice = rows[0].invoice_number; // e.g. INV-2026-045
+
+//     // extract last numeric part
+//     const match = lastInvoice.match(/(\d+)$/);
+
+//     if (!match) {
+//       return res.status(400).json({
+//         message: "Invalid invoice number format in DB",
+//       });
+//     }
+
+//     const lastNumber = Number(match[1]);
+//     const nextNumber = lastNumber + 1;
+
+//     const padded = String(nextNumber).padStart(4, "0");
+
+//     const nextInvoice = `INV-${year}-${padded}`;
+
+//     return res.json({
+//       nextInvoiceNumber: nextInvoice,
+//     });
+//   } catch (error) {
+//     console.error("Error generating next invoice:", error);
+//     return res
+//       .status(500)
+//       .json({ message: "Failed to generate next invoice number" });
+//   }
+// };
+
+
 export const getNextInvoiceNumber = async (req, res) => {
   try {
-    const [rows] = await db.query(`
+    const now = new Date();
+
+    let startYear = now.getFullYear();
+
+    // Financial year logic (Apr–Mar)
+    if (now.getMonth() < 3) {
+      startYear -= 1;
+    }
+
+    const shortStartYear = startYear.toString().slice(-2);
+    const shortEndYear = (startYear + 1).toString().slice(-2);
+
+    const financialYear = `${shortStartYear}-${shortEndYear}`;
+
+    const [rows] = await db.query(
+      `
       SELECT invoice_number 
       FROM customerBilling 
+      WHERE invoice_number LIKE ?
       ORDER BY created_at DESC 
       LIMIT 1
-    `);
+      `,
+      [`INV/${financialYear}/%`]
+    );
 
-    const year = new Date().getFullYear();
+    let nextNumber = 1;
 
-    // No invoices yet
-    if (rows.length === 0) {
-      return res.json({
-        nextInvoiceNumber: `INV-${year}-001`,
-      });
+    if (rows.length > 0) {
+      const lastInvoice = rows[0].invoice_number; // INV/26-27/0002
+
+      const parts = lastInvoice.split("/");
+      const lastNumber = Number(parts[2]);
+
+      nextNumber = lastNumber + 1;
     }
-
-    const lastInvoice = rows[0].invoice_number; // e.g. INV-2026-045
-
-    // extract last numeric part
-    const match = lastInvoice.match(/(\d+)$/);
-
-    if (!match) {
-      return res.status(400).json({
-        message: "Invalid invoice number format in DB",
-      });
-    }
-
-    const lastNumber = Number(match[1]);
-    const nextNumber = lastNumber + 1;
 
     const padded = String(nextNumber).padStart(4, "0");
 
-    const nextInvoice = `INV-${year}-${padded}`;
+    const nextInvoice = `INV/${financialYear}/${padded}`;
 
     return res.json({
       nextInvoiceNumber: nextInvoice,

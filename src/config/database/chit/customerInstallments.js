@@ -21,7 +21,11 @@ CREATE TABLE IF NOT EXISTS chit_customer_installments (
     -- 🚫 Prevent duplicate installments
     UNIQUE KEY unique_installment (subscription_id, installment_number),
 
-    INDEX idx_subscription (subscription_id)
+    INDEX idx_subscription (subscription_id),
+
+    INDEX idx_installment_number (installment_number),
+
+    INDEX idx_due_date (due_date)
 );
 `);
 

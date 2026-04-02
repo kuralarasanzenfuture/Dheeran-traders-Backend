@@ -1686,98 +1686,6 @@ export const deleteCustomerSubscription = async (req, res) => {
 // };
 
 // -----------------------------------------
-// export const getCustomerSubscriptions = async (req, res) => {
-//   try {
-//     const [rows] = await db.query(`
-      
-//       SELECT 
-//         s.id AS subscription_id,
-//         s.nominee_name,
-//         s.nominee_phone,
-
-//         c.id AS customer_id,
-//         c.name AS customer_name,
-//         c.phone,
-//         c.place,
-
-//         b.id AS batch_id,
-//         b.batch_name,
-//         b.batch_duration,
-//         b.start_date AS batch_start_date,
-//         b.end_date AS batch_end_date,
-
-//         p.id AS plan_id,
-//         p.plan_name,
-//         p.duration_days,
-//         p.collection_type,
-//         p.total_installments,
-
-//         s.installment_amount,
-//         s.investment_amount,
-//         s.start_date,
-//         s.duration,
-//         s.end_date,
-
-//         s.reference_mode,
-//         s.agent_staff_id,
-//         s.created_at,
-
-//         bs.total_members,
-//         bs.active_members,
-//         bs.batch_plan_count
-
-//       FROM chit_customer_subscriptions s
-
-//       LEFT JOIN chit_customers c 
-//         ON c.id = s.customer_id
-
-//       LEFT JOIN batches b 
-//         ON b.id = s.batch_id
-
-//       LEFT JOIN plans p 
-//         ON p.id = s.plan_id
-
-//       -- ✅ Pre-aggregated batch stats (ONLY ONCE)
-//       LEFT JOIN (
-//         SELECT 
-//           batch_id,
-//           COUNT(*) AS total_members,
-
-//           COUNT(
-//             CASE 
-//               WHEN CURRENT_DATE BETWEEN start_date AND end_date 
-//               THEN 1 
-//             END
-//           ) AS active_members,
-
-//           COUNT(DISTINCT plan_id) AS batch_plan_count
-
-//         FROM chit_customer_subscriptions
-//         GROUP BY batch_id
-//       ) bs 
-//         ON bs.batch_id = s.batch_id
-
-//       ORDER BY s.id DESC
-//     `);
-
-//     res.status(200).json({
-//       success: true,
-//       count: rows.length,
-//       data: rows,
-//     });
-
-//   } catch (error) {
-//     console.error("getCustomerSubscriptions error:", error);
-
-//     res.status(500).json({
-//       success: false,
-//       message: "Server error",
-//     });
-//   }
-// };
-
-// -----------------------------------------
-
 export const getCustomerSubscriptions = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -1812,14 +1720,6 @@ export const getCustomerSubscriptions = async (req, res) => {
 
         s.reference_mode,
         s.agent_staff_id,
-
-        a.id AS agent_id,
-a.name AS agent_name,
-a.phone AS agent_phone,
-a.reference_mode AS agent_reference_mode,
-a.status AS agent_status,
-
-
         s.created_at,
 
         bs.total_members,
@@ -1836,9 +1736,6 @@ a.status AS agent_status,
 
       LEFT JOIN plans p 
         ON p.id = s.plan_id
-
-        LEFT JOIN chit_agent_and_staff a 
-  ON a.id = s.agent_staff_id
 
       -- ✅ Pre-aggregated batch stats (ONLY ONCE)
       LEFT JOIN (
@@ -1863,82 +1760,10 @@ a.status AS agent_status,
       ORDER BY s.id DESC
     `);
 
-    const batchMap = {};
-
-    for (const row of rows) {
-      if (!batchMap[row.batch_id]) {
-        batchMap[row.batch_id] = {
-          batch_id: row.batch_id,
-          batch_name: row.batch_name,
-          batch_duration: row.batch_duration,
-          batch_start_date: row.batch_start_date,
-          batch_end_date: row.batch_end_date,
-
-          total_members: row.total_members,
-          active_members: row.active_members,
-          batch_plan_count: row.batch_plan_count,
-
-          plans: {}
-        };
-      }
-
-      const batch = batchMap[row.batch_id];
-
-      if (!batch.plans[row.plan_id]) {
-        batch.plans[row.plan_id] = {
-          plan_id: row.plan_id,
-          plan_name: row.plan_name,
-          duration_days: row.duration_days,
-          collection_type: row.collection_type,
-          total_installments: row.total_installments,
-
-          subscriptions: []
-        };
-      }
-
-      batch.plans[row.plan_id].subscriptions.push({
-        subscription_id: row.subscription_id,
-        nominee_name: row.nominee_name,
-        nominee_phone: row.nominee_phone,
-
-        customer_id: row.customer_id,
-        customer_name: row.customer_name,
-        phone: row.phone,
-        place: row.place,
-
-        installment_amount: row.installment_amount,
-        investment_amount: row.investment_amount,
-        start_date: row.start_date,
-        end_date: row.end_date,
-
-        reference_mode: row.reference_mode,
-        agent_staff_id: row.agent_staff_id,
-
-        agent: row.agent_id
-    ? {
-        agent_id: row.agent_id,
-        name: row.agent_name,
-        phone: row.agent_phone,
-        reference_mode: row.agent_reference_mode,
-        status: row.agent_status
-      }
-    : null,
-
-
-        created_at: row.created_at
-      });
-    }
-
-    // convert object → array
-    const result = Object.values(batchMap).map(batch => ({
-      ...batch,
-      plans: Object.values(batch.plans)
-    }));
-
     res.status(200).json({
       success: true,
-      count: result.length,
-      data: result
+      count: rows.length,
+      data: rows,
     });
 
   } catch (error) {
@@ -1946,10 +1771,185 @@ a.status AS agent_status,
 
     res.status(500).json({
       success: false,
-      message: "Server error"
+      message: "Server error",
     });
   }
 };
+
+// -----------------------------------------
+
+// export const getCustomerSubscriptions = async (req, res) => {
+//   try {
+//     const [rows] = await db.query(`
+      
+//       SELECT 
+//         s.id AS subscription_id,
+//         s.nominee_name,
+//         s.nominee_phone,
+
+//         c.id AS customer_id,
+//         c.name AS customer_name,
+//         c.phone,
+//         c.place,
+
+//         b.id AS batch_id,
+//         b.batch_name,
+//         b.batch_duration,
+//         b.start_date AS batch_start_date,
+//         b.end_date AS batch_end_date,
+
+//         p.id AS plan_id,
+//         p.plan_name,
+//         p.duration_days,
+//         p.collection_type,
+//         p.total_installments,
+
+//         s.installment_amount,
+//         s.investment_amount,
+//         s.start_date,
+//         s.duration,
+//         s.end_date,
+
+//         s.reference_mode,
+//         s.agent_staff_id,
+
+//         a.id AS agent_id,
+// a.name AS agent_name,
+// a.phone AS agent_phone,
+// a.reference_mode AS agent_reference_mode,
+// a.status AS agent_status,
+
+
+//         s.created_at,
+
+//         bs.total_members,
+//         bs.active_members,
+//         bs.batch_plan_count
+
+//       FROM chit_customer_subscriptions s
+
+//       LEFT JOIN chit_customers c 
+//         ON c.id = s.customer_id
+
+//       LEFT JOIN batches b 
+//         ON b.id = s.batch_id
+
+//       LEFT JOIN plans p 
+//         ON p.id = s.plan_id
+
+//         LEFT JOIN chit_agent_and_staff a 
+//   ON a.id = s.agent_staff_id
+
+//       -- ✅ Pre-aggregated batch stats (ONLY ONCE)
+//       LEFT JOIN (
+//         SELECT 
+//           batch_id,
+//           COUNT(*) AS total_members,
+
+//           COUNT(
+//             CASE 
+//               WHEN CURRENT_DATE BETWEEN start_date AND end_date 
+//               THEN 1 
+//             END
+//           ) AS active_members,
+
+//           COUNT(DISTINCT plan_id) AS batch_plan_count
+
+//         FROM chit_customer_subscriptions
+//         GROUP BY batch_id
+//       ) bs 
+//         ON bs.batch_id = s.batch_id
+
+//       ORDER BY s.id DESC
+//     `);
+
+//     const batchMap = {};
+
+//     for (const row of rows) {
+//       if (!batchMap[row.batch_id]) {
+//         batchMap[row.batch_id] = {
+//           batch_id: row.batch_id,
+//           batch_name: row.batch_name,
+//           batch_duration: row.batch_duration,
+//           batch_start_date: row.batch_start_date,
+//           batch_end_date: row.batch_end_date,
+
+//           total_members: row.total_members,
+//           active_members: row.active_members,
+//           batch_plan_count: row.batch_plan_count,
+
+//           plans: {}
+//         };
+//       }
+
+//       const batch = batchMap[row.batch_id];
+
+//       if (!batch.plans[row.plan_id]) {
+//         batch.plans[row.plan_id] = {
+//           plan_id: row.plan_id,
+//           plan_name: row.plan_name,
+//           duration_days: row.duration_days,
+//           collection_type: row.collection_type,
+//           total_installments: row.total_installments,
+
+//           subscriptions: []
+//         };
+//       }
+
+//       batch.plans[row.plan_id].subscriptions.push({
+//         subscription_id: row.subscription_id,
+//         nominee_name: row.nominee_name,
+//         nominee_phone: row.nominee_phone,
+
+//         customer_id: row.customer_id,
+//         customer_name: row.customer_name,
+//         phone: row.phone,
+//         place: row.place,
+
+//         installment_amount: row.installment_amount,
+//         investment_amount: row.investment_amount,
+//         start_date: row.start_date,
+//         end_date: row.end_date,
+
+//         reference_mode: row.reference_mode,
+//         agent_staff_id: row.agent_staff_id,
+
+//         agent: row.agent_id
+//     ? {
+//         agent_id: row.agent_id,
+//         name: row.agent_name,
+//         phone: row.agent_phone,
+//         reference_mode: row.agent_reference_mode,
+//         status: row.agent_status
+//       }
+//     : null,
+
+
+//         created_at: row.created_at
+//       });
+//     }
+
+//     // convert object → array
+//     const result = Object.values(batchMap).map(batch => ({
+//       ...batch,
+//       plans: Object.values(batch.plans)
+//     }));
+
+//     res.status(200).json({
+//       success: true,
+//       count: result.length,
+//       data: result
+//     });
+
+//   } catch (error) {
+//     console.error("getCustomerSubscriptions error:", error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error"
+//     });
+//   }
+// };
 
 /* GET BY ID */
 // export const getCustomerSubscriptionById = async (req, res) => {

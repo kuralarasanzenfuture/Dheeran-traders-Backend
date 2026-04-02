@@ -173,6 +173,106 @@ import db from "../../config/db.js";
 
 // --------------------------------------------------------------------
 
+// export const assignUserToCustomer = async (req, res) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const { user_id, customer_id } = req.body;
+//     const assigned_by = req.user?.id;
+//     const assigned_by_role = req.user?.role;
+
+//     if (!user_id) throw new Error("user_id is required");
+//     if (!customer_id) throw new Error("customer_id is required");
+//     if (!assigned_by) throw new Error("Unauthorized");
+
+//     // ❌ ADMIN CANNOT BE ASSIGNED
+//     const [userRows] = await connection.query(
+//       `SELECT id, role_id FROM users_roles WHERE id = ?`,
+//       [user_id],
+//     );
+
+//     if (!userRows.length) throw new Error("User not found");
+
+//     const targetUser = userRows[0];
+
+//     // 👉 CHANGE THIS BASED ON YOUR ROLE TABLE
+//     if (targetUser.role_id === 1) {
+//       throw new Error("Admin users cannot be assigned to customers");
+//     }
+
+//     // 🔴 CHECK CUSTOMER
+//     const [customerRows] = await connection.query(
+//       `SELECT id FROM chit_customers WHERE id = ?`,
+//       [customer_id],
+//     );
+
+//     if (!customerRows.length) throw new Error("Customer not found");
+
+//     // 🔴 CHECK EXISTING
+//     const [existing] = await connection.query(
+//       `SELECT id, is_active 
+//        FROM user_chit_customer_assignments
+//        WHERE user_id = ? AND customer_id = ?`,
+//       [user_id, customer_id],
+//     );
+
+//     if (existing.length) {
+//       if (existing[0].is_active) {
+//         throw new Error("User already assigned to this customer");
+//       } else {
+//         await connection.query(
+//           `UPDATE user_chit_customer_assignments
+//            SET is_active = TRUE,
+//                assigned_by = ?,
+//                assigned_at = NOW()
+//            WHERE id = ?`,
+//           [assigned_by, existing[0].id],
+//         );
+
+//         await connection.commit();
+
+//         return res.json({
+//           success: true,
+//           message: "Assignment reactivated successfully",
+//         });
+//       }
+//     }
+
+//     // 🔴 INSERT
+//     await connection.query(
+//       `INSERT INTO user_chit_customer_assignments
+//        (user_id, customer_id, assigned_by)
+//        VALUES (?, ?, ?)`,
+//       [user_id, customer_id, assigned_by],
+//     );
+
+//     await connection.commit();
+
+//     return res.json({
+//       success: true,
+//       message: "User assigned to customer successfully",
+//     });
+//   } catch (err) {
+//     await connection.rollback();
+
+//     if (err.code === "ER_DUP_ENTRY") {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Duplicate assignment: user already assigned",
+//       });
+//     }
+
+//     return res.status(400).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
 export const assignUserToCustomer = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -181,63 +281,56 @@ export const assignUserToCustomer = async (req, res) => {
 
     const { user_id, customer_id } = req.body;
     const assigned_by = req.user?.id;
-    const assigned_by_role = req.user?.role;
 
     if (!user_id) throw new Error("user_id is required");
     if (!customer_id) throw new Error("customer_id is required");
     if (!assigned_by) throw new Error("Unauthorized");
 
-    // ❌ ADMIN CANNOT BE ASSIGNED
+    // 🔴 CHECK USER
     const [userRows] = await connection.query(
-      `SELECT id, role_id FROM users_roles WHERE id = ?`,
-      [user_id],
+      `SELECT role_id FROM users_roles WHERE id = ?`,
+      [user_id]
     );
 
     if (!userRows.length) throw new Error("User not found");
-
-    const targetUser = userRows[0];
-
-    // 👉 CHANGE THIS BASED ON YOUR ROLE TABLE
-    if (targetUser.role_id === 1) {
-      throw new Error("Admin users cannot be assigned to customers");
+    if (userRows[0].role_id === 1) {
+      throw new Error("Admin cannot be assigned");
     }
 
     // 🔴 CHECK CUSTOMER
     const [customerRows] = await connection.query(
       `SELECT id FROM chit_customers WHERE id = ?`,
-      [customer_id],
+      [customer_id]
     );
 
     if (!customerRows.length) throw new Error("Customer not found");
 
     // 🔴 CHECK EXISTING
     const [existing] = await connection.query(
-      `SELECT id, is_active 
-       FROM user_chit_customer_assignments
+      `SELECT id, is_active FROM user_chit_customer_assignments
        WHERE user_id = ? AND customer_id = ?`,
-      [user_id, customer_id],
+      [user_id, customer_id]
     );
 
     if (existing.length) {
       if (existing[0].is_active) {
-        throw new Error("User already assigned to this customer");
-      } else {
-        await connection.query(
-          `UPDATE user_chit_customer_assignments
-           SET is_active = TRUE,
-               assigned_by = ?,
-               assigned_at = NOW()
-           WHERE id = ?`,
-          [assigned_by, existing[0].id],
-        );
-
-        await connection.commit();
-
-        return res.json({
-          success: true,
-          message: "Assignment reactivated successfully",
-        });
+        throw new Error("Already assigned");
       }
+
+      await connection.query(
+        `UPDATE user_chit_customer_assignments
+         SET is_active = TRUE,
+             assigned_by = ?,
+             assigned_at = NOW(),
+             updated_by = ?,
+             updated_at = NOW()
+         WHERE id = ?`,
+        [assigned_by, assigned_by, existing[0].id]
+      );
+
+      await connection.commit();
+
+      return res.json({ success: true, message: "Reactivated" });
     }
 
     // 🔴 INSERT
@@ -245,29 +338,16 @@ export const assignUserToCustomer = async (req, res) => {
       `INSERT INTO user_chit_customer_assignments
        (user_id, customer_id, assigned_by)
        VALUES (?, ?, ?)`,
-      [user_id, customer_id, assigned_by],
+      [user_id, customer_id, assigned_by]
     );
 
     await connection.commit();
 
-    return res.json({
-      success: true,
-      message: "User assigned to customer successfully",
-    });
+    return res.json({ success: true, message: "Assigned successfully" });
+
   } catch (err) {
     await connection.rollback();
-
-    if (err.code === "ER_DUP_ENTRY") {
-      return res.status(400).json({
-        success: false,
-        message: "Duplicate assignment: user already assigned",
-      });
-    }
-
-    return res.status(400).json({
-      success: false,
-      message: err.message,
-    });
+    return res.status(400).json({ success: false, message: err.message });
   } finally {
     connection.release();
   }
@@ -457,41 +537,86 @@ export const getMyCustomers = async (req, res) => {
   }
 };
 
+// export const removeUserFromCustomer = async (req, res) => {
+//   try {
+//     const { user_id, customer_id } = req.body;
+
+//     if (!user_id || !customer_id) {
+//       throw new Error("user_id and customer_id required");
+//     }
+
+//     // ❌ PREVENT ADMIN REMOVAL LOGIC
+//     const [userRows] = await db.query(
+//       `SELECT role_id FROM users_roles WHERE id = ?`,
+//       [user_id],
+//     );
+
+//     if (!userRows.length) throw new Error("User not found");
+
+//     if (userRows[0].role_id === 1) {
+//       throw new Error("Admin cannot be part of assignments");
+//     }
+
+//     const [result] = await db.query(
+//       `UPDATE user_chit_customer_assignments
+//        SET is_active = FALSE
+//        WHERE user_id = ? AND customer_id = ?`,
+//       [user_id, customer_id],
+//     );
+
+//     if (result.affectedRows === 0) {
+//       throw new Error("Assignment not found");
+//     }
+
+//     return res.json({
+//       success: true,
+//       message: "Assignment removed successfully",
+//     });
+//   } catch (err) {
+//     return res.status(400).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// };
+
 export const removeUserFromCustomer = async (req, res) => {
   try {
-    const { user_id, customer_id } = req.body;
+    const { id } = req.params;
 
-    if (!user_id || !customer_id) {
-      throw new Error("user_id and customer_id required");
-    }
+    if (!id) throw new Error("assignment_id is required");
 
-    // ❌ PREVENT ADMIN REMOVAL LOGIC
+    // 🔴 CHECK EXISTENCE
+    const [rows] = await db.query(
+      `SELECT user_id FROM user_chit_customer_assignments WHERE id = ?`,
+      [id]
+    );
+
+    if (!rows.length) throw new Error("Assignment not found");
+
+    // 🔴 PREVENT ADMIN DELETE
     const [userRows] = await db.query(
       `SELECT role_id FROM users_roles WHERE id = ?`,
-      [user_id],
+      [rows[0].user_id]
     );
 
-    if (!userRows.length) throw new Error("User not found");
-
-    if (userRows[0].role_id === 1) {
-      throw new Error("Admin cannot be part of assignments");
+    if (userRows[0]?.role_id === 1) {
+      throw new Error("Admin assignment cannot be removed");
     }
 
-    const [result] = await db.query(
+    // 🔴 SOFT DELETE
+    await db.query(
       `UPDATE user_chit_customer_assignments
        SET is_active = FALSE
-       WHERE user_id = ? AND customer_id = ?`,
-      [user_id, customer_id],
+       WHERE id = ?`,
+      [id]
     );
-
-    if (result.affectedRows === 0) {
-      throw new Error("Assignment not found");
-    }
 
     return res.json({
       success: true,
       message: "Assignment removed successfully",
     });
+
   } catch (err) {
     return res.status(400).json({
       success: false,
@@ -499,3 +624,106 @@ export const removeUserFromCustomer = async (req, res) => {
     });
   }
 };
+
+export const updateAssignment = async (req, res) => {
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const { id } = req.params;
+    const { user_id, is_active } = req.body;
+    const updated_by = req.user?.id;
+
+    if (!id) throw new Error("assignment_id is required");
+    if (!updated_by) throw new Error("Unauthorized");
+
+    // 🔴 GET EXISTING
+    const [rows] = await connection.query(
+      `SELECT * FROM user_chit_customer_assignments WHERE id = ?`,
+      [id]
+    );
+
+    if (!rows.length) throw new Error("Assignment not found");
+
+    const assignment = rows[0];
+
+    let newUserId = assignment.user_id;
+    let newStatus = assignment.is_active;
+
+    // 🔴 VALIDATE + UPDATE USER (REASSIGN)
+    if (user_id !== undefined) {
+      const [userRows] = await connection.query(
+        `SELECT role_id FROM users_roles WHERE id = ?`,
+        [user_id]
+      );
+
+      if (!userRows.length) throw new Error("New user not found");
+
+      if (userRows[0].role_id === 1) {
+        throw new Error("Admin cannot be assigned");
+      }
+
+      // 🔴 CHECK DUPLICATE ACTIVE ASSIGNMENT
+      const [duplicate] = await connection.query(
+        `SELECT id FROM user_chit_customer_assignments
+         WHERE user_id = ? 
+           AND customer_id = ? 
+           AND is_active = TRUE 
+           AND id != ?`,
+        [user_id, assignment.customer_id, id]
+      );
+
+      if (duplicate.length) {
+        throw new Error("User already assigned to this customer");
+      }
+
+      newUserId = user_id;
+    }
+
+    // 🔴 UPDATE ACTIVE STATUS
+    if (typeof is_active === "boolean") {
+      newStatus = is_active;
+    }
+
+    // 🔴 SINGLE UPDATE (CLEAN)
+    await connection.query(
+      `UPDATE user_chit_customer_assignments
+       SET user_id = ?,
+           is_active = ?,
+           updated_by = ?,
+           updated_at = NOW()
+       WHERE id = ?`,
+      [newUserId, newStatus, updated_by, id]
+    );
+
+    await connection.commit();
+
+    return res.json({
+      success: true,
+      message: "Assignment updated successfully",
+    });
+
+  } catch (err) {
+    await connection.rollback();
+
+    // 🔴 HANDLE DUPLICATE DB ERROR (IMPORTANT)
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate assignment (user already linked to customer)",
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+
+  } finally {
+    connection.release();
+  }
+};
+
+
+

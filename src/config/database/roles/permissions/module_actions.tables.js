@@ -63,7 +63,8 @@ export const seedModuleActions = async (db) => {
     BILLING_REPORT_CUSTOMER: ["VIEW", "EXPORT"],
     BILLING_QUANTITY: ["VIEW", "EDIT"],
     BILLING_CURRENT_STOCK: ["VIEW"],
-    CHIT_COLLECTIONS: ["VIEW", "CREATE"]
+    CHIT_COLLECTIONS: ["VIEW", "CREATE"],
+    CHIT_ASSIGN_USER: ["VIEW", "CREATE"],
   };
 
   for (const module of modules) {

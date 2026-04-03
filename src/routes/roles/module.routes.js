@@ -5,6 +5,7 @@ import {
   getModulesByParent,
   getUserModules
 } from "../../controllers/roles/module.controller.js";
+import { verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
@@ -18,6 +19,6 @@ router.get("/flat", getAllModulesFlat);
 router.get("/parent/:parent_id", getModulesByParent);
 
 // User permission based
-router.get("/user", getUserModules);
+router.get("/user",verifyToken, getUserModules);
 
 export default router;

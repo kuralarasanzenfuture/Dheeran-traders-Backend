@@ -26,6 +26,8 @@ export const getAllModulesTree = async (req, res) => {
 
     const tree = buildTree(modules);
 
+    console.table(tree);
+
     res.json({
       success: true,
       data: tree
@@ -33,7 +35,7 @@ export const getAllModulesTree = async (req, res) => {
 
   } catch (err) {
     console.error("getAllModulesTree error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 };
 
@@ -47,6 +49,8 @@ export const getAllModulesFlat = async (req, res) => {
       ORDER BY parent_id ASC, id ASC
     `);
 
+    console.table(modules);
+
     res.json({
       success: true,
       count: modules.length,
@@ -55,7 +59,7 @@ export const getAllModulesFlat = async (req, res) => {
 
   } catch (err) {
     console.error("getAllModulesFlat error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 };
 
@@ -70,6 +74,8 @@ export const getModulesByParent = async (req, res) => {
       WHERE parent_id = ?
     `, [parent_id]);
 
+    console.table(modules);
+
     res.json({
       success: true,
       data: modules
@@ -77,7 +83,7 @@ export const getModulesByParent = async (req, res) => {
 
   } catch (err) {
     console.error("getModulesByParent error:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 };
 
@@ -138,7 +144,8 @@ export const getUserModules = async (req, res) => {
     console.error("getUserModules error:", err);
     return res.status(500).json({
       success: false,
-      message: "Server error"
+      message: "Server error",
+      error: err.message
     });
   }
 };

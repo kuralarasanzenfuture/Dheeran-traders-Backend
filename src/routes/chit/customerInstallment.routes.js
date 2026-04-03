@@ -12,6 +12,7 @@ import { verifyToken } from "../../middlewares/auth.middleware.js";
 import {
   getCollectionDashboard,
   getCollectorDueList,
+  getCollectorDueListByDate,
   getOverdueInstallments,
   getPriorityDueList,
   getTodayDueList,
@@ -32,7 +33,10 @@ router.get("/due/today/summary", getTodayDueSummary);
 router.get("/due/today", getTodayDueList);
 router.get("/due/overdue", getOverdueInstallments);
 
+// assigned routes
+router.get("/due/collector/bydate/:date", verifyToken, getCollectorDueListByDate);
 router.get("/due/collector", verifyToken, getCollectorDueList);
+
 router.get("/dashboard/collection", verifyToken, getCollectionDashboard);
 router.get("/due/priority", verifyToken, getPriorityDueList);
 

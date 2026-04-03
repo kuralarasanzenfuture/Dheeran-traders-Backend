@@ -13,6 +13,7 @@ import {
   getCollectionDashboard,
   getCollectorDueList,
   getCollectorDueListByDate,
+  getCollectorDueListTree,
   getOverdueInstallments,
   getPriorityDueList,
   getTodayDueList,
@@ -36,6 +37,7 @@ router.get("/due/overdue", getOverdueInstallments);
 // assigned routes
 router.get("/due/collector/bydate/:date", verifyToken, getCollectorDueListByDate);
 router.get("/due/collector", verifyToken, getCollectorDueList);
+router.get("/due/collector-tree", verifyToken, getCollectorDueListTree);
 
 router.get("/dashboard/collection", verifyToken, getCollectionDashboard);
 router.get("/due/priority", verifyToken, getPriorityDueList);

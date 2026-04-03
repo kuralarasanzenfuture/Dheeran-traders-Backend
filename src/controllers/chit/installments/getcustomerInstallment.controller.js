@@ -211,6 +211,7 @@ export const getOverdueInstallments = async (req, res) => {
 //   }
 // };
 
+// filter by status like paid, pending, overdue, all
 export const getCollectorDueList = async (req, res) => {
   try {
     const user_id = req.user?.id;
@@ -248,6 +249,7 @@ export const getCollectorDueList = async (req, res) => {
     let baseQuery = `
       SELECT
         i.id AS installment_id,
+        i.subscription_id,
         i.installment_number,
         i.due_date,
 
@@ -306,11 +308,169 @@ export const getCollectorDueList = async (req, res) => {
       overdue: rows.filter(r => r.status === "OVERDUE").length,
     };
 
+    console.table(rows);
+
     return res.json({
       success: true,
       filter: status,
       summary,
       data: rows,
+    });
+
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+export const getCollectorDueListTree = async (req, res) => {
+  try {
+    const user_id = req.user?.id;
+    if (!user_id) throw new Error("Unauthorized");
+
+    const { status = "all" } = req.query;
+
+    // 🔹 Get role
+    const [roleRow] = await db.query(
+      `SELECT r.role_name 
+       FROM users_roles u
+       JOIN role_based r ON r.id = u.role_id
+       WHERE u.id = ?`,
+      [user_id]
+    );
+
+    const role = roleRow[0]?.role_name;
+
+    let condition = "";
+    let params = [];
+
+    // 🔹 Restrict collector
+    if (role !== "ADMIN") {
+      condition += `
+        AND s.customer_id IN (
+          SELECT customer_id 
+          FROM user_chit_customer_assignments
+          WHERE user_id = ? AND is_active = TRUE
+        )
+      `;
+      params.push(user_id);
+    }
+
+    // 🔹 Main query (FLAT DATA)
+    let query = `
+      SELECT
+        i.id AS installment_id,
+        i.subscription_id,
+        i.installment_number,
+        i.due_date,
+
+        i.installment_amount,
+        IFNULL(p.total_paid,0) AS paid_amount,
+
+        (i.installment_amount - IFNULL(p.total_paid,0)) AS pending_amount,
+
+        CASE 
+          WHEN IFNULL(p.total_paid,0) >= i.installment_amount THEN 'PAID'
+          WHEN i.due_date < CURDATE() THEN 'OVERDUE'
+          ELSE 'PENDING'
+        END AS status,
+
+        c.id AS customer_id,
+        c.name AS customer_name,
+        c.phone,
+
+        b.batch_name,
+        p2.plan_name
+
+      FROM chit_customer_installments i
+
+      JOIN chit_customer_subscriptions s ON s.id = i.subscription_id
+      JOIN chit_customers c ON c.id = s.customer_id
+      JOIN batches b ON b.id = s.batch_id
+      JOIN plans p2 ON p2.id = s.plan_id
+
+      LEFT JOIN (
+        SELECT installment_id, SUM(allocated_amount) AS total_paid
+        FROM chit_payment_allocations
+        GROUP BY installment_id
+      ) p ON p.installment_id = i.id
+
+      WHERE 1=1
+      ${condition}
+    `;
+
+    // 🔹 Status filter
+    if (status !== "all") {
+      query += ` HAVING status = ?`;
+      params.push(status.toUpperCase());
+    }
+
+    query += ` ORDER BY i.subscription_id, i.due_date ASC`;
+
+    const [rows] = await db.query(query, params);
+
+    // 🔥 🔥 🔥 TREE STRUCTURE BUILD (MAIN LOGIC)
+
+    const grouped = {};
+
+    for (const row of rows) {
+      const subId = row.subscription_id;
+
+      if (!grouped[subId]) {
+        grouped[subId] = {
+          subscription_id: subId,
+
+          customer: {
+            id: row.customer_id,
+            name: row.customer_name,
+            phone: row.phone,
+          },
+
+          batch_name: row.batch_name,
+          plan_name: row.plan_name,
+
+          summary: {
+            total_installments: 0,
+            paid: 0,
+            pending: 0,
+            overdue: 0,
+          },
+
+          installments: [],
+        };
+      }
+
+      // 🔹 Add installment
+      grouped[subId].installments.push({
+        installment_id: row.installment_id,
+        installment_number: row.installment_number,
+        due_date: row.due_date,
+        installment_amount: row.installment_amount,
+        paid_amount: row.paid_amount,
+        pending_amount: row.pending_amount,
+        status: row.status,
+      });
+
+      // 🔹 Update summary
+      grouped[subId].summary.total_installments++;
+
+      if (row.status === "PAID") grouped[subId].summary.paid++;
+      else if (row.status === "PENDING") grouped[subId].summary.pending++;
+      else if (row.status === "OVERDUE") grouped[subId].summary.overdue++;
+    }
+
+    // 🔹 Convert object → array
+    const result = Object.values(grouped);
+
+    // console.table(result);
+
+    return res.json({
+      success: true,
+      filter: status,
+      count: result.length,
+      data: result,
     });
 
   } catch (err) {

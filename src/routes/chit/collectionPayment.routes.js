@@ -14,7 +14,8 @@ import {
   collectPaymentBySubscription,
   collectPaymentByInstallment,
   collectPayment,
-  collectPaymentAutoAllocate
+  collectPaymentAutoAllocate,
+  collectPaymentByCustomer
 } from "../../controllers/chit/collectionPayment.controller.js";
 import { protect, verifyToken } from "../../middlewares/auth.middleware.js";
 
@@ -31,6 +32,8 @@ router.post("/collect/subscription", collectPaymentBySubscription);
 
 // 🔧 Manual payment (specific installment)
 router.post("/collect/installment", collectPaymentByInstallment);
+
+router.post("/collect/customer", collectPaymentByCustomer);
 
 
 export default router;

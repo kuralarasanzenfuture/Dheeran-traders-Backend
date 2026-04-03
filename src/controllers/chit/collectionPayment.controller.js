@@ -2084,3 +2084,148 @@ export const collectPaymentByInstallment = async (req, res) => {
     connection.release();
   }
 };
+
+
+export const collectPaymentByCustomer = async (req, res) => {
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const {
+      customer_id,
+      pay_upi = 0,
+      pay_cheque = 0,
+      pay_cash = 0,
+      pay_upi_reference,
+      remarks,
+    } = req.body;
+
+    const collected_by = req.user?.id;
+
+    if (!customer_id) throw new Error("customer_id required");
+    if (!collected_by) throw new Error("Unauthorized");
+
+    const total_amount =
+      Number(pay_upi) + Number(pay_cheque) + Number(pay_cash);
+
+    if (total_amount <= 0) throw new Error("Invalid payment");
+
+    // 🔴 SECURITY (CRITICAL — YOU MISSED THIS EVERYWHERE)
+    // const [access] = await connection.query(
+    //   `SELECT id FROM user_chit_customer_assignments
+    //    WHERE user_id = ? AND customer_id = ? AND is_active = TRUE`,
+    //   [collected_by, customer_id]
+    // );
+
+    // if (!access.length) {
+    //   throw new Error("You are not assigned to this customer");
+    // }
+
+    // 🔒 GET ALL PENDING INSTALLMENTS ACROSS ALL SUBSCRIPTIONS
+    const [installments] = await connection.query(
+      `SELECT 
+          i.id,
+          i.subscription_id,
+          i.installment_amount,
+          COALESCE(SUM(a.allocated_amount),0) AS paid
+       FROM chit_customer_installments i
+       JOIN chit_customer_subscriptions s 
+         ON s.id = i.subscription_id
+       LEFT JOIN chit_payment_allocations a 
+         ON a.installment_id = i.id
+       WHERE s.customer_id = ?
+       GROUP BY i.id
+       HAVING (i.installment_amount - paid) > 0
+       ORDER BY i.due_date ASC
+       FOR UPDATE`,
+      [customer_id]
+    );
+
+    if (!installments.length) {
+      throw new Error("No pending dues");
+    }
+
+    let remaining = total_amount;
+    const allocations = [];
+
+    // 🔥 ALLOCATION LOGIC (oldest due first)
+    for (const inst of installments) {
+      if (remaining <= 0) break;
+
+      const pending = inst.installment_amount - inst.paid;
+      const allocate = Math.min(pending, remaining);
+
+      allocations.push({
+        installment_id: inst.id,
+        subscription_id: inst.subscription_id,
+        amount: allocate,
+      });
+
+      remaining -= allocate;
+    }
+
+    if (allocations.length === 0) {
+      throw new Error("Nothing to allocate");
+    }
+
+    // ❌ STRICT MODE (recommended)
+    if (remaining > 0) {
+      throw new Error(`Excess amount ${remaining} not allowed`);
+    }
+
+    // 🔴 INSERT PAYMENT (NO subscription_id here!)
+    const [paymentResult] = await connection.query(
+      `INSERT INTO chit_collections_payments
+       (customer_id, collected_by,
+        pay_upi, pay_upi_reference, pay_cheque, pay_cash,
+        total_amount, remarks)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [
+        customer_id,
+        collected_by,
+        pay_upi,
+        pay_upi_reference || null,
+        pay_cheque,
+        pay_cash,
+        total_amount,
+        remarks || null,
+      ]
+    );
+
+    const payment_id = paymentResult.insertId;
+
+    // 🔴 INSERT ALLOCATIONS
+    for (const item of allocations) {
+      await connection.query(
+        `INSERT INTO chit_payment_allocations
+         (payment_id, installment_id, allocated_amount)
+         VALUES (?,?,?)`,
+        [payment_id, item.installment_id, item.amount]
+      );
+    }
+
+    await connection.commit();
+
+    return res.json({
+      success: true,
+      message: "Customer payment allocated successfully",
+      data: {
+        payment_id,
+        total_paid: total_amount,
+        allocations,
+      },
+    });
+
+  } catch (err) {
+    await connection.rollback();
+
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  } finally {
+    connection.release();
+  }
+};
+

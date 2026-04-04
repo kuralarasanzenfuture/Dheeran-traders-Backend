@@ -1138,6 +1138,7 @@ export const loginUser = async (req, res) => {
       {
         id: user.id,
         role_id: user.role_id,
+        role: user.role_name,
         session_id: sessionId,
         token_version: user.token_version, // 🔥 critical
         permissions,

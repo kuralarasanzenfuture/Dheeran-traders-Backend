@@ -898,6 +898,169 @@ import db from "../../config/db.js";
 // };
 
 // ----------------------------------------------------------------
+// export const collectPayment = async (req, res) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const {
+//       subscription_id,
+//       installment_id,
+//       pay_upi = 0,
+//       pay_cheque = 0,
+//       pay_cash = 0,
+//       pay_upi_reference,
+//       remarks,
+//     } = req.body;
+
+//     const collected_by = req.user?.id;
+
+//     // ✅ BASIC VALIDATION
+//     if (!subscription_id || !installment_id) {
+//       throw new Error("subscription_id and installment_id required");
+//     }
+
+//     if (!collected_by) {
+//       throw new Error("Unauthorized");
+//     }
+
+//     const upi = Number(pay_upi) || 0;
+//     const cheque = Number(pay_cheque) || 0;
+//     const cash = Number(pay_cash) || 0;
+
+//     if (upi < 0 || cheque < 0 || cash < 0) {
+//       throw new Error("Invalid payment values");
+//     }
+
+//     const total_amount = upi + cheque + cash;
+
+//     if (total_amount <= 0) {
+//       throw new Error("Payment must be greater than zero");
+//     }
+
+//     // ✅ LOCK INSTALLMENT
+//     const [instRows] = await connection.query(
+//       `SELECT * FROM chit_customer_installments
+//        WHERE id = ? AND subscription_id = ?
+//        FOR UPDATE`,
+//       [installment_id, subscription_id],
+//     );
+
+//     if (!instRows.length) {
+//       throw new Error("Invalid installment");
+//     }
+
+//     const inst = instRows[0];
+
+//     // ✅ GET CURRENT PAID (REAL SOURCE)
+//     const [paidRows] = await connection.query(
+//       `SELECT COALESCE(SUM(allocated_amount),0) AS paid
+//        FROM chit_payment_allocations
+//        WHERE installment_id = ?`,
+//       [installment_id],
+//     );
+
+//     const alreadyPaid = Number(paidRows[0].paid);
+//     const pending = Number(inst.installment_amount) - alreadyPaid;
+
+//     if (pending <= 0) {
+//       throw new Error("Already fully paid");
+//     }
+
+//     if (total_amount > pending) {
+//       throw new Error(`Exceeds pending amount (${pending})`);
+//     }
+
+//     // ✅ UPI VALIDATION
+//     if (upi > 0 && !pay_upi_reference) {
+//       throw new Error("UPI reference required");
+//     }
+
+//     if (upi > 0) {
+//       const [dup] = await connection.query(
+//         `SELECT id FROM chit_collections_payments
+//          WHERE pay_upi_reference = ? LIMIT 1`,
+//         [pay_upi_reference],
+//       );
+
+//       if (dup.length) {
+//         throw new Error("Duplicate UPI reference");
+//       }
+//     }
+
+//     // ✅ GET CUSTOMER FROM SUBSCRIPTION
+//     const [subRows] = await connection.query(
+//       `SELECT customer_id 
+//    FROM chit_customer_subscriptions
+//    WHERE id = ?
+//    FOR UPDATE`,
+//       [subscription_id],
+//     );
+
+//     if (!subRows.length) {
+//       throw new Error("Invalid subscription");
+//     }
+
+//     const customer_id = subRows[0].customer_id;
+
+//     // ✅ INSERT PAYMENT
+//     const [paymentResult] = await connection.query(
+//       `INSERT INTO chit_collections_payments
+//       (subscription_id, customer_id, collected_by,
+//        pay_upi, pay_upi_reference, pay_cheque, pay_cash,
+//        total_amount, remarks)
+//       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//       [
+//         subscription_id,
+//         // req.user.customer_id || null, // adjust if needed
+//         customer_id,
+//         collected_by,
+//         upi,
+//         pay_upi_reference || null,
+//         cheque,
+//         cash,
+//         total_amount,
+//         remarks || null,
+//       ],
+//     );
+
+//     const payment_id = paymentResult.insertId;
+
+//     // ✅ ALLOCATION
+//     await connection.query(
+//       `INSERT INTO chit_payment_allocations
+//        (payment_id, installment_id, allocated_amount)
+//        VALUES (?, ?, ?)`,
+//       [payment_id, installment_id, total_amount],
+//     );
+
+//     await connection.commit();
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Payment successful",
+//       data: {
+//         payment_id,
+//         installment_id,
+//         paid_now: total_amount,
+//         total_paid: alreadyPaid + total_amount,
+//         pending: pending - total_amount,
+//       },
+//     });
+//   } catch (err) {
+//     await connection.rollback();
+
+//     return res.status(400).json({
+//       success: false,
+//       message: err.message || "Payment failed",
+//     });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+// add field payType
 export const collectPayment = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -905,7 +1068,6 @@ export const collectPayment = async (req, res) => {
     await connection.beginTransaction();
 
     const {
-      subscription_id,
       installment_id,
       pay_upi = 0,
       pay_cheque = 0,
@@ -915,12 +1077,15 @@ export const collectPayment = async (req, res) => {
     } = req.body;
 
     const collected_by = req.user?.id;
+    const role = req.user?.role; // 🔥 store role in JWT (recommended)
 
-    // ✅ BASIC VALIDATION
-    if (!subscription_id || !installment_id) {
-      throw new Error("subscription_id and installment_id required");
+    // console.log(role);
+    
+
+    // ✅ VALIDATION
+    if (!installment_id) {
+      throw new Error("installment_id is required");
     }
-
 
     if (!collected_by) {
       throw new Error("Unauthorized");
@@ -940,12 +1105,19 @@ export const collectPayment = async (req, res) => {
       throw new Error("Payment must be greater than zero");
     }
 
-    // ✅ LOCK INSTALLMENT
+    // ✅ LOCK + GET FULL DATA (single source of truth)
     const [instRows] = await connection.query(
-      `SELECT * FROM chit_customer_installments
-       WHERE id = ? AND subscription_id = ?
+      `SELECT 
+          i.id,
+          i.subscription_id,
+          i.installment_amount,
+          s.customer_id
+       FROM chit_customer_installments i
+       JOIN chit_customer_subscriptions s 
+         ON s.id = i.subscription_id
+       WHERE i.id = ?
        FOR UPDATE`,
-      [installment_id, subscription_id],
+      [installment_id]
     );
 
     if (!instRows.length) {
@@ -953,13 +1125,28 @@ export const collectPayment = async (req, res) => {
     }
 
     const inst = instRows[0];
+    const subscription_id = inst.subscription_id;
+    const customer_id = inst.customer_id;
 
-    // ✅ GET CURRENT PAID (REAL SOURCE)
+    // 🔐 ACCESS CONTROL (ADMIN BYPASS)
+    if (role !== "ADMIN") {
+      const [access] = await connection.query(
+        `SELECT id FROM user_chit_customer_assignments
+         WHERE user_id = ? AND customer_id = ? AND is_active = TRUE`,
+        [collected_by, customer_id]
+      );
+
+      if (!access.length) {
+        throw new Error("You are not assigned to this customer");
+      }
+    }
+
+    // ✅ GET CURRENT PAID
     const [paidRows] = await connection.query(
       `SELECT COALESCE(SUM(allocated_amount),0) AS paid
        FROM chit_payment_allocations
        WHERE installment_id = ?`,
-      [installment_id],
+      [installment_id]
     );
 
     const alreadyPaid = Number(paidRows[0].paid);
@@ -982,7 +1169,7 @@ export const collectPayment = async (req, res) => {
       const [dup] = await connection.query(
         `SELECT id FROM chit_collections_payments
          WHERE pay_upi_reference = ? LIMIT 1`,
-        [pay_upi_reference],
+        [pay_upi_reference]
       );
 
       if (dup.length) {
@@ -990,51 +1177,36 @@ export const collectPayment = async (req, res) => {
       }
     }
 
-    // ✅ GET CUSTOMER FROM SUBSCRIPTION
-const [subRows] = await connection.query(
-  `SELECT customer_id 
-   FROM chit_customer_subscriptions
-   WHERE id = ?
-   FOR UPDATE`,
-  [subscription_id]
-);
-
-if (!subRows.length) {
-  throw new Error("Invalid subscription");
-}
-
-const customer_id = subRows[0].customer_id;
-
-
     // ✅ INSERT PAYMENT
     const [paymentResult] = await connection.query(
       `INSERT INTO chit_collections_payments
       (subscription_id, customer_id, collected_by,
+       payment_type,
        pay_upi, pay_upi_reference, pay_cheque, pay_cash,
        total_amount, remarks)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         subscription_id,
-        // req.user.customer_id || null, // adjust if needed
         customer_id,
         collected_by,
+        "INSTALLMENT",
         upi,
         pay_upi_reference || null,
         cheque,
         cash,
         total_amount,
         remarks || null,
-      ],
+      ]
     );
 
     const payment_id = paymentResult.insertId;
 
-    // ✅ ALLOCATION
+    // ✅ ALLOCATE PAYMENT
     await connection.query(
       `INSERT INTO chit_payment_allocations
        (payment_id, installment_id, allocated_amount)
        VALUES (?, ?, ?)`,
-      [payment_id, installment_id, total_amount],
+      [payment_id, installment_id, total_amount]
     );
 
     await connection.commit();
@@ -1045,11 +1217,14 @@ const customer_id = subRows[0].customer_id;
       data: {
         payment_id,
         installment_id,
+        subscription_id,
+        customer_id,
         paid_now: total_amount,
         total_paid: alreadyPaid + total_amount,
         pending: pending - total_amount,
       },
     });
+
   } catch (err) {
     await connection.rollback();
 
@@ -1061,6 +1236,7 @@ const customer_id = subRows[0].customer_id;
     connection.release();
   }
 };
+
 // business supports wallet/advance payments.
 // export const collectPaymentAutoAllocate = async (req, res) => {
 //   const connection = await db.getConnection();
@@ -1151,7 +1327,7 @@ const customer_id = subRows[0].customer_id;
 
 //     // ✅ GET CUSTOMER FROM SUBSCRIPTION
 //     const [subRows] = await connection.query(
-//       `SELECT customer_id 
+//       `SELECT customer_id
 //    FROM chit_customer_subscriptions
 //    WHERE id = ?
 //    FOR UPDATE`,
@@ -1221,6 +1397,7 @@ const customer_id = subRows[0].customer_id;
 //   }
 // };
 
+// 🔥 AUTO ALLOCATE like subscription id to pay
 export const collectPaymentAutoAllocate = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -1259,7 +1436,7 @@ export const collectPaymentAutoAllocate = async (req, res) => {
        FROM chit_customer_subscriptions
        WHERE id = ?
        FOR UPDATE`,
-      [subscription_id]
+      [subscription_id],
     );
 
     if (!subRows.length) throw new Error("Invalid subscription");
@@ -1271,7 +1448,7 @@ export const collectPaymentAutoAllocate = async (req, res) => {
       `SELECT COALESCE(SUM(total_amount), 0) AS total_paid
        FROM chit_collections_payments
        WHERE subscription_id = ?`,
-      [subscription_id]
+      [subscription_id],
     );
 
     const already_paid = Number(paidRows[0].total_paid);
@@ -1284,7 +1461,7 @@ export const collectPaymentAutoAllocate = async (req, res) => {
     // ❌ STRICT: block overpayment
     if (total_amount > allowed_remaining) {
       throw new Error(
-        `Payment exceeds remaining balance. Max allowed: ${allowed_remaining}`
+        `Payment exceeds remaining balance. Max allowed: ${allowed_remaining}`,
       );
     }
 
@@ -1295,7 +1472,7 @@ export const collectPaymentAutoAllocate = async (req, res) => {
        WHERE subscription_id = ?
        ORDER BY installment_number
        FOR UPDATE`,
-      [subscription_id]
+      [subscription_id],
     );
 
     if (!installments.length) {
@@ -1308,7 +1485,7 @@ export const collectPaymentAutoAllocate = async (req, res) => {
        FROM chit_payment_allocations
        WHERE installment_id IN (?)
        GROUP BY installment_id`,
-      [installments.map((i) => i.id)]
+      [installments.map((i) => i.id)],
     );
 
     const paidMap = {};
@@ -1345,7 +1522,7 @@ export const collectPaymentAutoAllocate = async (req, res) => {
     // ❌ STRICT: no leftover allowed
     if (remaining > 0) {
       throw new Error(
-        `Payment exceeds pending installments. Extra: ${remaining}`
+        `Payment exceeds pending installments. Extra: ${remaining}`,
       );
     }
 
@@ -1366,7 +1543,7 @@ export const collectPaymentAutoAllocate = async (req, res) => {
         cash,
         total_amount,
         remarks || null,
-      ]
+      ],
     );
 
     const payment_id = paymentResult.insertId;
@@ -1377,15 +1554,14 @@ export const collectPaymentAutoAllocate = async (req, res) => {
         `INSERT INTO chit_payment_allocations
          (payment_id, installment_id, allocated_amount)
          VALUES (?, ?, ?)`,
-        [payment_id, item.installment_id, item.amount]
+        [payment_id, item.installment_id, item.amount],
       );
     }
 
     await connection.commit();
 
-
     const [paymentDetails] = await connection.query(
-  `SELECT 
+      `SELECT 
       p.id AS payment_id,
       p.subscription_id,
       p.total_amount,
@@ -1404,9 +1580,8 @@ export const collectPaymentAutoAllocate = async (req, res) => {
    FROM chit_collections_payments p
    LEFT JOIN users_roles u ON u.id = p.collected_by
    WHERE p.id = ?`,
-  [payment_id]
-);
-
+      [payment_id],
+    );
 
     return res.json({
       success: true,
@@ -1415,10 +1590,9 @@ export const collectPaymentAutoAllocate = async (req, res) => {
         payment_id,
         total_paid: total_amount,
         allocations,
-        collected_by: {...paymentDetails[0]},
+        collected_by: { ...paymentDetails[0] },
       },
     });
-
   } catch (err) {
     await connection.rollback();
 
@@ -1470,8 +1644,8 @@ export const collectPaymentAutoAllocate = async (req, res) => {
 //     /* GET CUSTOMER */
 
 //     const [sub] = await connection.query(
-//       `SELECT customer_id 
-//        FROM chit_customer_subscriptions 
+//       `SELECT customer_id
+//        FROM chit_customer_subscriptions
 //        WHERE id=? FOR UPDATE`,
 //       [subscription_id],
 //     );
@@ -1489,7 +1663,7 @@ export const collectPaymentAutoAllocate = async (req, res) => {
 //     /* TOTAL CHECK */
 
 //     const [summary] = await connection.query(
-//       `SELECT 
+//       `SELECT
 //         SUM(installment_amount) total_amount,
 //         SUM(paid_amount) total_paid
 //        FROM chit_customer_installments
@@ -1536,7 +1710,7 @@ export const collectPaymentAutoAllocate = async (req, res) => {
 //       }
 
 //       const [dup] = await connection.query(
-//         `SELECT id FROM chit_collections_payments 
+//         `SELECT id FROM chit_collections_payments
 //          WHERE pay_upi_reference=?`,
 //         [pay_upi_reference],
 //       );
@@ -1660,6 +1834,151 @@ export const collectPaymentAutoAllocate = async (req, res) => {
 //   }
 // };
 
+// export const collectPaymentBySubscription = async (req, res) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const {
+//       subscription_id,
+//       pay_upi = 0,
+//       pay_cheque = 0,
+//       pay_cash = 0,
+//       pay_upi_reference,
+//       remarks,
+//     } = req.body;
+
+//     const collected_by = req.user?.id;
+
+//     if (!subscription_id) throw new Error("Subscription ID required");
+//     if (!collected_by) throw new Error("Unauthorized");
+
+//     /* GET CUSTOMER */
+//     const [sub] = await connection.query(
+//       `SELECT customer_id 
+//        FROM chit_customer_subscriptions 
+//        WHERE id=? FOR UPDATE`,
+//       [subscription_id],
+//     );
+
+//     if (!sub.length) throw new Error("Invalid subscription");
+
+//     const customer_id = sub[0].customer_id;
+
+//     /* PAYMENT CALC */
+//     const upi = Number(pay_upi) || 0;
+//     const cheque = Number(pay_cheque) || 0;
+//     const cash = Number(pay_cash) || 0;
+//     const total_amount = upi + cheque + cash;
+
+//     if (total_amount <= 0) throw new Error("Invalid payment");
+
+//     /* UPI CHECK */
+//     if (upi > 0) {
+//       if (!pay_upi_reference) throw new Error("UPI ref required");
+
+//       const [dup] = await connection.query(
+//         `SELECT id FROM chit_collections_payments 
+//          WHERE pay_upi_reference=? LIMIT 1`,
+//         [pay_upi_reference],
+//       );
+
+//       if (dup.length) throw new Error("Duplicate UPI ref");
+//     }
+
+//     /* GET INSTALLMENTS WITH REAL PENDING */
+//     const [installments] = await connection.query(
+//       `SELECT 
+//         i.id,
+//         i.installment_amount,
+//         COALESCE(SUM(a.allocated_amount),0) AS paid
+//       FROM chit_customer_installments i
+//       LEFT JOIN chit_payment_allocations a 
+//         ON i.id = a.installment_id
+//       WHERE i.subscription_id = ?
+//       GROUP BY i.id
+//       HAVING (i.installment_amount - paid) > 0
+//       ORDER BY i.installment_number ASC
+//       FOR UPDATE`,
+//       [subscription_id],
+//     );
+
+//     if (!installments.length) throw new Error("No pending installments");
+
+//     /* INSERT PAYMENT */
+//     const [paymentResult] = await connection.query(
+//       `INSERT INTO chit_collections_payments
+//       (subscription_id, customer_id, collected_by,
+//        pay_upi, pay_upi_reference, pay_cheque, pay_cash,
+//        total_amount, remarks)
+//       VALUES (?,?,?,?,?,?,?,?,?)`,
+//       [
+//         subscription_id,
+//         customer_id,
+//         collected_by,
+//         upi,
+//         pay_upi_reference || null,
+//         cheque,
+//         cash,
+//         total_amount,
+//         remarks || null,
+//       ],
+//     );
+
+//     const payment_id = paymentResult.insertId;
+
+//     /* DISTRIBUTE USING ALLOCATION TABLE */
+//     let remaining = total_amount;
+//     let distribution = [];
+
+//     for (const inst of installments) {
+//       if (remaining <= 0) break;
+
+//       const pending = inst.installment_amount - inst.paid;
+//       const allocate = Math.min(remaining, pending);
+
+//       await connection.query(
+//         `INSERT INTO chit_payment_allocations
+//          (payment_id, installment_id, allocated_amount)
+//          VALUES (?,?,?)`,
+//         [payment_id, inst.id, allocate],
+//       );
+
+//       distribution.push({
+//         installment_id: inst.id,
+//         allocated: allocate,
+//         pending_after: pending - allocate,
+//       });
+
+//       remaining -= allocate;
+//     }
+
+//     await connection.commit();
+
+//     return res.json({
+//       success: true,
+//       message: "Payment successful",
+//       data: {
+//         payment_id,
+//         total_paid: total_amount,
+//         remaining_unused: remaining,
+//         distribution,
+//       },
+//     });
+//   } catch (err) {
+//     await connection.rollback();
+
+//     return res.status(400).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+// pay with subscription id and auto distribute
 export const collectPaymentBySubscription = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -1676,73 +1995,138 @@ export const collectPaymentBySubscription = async (req, res) => {
     } = req.body;
 
     const collected_by = req.user?.id;
+    const role = req.user?.role; // 🔥 must come from JWT
 
-    if (!subscription_id) throw new Error("Subscription ID required");
-    if (!collected_by) throw new Error("Unauthorized");
+    // ✅ VALIDATION
+    if (!subscription_id) {
+      throw new Error("subscription_id is required");
+    }
 
-    /* GET CUSTOMER */
-    const [sub] = await connection.query(
-      `SELECT customer_id 
-       FROM chit_customer_subscriptions 
-       WHERE id=? FOR UPDATE`,
-      [subscription_id]
-    );
+    if (!collected_by) {
+      throw new Error("Unauthorized");
+    }
 
-    if (!sub.length) throw new Error("Invalid subscription");
-
-    const customer_id = sub[0].customer_id;
-
-    /* PAYMENT CALC */
     const upi = Number(pay_upi) || 0;
     const cheque = Number(pay_cheque) || 0;
     const cash = Number(pay_cash) || 0;
-    const total_amount = upi + cheque + cash;
 
-    if (total_amount <= 0) throw new Error("Invalid payment");
-
-    /* UPI CHECK */
-    if (upi > 0) {
-      if (!pay_upi_reference) throw new Error("UPI ref required");
-
-      const [dup] = await connection.query(
-        `SELECT id FROM chit_collections_payments 
-         WHERE pay_upi_reference=? LIMIT 1`,
-        [pay_upi_reference]
-      );
-
-      if (dup.length) throw new Error("Duplicate UPI ref");
+    if (upi < 0 || cheque < 0 || cash < 0) {
+      throw new Error("Invalid payment values");
     }
 
-    /* GET INSTALLMENTS WITH REAL PENDING */
-    const [installments] = await connection.query(
-      `SELECT 
-        i.id,
-        i.installment_amount,
-        COALESCE(SUM(a.allocated_amount),0) AS paid
-      FROM chit_customer_installments i
-      LEFT JOIN chit_payment_allocations a 
-        ON i.id = a.installment_id
-      WHERE i.subscription_id = ?
-      GROUP BY i.id
-      HAVING (i.installment_amount - paid) > 0
-      ORDER BY i.installment_number ASC
-      FOR UPDATE`,
+    const total_amount = upi + cheque + cash;
+
+    if (total_amount <= 0) {
+      throw new Error("Payment must be greater than zero");
+    }
+
+    // ✅ LOCK SUBSCRIPTION + GET CUSTOMER
+    const [subRows] = await connection.query(
+      `SELECT customer_id 
+       FROM chit_customer_subscriptions 
+       WHERE id = ? 
+       FOR UPDATE`,
       [subscription_id]
     );
 
-    if (!installments.length) throw new Error("No pending installments");
+    if (!subRows.length) {
+      throw new Error("Invalid subscription");
+    }
 
-    /* INSERT PAYMENT */
+    const customer_id = subRows[0].customer_id;
+
+    // 🔐 ACCESS CONTROL (ADMIN BYPASS)
+    if (role !== "ADMIN") {
+      const [access] = await connection.query(
+        `SELECT id FROM user_chit_customer_assignments
+         WHERE user_id = ? AND customer_id = ? AND is_active = TRUE`,
+        [collected_by, customer_id]
+      );
+
+      if (!access.length) {
+        throw new Error("You are not assigned to this customer");
+      }
+    }
+
+    // ✅ UPI VALIDATION
+    if (upi > 0 && !pay_upi_reference) {
+      throw new Error("UPI reference required");
+    }
+
+    if (upi > 0) {
+      const [dup] = await connection.query(
+        `SELECT id FROM chit_collections_payments
+         WHERE pay_upi_reference = ? LIMIT 1`,
+        [pay_upi_reference]
+      );
+
+      if (dup.length) {
+        throw new Error("Duplicate UPI reference");
+      }
+    }
+
+    // ✅ GET PENDING INSTALLMENTS (LOCKED)
+    const [installments] = await connection.query(
+      `SELECT 
+          i.id,
+          i.installment_amount,
+          COALESCE(SUM(a.allocated_amount),0) AS paid
+       FROM chit_customer_installments i
+       LEFT JOIN chit_payment_allocations a 
+         ON i.id = a.installment_id
+       WHERE i.subscription_id = ?
+       GROUP BY i.id
+       HAVING (i.installment_amount - paid) > 0
+       ORDER BY i.installment_number ASC
+       FOR UPDATE`,
+      [subscription_id]
+    );
+
+    if (!installments.length) {
+      throw new Error("No pending installments");
+    }
+
+    // ✅ ALLOCATION LOGIC (STRICT)
+    let remaining = total_amount;
+    const allocations = [];
+
+    for (const inst of installments) {
+      if (remaining <= 0) break;
+
+      const pending = inst.installment_amount - inst.paid;
+      const allocate = Math.min(pending, remaining);
+
+      allocations.push({
+        installment_id: inst.id,
+        amount: allocate,
+        pending_after: pending - allocate,
+      });
+
+      remaining -= allocate;
+    }
+
+    if (allocations.length === 0) {
+      throw new Error("Nothing to allocate");
+    }
+
+    // ❌ STRICT MODE (NO EXTRA MONEY ALLOWED)
+    if (remaining > 0) {
+      throw new Error(`Excess amount ${remaining} not allowed`);
+    }
+
+    // ✅ INSERT PAYMENT
     const [paymentResult] = await connection.query(
       `INSERT INTO chit_collections_payments
       (subscription_id, customer_id, collected_by,
+       payment_type,
        pay_upi, pay_upi_reference, pay_cheque, pay_cash,
        total_amount, remarks)
-      VALUES (?,?,?,?,?,?,?,?,?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         subscription_id,
         customer_id,
         collected_by,
+        "SUBSCRIPTION",
         upi,
         pay_upi_reference || null,
         cheque,
@@ -1754,42 +2138,199 @@ export const collectPaymentBySubscription = async (req, res) => {
 
     const payment_id = paymentResult.insertId;
 
-    /* DISTRIBUTE USING ALLOCATION TABLE */
-    let remaining = total_amount;
-    let distribution = [];
-
-    for (const inst of installments) {
-      if (remaining <= 0) break;
-
-      const pending = inst.installment_amount - inst.paid;
-      const allocate = Math.min(remaining, pending);
-
+    // ✅ INSERT ALLOCATIONS
+    for (const item of allocations) {
       await connection.query(
         `INSERT INTO chit_payment_allocations
          (payment_id, installment_id, allocated_amount)
-         VALUES (?,?,?)`,
-        [payment_id, inst.id, allocate]
+         VALUES (?, ?, ?)`,
+        [payment_id, item.installment_id, item.amount]
       );
-
-      distribution.push({
-        installment_id: inst.id,
-        allocated: allocate,
-        pending_after: pending - allocate,
-      });
-
-      remaining -= allocate;
     }
 
     await connection.commit();
 
     return res.json({
       success: true,
-      message: "Payment successful",
+      message: "Subscription payment successful",
+      data: {
+        payment_id,
+        subscription_id,
+        customer_id,
+        total_paid: total_amount,
+        allocations,
+      },
+    });
+
+  } catch (err) {
+    await connection.rollback();
+
+    return res.status(400).json({
+      success: false,
+      message: err.message || "Payment failed",
+    });
+  } finally {
+    connection.release();
+  }
+};
+
+
+export const collectPaymentBySelectedInstallmentsBySubscription = async (req, res) => {
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const {
+      subscription_id,
+      installments, // [{installment_id, amount}]
+      pay_upi = 0,
+      pay_cheque = 0,
+      pay_cash = 0,
+      pay_upi_reference,
+      remarks,
+    } = req.body;
+
+    const collected_by = req.user?.id;
+    const role = req.user?.role;
+
+    if (!subscription_id) throw new Error("subscription_id required");
+    if (!installments || !installments.length) {
+      throw new Error("installments required");
+    }
+
+    // ✅ PAYMENT CALC
+    const total_amount =
+      Number(pay_upi) + Number(pay_cheque) + Number(pay_cash);
+
+    if (total_amount <= 0) throw new Error("Invalid payment");
+
+    // ✅ LOCK SUBSCRIPTION
+    const [subRows] = await connection.query(
+      `SELECT customer_id 
+       FROM chit_customer_subscriptions
+       WHERE id = ? FOR UPDATE`,
+      [subscription_id]
+    );
+
+    if (!subRows.length) throw new Error("Invalid subscription");
+
+    const customer_id = subRows[0].customer_id;
+
+    // 🔐 ACCESS CONTROL
+    if (role !== "ADMIN") {
+      const [access] = await connection.query(
+        `SELECT id FROM user_chit_customer_assignments
+         WHERE user_id=? AND customer_id=? AND is_active=TRUE`,
+        [collected_by, customer_id]
+      );
+
+      if (!access.length) {
+        throw new Error("Not assigned to this customer");
+      }
+    }
+
+    // ✅ VALIDATE INSTALLMENTS
+    const ids = installments.map(i => i.installment_id);
+
+    const [dbInstallments] = await connection.query(
+      `SELECT 
+          i.id,
+          i.installment_amount,
+          COALESCE(SUM(a.allocated_amount),0) AS paid
+       FROM chit_customer_installments i
+       LEFT JOIN chit_payment_allocations a
+         ON a.installment_id = i.id
+       WHERE i.subscription_id = ?
+         AND i.id IN (?)
+       GROUP BY i.id
+       FOR UPDATE`,
+      [subscription_id, ids]
+    );
+
+    if (dbInstallments.length !== ids.length) {
+      throw new Error("Invalid installment selection");
+    }
+
+    let allocation_total = 0;
+    const allocations = [];
+
+    for (const input of installments) {
+      const dbInst = dbInstallments.find(d => d.id === input.installment_id);
+
+      const pending = dbInst.installment_amount - dbInst.paid;
+
+      if (pending <= 0) {
+        throw new Error(`Installment ${dbInst.id} already paid`);
+      }
+
+      if (input.amount <= 0) {
+        throw new Error("Invalid allocation amount");
+      }
+
+      if (input.amount > pending) {
+        throw new Error(
+          `Installment ${dbInst.id} exceeds pending (${pending})`
+        );
+      }
+
+      allocation_total += Number(input.amount);
+
+      allocations.push({
+        installment_id: dbInst.id,
+        amount: input.amount,
+        pending_after: pending - input.amount,
+      });
+    }
+
+    // ❌ STRICT CHECK
+    if (allocation_total !== total_amount) {
+      throw new Error("Payment amount mismatch with allocations");
+    }
+
+    // ✅ INSERT PAYMENT
+    const [paymentResult] = await connection.query(
+      `INSERT INTO chit_collections_payments
+      (subscription_id, customer_id, collected_by,
+       payment_type,
+       pay_upi, pay_upi_reference, pay_cheque, pay_cash,
+       total_amount, remarks)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        subscription_id,
+        customer_id,
+        collected_by,
+        "SUBSCRIPTION",
+        pay_upi,
+        pay_upi_reference || null,
+        pay_cheque,
+        pay_cash,
+        total_amount,
+        remarks || null,
+      ]
+    );
+
+    const payment_id = paymentResult.insertId;
+
+    // ✅ INSERT ALLOCATIONS
+    for (const item of allocations) {
+      await connection.query(
+        `INSERT INTO chit_payment_allocations
+         (payment_id, installment_id, allocated_amount)
+         VALUES (?,?,?)`,
+        [payment_id, item.installment_id, item.amount]
+      );
+    }
+
+    await connection.commit();
+
+    return res.json({
+      success: true,
+      message: "Selected installment payment successful",
       data: {
         payment_id,
         total_paid: total_amount,
-        remaining_unused: remaining,
-        distribution,
+        allocations,
       },
     });
 
@@ -1804,7 +2345,6 @@ export const collectPaymentBySubscription = async (req, res) => {
     connection.release();
   }
 };
-
 
 /* =========================================================
    🔧 2. INSTALLMENT BASED PAYMENT (STRICT) 
@@ -2085,15 +2625,212 @@ export const collectPaymentByInstallment = async (req, res) => {
   }
 };
 
+// error subcription id
+// export const collectPaymentBySelectedInstallmentsByInstallment = async (req, res) => {
+//   const connection = await db.getConnection();
 
-export const collectPaymentByCustomer = async (req, res) => {
+//   try {
+//     await connection.beginTransaction();
+
+//     const {
+//       installments,
+//       pay_upi = 0,
+//       pay_cheque = 0,
+//       pay_cash = 0,
+//       pay_upi_reference,
+//       remarks,
+//     } = req.body;
+
+//     const collected_by = req.user?.id;
+//     const role = req.user?.role;
+
+//     if (!installments || !installments.length) {
+//       throw new Error("installments required");
+//     }
+
+//     if (!collected_by) throw new Error("Unauthorized");
+
+//     const total_amount =
+//       Number(pay_upi) + Number(pay_cheque) + Number(pay_cash);
+
+//     if (total_amount <= 0) throw new Error("Invalid payment");
+
+//     // ✅ EXTRACT IDS
+//     const ids = installments.map(i => i.installment_id);
+
+//     // ✅ FETCH + LOCK INSTALLMENTS
+//     const [dbInstallments] = await connection.query(
+//       `SELECT 
+//           i.id,
+//           i.subscription_id,
+//           i.installment_amount,
+//           s.customer_id,
+//           COALESCE(SUM(a.allocated_amount),0) AS paid
+//        FROM chit_customer_installments i
+//        JOIN chit_customer_subscriptions s 
+//          ON s.id = i.subscription_id
+//        LEFT JOIN chit_payment_allocations a 
+//          ON a.installment_id = i.id
+//        WHERE i.id IN (?)
+//        GROUP BY i.id
+//        FOR UPDATE`,
+//       [ids]
+//     );
+
+//     if (dbInstallments.length !== ids.length) {
+//       throw new Error("Invalid installment selection");
+//     }
+
+//     let allocation_total = 0;
+//     const allocations = [];
+
+//     for (const input of installments) {
+//       const dbInst = dbInstallments.find(d => d.id === input.installment_id);
+
+//       const pending = dbInst.installment_amount - dbInst.paid;
+
+//       if (pending <= 0) {
+//         throw new Error(`Installment ${dbInst.id} already paid`);
+//       }
+
+//       if (input.amount <= 0) {
+//         throw new Error("Invalid amount");
+//       }
+
+//       if (input.amount > pending) {
+//         throw new Error(
+//           `Installment ${dbInst.id} exceeds pending (${pending})`
+//         );
+//       }
+
+//       allocation_total += Number(input.amount);
+
+//       allocations.push({
+//         installment_id: dbInst.id,
+//         subscription_id: dbInst.subscription_id,
+//         customer_id: dbInst.customer_id,
+//         amount: input.amount,
+//       });
+//     }
+
+//     // ❌ STRICT CHECK
+//     if (allocation_total !== total_amount) {
+//       throw new Error("Payment mismatch with allocation");
+//     }
+
+//     // ✅ UPI VALIDATION
+//     if (pay_upi > 0 && !pay_upi_reference) {
+//       throw new Error("UPI reference required");
+//     }
+
+//     if (pay_upi > 0) {
+//       const [dup] = await connection.query(
+//         `SELECT id FROM chit_collections_payments
+//          WHERE pay_upi_reference = ?`,
+//         [pay_upi_reference]
+//       );
+
+//       if (dup.length) {
+//         throw new Error("Duplicate UPI reference");
+//       }
+//     }
+
+//     // 🔐 ACCESS CHECK (GROUP BY CUSTOMER)
+//     const uniqueCustomers = [
+//       ...new Set(allocations.map(a => a.customer_id)),
+//     ];
+
+//     if (role !== "ADMIN") {
+//       for (const customer_id of uniqueCustomers) {
+//         const [access] = await connection.query(
+//           `SELECT id FROM user_chit_customer_assignments
+//            WHERE user_id=? AND customer_id=? AND is_active=TRUE`,
+//           [collected_by, customer_id]
+//         );
+
+//         if (!access.length) {
+//           throw new Error(`No access to customer ${customer_id}`);
+//         }
+//       }
+//     }
+
+//     // 🚨 IMPORTANT DESIGN DECISION
+//     // One payment per customer (correct approach)
+
+//     const paymentMap = {};
+
+//     for (const custId of uniqueCustomers) {
+//       const custAllocations = allocations.filter(
+//         a => a.customer_id === custId
+//       );
+
+//       const custTotal = custAllocations.reduce(
+//         (sum, a) => sum + a.amount,
+//         0
+//       );
+
+//       const [paymentResult] = await connection.query(
+//         `INSERT INTO chit_collections_payments
+//         (customer_id, collected_by, payment_type,
+//          pay_upi, pay_upi_reference, pay_cheque, pay_cash,
+//          total_amount, remarks)
+//         VALUES (?,?,?,?,?,?,?,?,?)`,
+//         [
+//           custId,
+//           collected_by,
+//           "INSTALLMENT",
+//           pay_upi,
+//           pay_upi_reference || null,
+//           pay_cheque,
+//           pay_cash,
+//           custTotal,
+//           remarks || null,
+//         ]
+//       );
+
+//       paymentMap[custId] = paymentResult.insertId;
+
+//       for (const item of custAllocations) {
+//         await connection.query(
+//           `INSERT INTO chit_payment_allocations
+//            (payment_id, installment_id, allocated_amount)
+//            VALUES (?,?,?)`,
+//           [paymentMap[custId], item.installment_id, item.amount]
+//         );
+//       }
+//     }
+
+//     await connection.commit();
+
+//     return res.json({
+//       success: true,
+//       message: "Installment payments successful",
+//       data: {
+//         total_paid: total_amount,
+//         allocations,
+//       },
+//     });
+
+//   } catch (err) {
+//     await connection.rollback();
+
+//     return res.status(400).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+export const collectPaymentBySelectedInstallmentsByInstallment = async (req, res) => {
   const connection = await db.getConnection();
 
   try {
     await connection.beginTransaction();
 
     const {
-      customer_id,
+      installments,
       pay_upi = 0,
       pay_cheque = 0,
       pay_cash = 0,
@@ -2102,117 +2839,182 @@ export const collectPaymentByCustomer = async (req, res) => {
     } = req.body;
 
     const collected_by = req.user?.id;
+    const role = req.user?.role;
 
-    if (!customer_id) throw new Error("customer_id required");
+    if (!installments || !installments.length) {
+      throw new Error("installments required");
+    }
+
     if (!collected_by) throw new Error("Unauthorized");
 
-    const total_amount =
-      Number(pay_upi) + Number(pay_cheque) + Number(pay_cash);
+    const upi = Number(pay_upi) || 0;
+    const cheque = Number(pay_cheque) || 0;
+    const cash = Number(pay_cash) || 0;
+
+    const total_amount = upi + cheque + cash;
 
     if (total_amount <= 0) throw new Error("Invalid payment");
 
-    // 🔴 SECURITY (CRITICAL — YOU MISSED THIS EVERYWHERE)
-    // const [access] = await connection.query(
-    //   `SELECT id FROM user_chit_customer_assignments
-    //    WHERE user_id = ? AND customer_id = ? AND is_active = TRUE`,
-    //   [collected_by, customer_id]
-    // );
+    // ✅ EXTRACT IDS
+    const ids = installments.map(i => i.installment_id);
 
-    // if (!access.length) {
-    //   throw new Error("You are not assigned to this customer");
-    // }
-
-    // 🔒 GET ALL PENDING INSTALLMENTS ACROSS ALL SUBSCRIPTIONS
-    const [installments] = await connection.query(
+    // ✅ FETCH + LOCK INSTALLMENTS
+    const [dbInstallments] = await connection.query(
       `SELECT 
           i.id,
           i.subscription_id,
           i.installment_amount,
+          s.customer_id,
           COALESCE(SUM(a.allocated_amount),0) AS paid
        FROM chit_customer_installments i
        JOIN chit_customer_subscriptions s 
          ON s.id = i.subscription_id
        LEFT JOIN chit_payment_allocations a 
          ON a.installment_id = i.id
-       WHERE s.customer_id = ?
+       WHERE i.id IN (?)
        GROUP BY i.id
-       HAVING (i.installment_amount - paid) > 0
-       ORDER BY i.due_date ASC
        FOR UPDATE`,
-      [customer_id]
+      [ids]
     );
 
-    if (!installments.length) {
-      throw new Error("No pending dues");
+    if (dbInstallments.length !== ids.length) {
+      throw new Error("Invalid installment selection");
     }
 
-    let remaining = total_amount;
+    let allocation_total = 0;
     const allocations = [];
 
-    // 🔥 ALLOCATION LOGIC (oldest due first)
-    for (const inst of installments) {
-      if (remaining <= 0) break;
+    for (const input of installments) {
+      const dbInst = dbInstallments.find(d => d.id === input.installment_id);
 
-      const pending = inst.installment_amount - inst.paid;
-      const allocate = Math.min(pending, remaining);
+      const pending = dbInst.installment_amount - dbInst.paid;
+
+      if (pending <= 0) {
+        throw new Error(`Installment ${dbInst.id} already paid`);
+      }
+
+      if (input.amount <= 0) {
+        throw new Error("Invalid amount");
+      }
+
+      if (input.amount > pending) {
+        throw new Error(
+          `Installment ${dbInst.id} exceeds pending (${pending})`
+        );
+      }
+
+      allocation_total += Number(input.amount);
 
       allocations.push({
-        installment_id: inst.id,
-        subscription_id: inst.subscription_id,
-        amount: allocate,
+        installment_id: dbInst.id,
+        subscription_id: dbInst.subscription_id,
+        customer_id: dbInst.customer_id,
+        amount: input.amount,
       });
-
-      remaining -= allocate;
     }
 
-    if (allocations.length === 0) {
-      throw new Error("Nothing to allocate");
+    // ❌ STRICT CHECK
+    if (allocation_total !== total_amount) {
+      throw new Error("Payment mismatch with allocation");
     }
 
-    // ❌ STRICT MODE (recommended)
-    if (remaining > 0) {
-      throw new Error(`Excess amount ${remaining} not allowed`);
+    // ✅ UPI VALIDATION
+    if (upi > 0 && !pay_upi_reference) {
+      throw new Error("UPI reference required");
     }
 
-    // 🔴 INSERT PAYMENT (NO subscription_id here!)
-    const [paymentResult] = await connection.query(
-      `INSERT INTO chit_collections_payments
-       (customer_id, collected_by,
-        pay_upi, pay_upi_reference, pay_cheque, pay_cash,
-        total_amount, remarks)
-       VALUES (?,?,?,?,?,?,?,?)`,
-      [
-        customer_id,
-        collected_by,
-        pay_upi,
-        pay_upi_reference || null,
-        pay_cheque,
-        pay_cash,
-        total_amount,
-        remarks || null,
-      ]
-    );
-
-    const payment_id = paymentResult.insertId;
-
-    // 🔴 INSERT ALLOCATIONS
-    for (const item of allocations) {
-      await connection.query(
-        `INSERT INTO chit_payment_allocations
-         (payment_id, installment_id, allocated_amount)
-         VALUES (?,?,?)`,
-        [payment_id, item.installment_id, item.amount]
+    if (upi > 0) {
+      const [dup] = await connection.query(
+        `SELECT id FROM chit_collections_payments
+         WHERE pay_upi_reference = ?`,
+        [pay_upi_reference]
       );
+
+      if (dup.length) {
+        throw new Error("Duplicate UPI reference");
+      }
+    }
+
+    // 🔐 ACCESS CHECK
+    const uniqueCustomers = [
+      ...new Set(allocations.map(a => a.customer_id)),
+    ];
+
+    if (role !== "ADMIN") {
+      for (const customer_id of uniqueCustomers) {
+        const [access] = await connection.query(
+          `SELECT id FROM user_chit_customer_assignments
+           WHERE user_id=? AND customer_id=? AND is_active=TRUE`,
+          [collected_by, customer_id]
+        );
+
+        if (!access.length) {
+          throw new Error(`No access to customer ${customer_id}`);
+        }
+      }
+    }
+
+    const paymentMap = {};
+
+    for (const custId of uniqueCustomers) {
+      const custAllocations = allocations.filter(
+        a => a.customer_id === custId
+      );
+
+      const custTotal = custAllocations.reduce(
+        (sum, a) => sum + a.amount,
+        0
+      );
+
+      // 🔥 DETERMINE subscription_id
+      const uniqueSubs = [
+        ...new Set(custAllocations.map(a => a.subscription_id)),
+      ];
+
+      const subscription_id =
+        uniqueSubs.length === 1 ? uniqueSubs[0] : null;
+
+      const [paymentResult] = await connection.query(
+        `INSERT INTO chit_collections_payments
+        (subscription_id, customer_id, collected_by, payment_type,
+         pay_upi, pay_upi_reference, pay_cheque, pay_cash,
+         total_amount, remarks)
+        VALUES (?,?,?,?,?,?,?,?,?,?)`,
+        [
+          subscription_id, // 🔥 FIXED HERE
+          custId,
+          collected_by,
+          "INSTALLMENT",
+          upi,
+          pay_upi_reference || null,
+          cheque,
+          cash,
+          custTotal,
+          remarks || null,
+        ]
+      );
+
+      const payment_id = paymentResult.insertId;
+      paymentMap[custId] = payment_id;
+
+      for (const item of custAllocations) {
+        await connection.query(
+          `INSERT INTO chit_payment_allocations
+           (payment_id, installment_id, allocated_amount)
+           VALUES (?,?,?)`,
+          [payment_id, item.installment_id, item.amount]
+        );
+      }
     }
 
     await connection.commit();
 
     return res.json({
       success: true,
-      message: "Customer payment allocated successfully",
+      message: "Installment payments successful",
       data: {
-        payment_id,
         total_paid: total_amount,
+        payments: paymentMap,
         allocations,
       },
     });
@@ -2229,3 +3031,566 @@ export const collectPaymentByCustomer = async (req, res) => {
   }
 };
 
+// pay with customer id
+// export const collectPaymentByCustomer = async (req, res) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const {
+//       customer_id,
+//       pay_upi = 0,
+//       pay_cheque = 0,
+//       pay_cash = 0,
+//       pay_upi_reference,
+//       remarks,
+//     } = req.body;
+
+//     const collected_by = req.user?.id;
+
+//     if (!customer_id) throw new Error("customer_id required");
+//     if (!collected_by) throw new Error("Unauthorized");
+
+//     const total_amount =
+//       Number(pay_upi) + Number(pay_cheque) + Number(pay_cash);
+
+//     if (total_amount <= 0) throw new Error("Invalid payment");
+
+//     // 🔴 SECURITY (CRITICAL — YOU MISSED THIS EVERYWHERE)
+//     // const [access] = await connection.query(
+//     //   `SELECT id FROM user_chit_customer_assignments
+//     //    WHERE user_id = ? AND customer_id = ? AND is_active = TRUE`,
+//     //   [collected_by, customer_id]
+//     // );
+
+//     // if (!access.length) {
+//     //   throw new Error("You are not assigned to this customer");
+//     // }
+
+//     // 🔒 GET ALL PENDING INSTALLMENTS ACROSS ALL SUBSCRIPTIONS
+//     const [installments] = await connection.query(
+//       `SELECT
+//           i.id,
+//           i.subscription_id,
+//           i.installment_amount,
+//           COALESCE(SUM(a.allocated_amount),0) AS paid
+//        FROM chit_customer_installments i
+//        JOIN chit_customer_subscriptions s
+//          ON s.id = i.subscription_id
+//        LEFT JOIN chit_payment_allocations a
+//          ON a.installment_id = i.id
+//        WHERE s.customer_id = ?
+//        GROUP BY i.id
+//        HAVING (i.installment_amount - paid) > 0
+//        ORDER BY i.due_date ASC
+//        FOR UPDATE`,
+//       [customer_id]
+//     );
+
+//     if (!installments.length) {
+//       throw new Error("No pending dues");
+//     }
+
+//     let remaining = total_amount;
+//     const allocations = [];
+
+//     // 🔥 ALLOCATION LOGIC (oldest due first)
+//     for (const inst of installments) {
+//       if (remaining <= 0) break;
+
+//       const pending = inst.installment_amount - inst.paid;
+//       const allocate = Math.min(pending, remaining);
+
+//       allocations.push({
+//         installment_id: inst.id,
+//         subscription_id: inst.subscription_id,
+//         amount: allocate,
+//       });
+
+//       remaining -= allocate;
+//     }
+
+//     if (allocations.length === 0) {
+//       throw new Error("Nothing to allocate");
+//     }
+
+//     // ❌ STRICT MODE (recommended)
+//     if (remaining > 0) {
+//       throw new Error(`Excess amount ${remaining} not allowed`);
+//     }
+
+//     // 🔴 INSERT PAYMENT (NO subscription_id here!)
+//     const [paymentResult] = await connection.query(
+//       `INSERT INTO chit_collections_payments
+//        (customer_id, collected_by,
+//         pay_upi, pay_upi_reference, pay_cheque, pay_cash,
+//         total_amount, remarks)
+//        VALUES (?,?,?,?,?,?,?,?)`,
+//       [
+//         customer_id,
+//         collected_by,
+//         pay_upi,
+//         pay_upi_reference || null,
+//         pay_cheque,
+//         pay_cash,
+//         total_amount,
+//         remarks || null,
+//       ]
+//     );
+
+//     const payment_id = paymentResult.insertId;
+
+//     // 🔴 INSERT ALLOCATIONS
+//     for (const item of allocations) {
+//       await connection.query(
+//         `INSERT INTO chit_payment_allocations
+//          (payment_id, installment_id, allocated_amount)
+//          VALUES (?,?,?)`,
+//         [payment_id, item.installment_id, item.amount]
+//       );
+//     }
+
+//     await connection.commit();
+
+//     return res.json({
+//       success: true,
+//       message: "Customer payment allocated successfully",
+//       data: {
+//         payment_id,
+//         total_paid: total_amount,
+//         allocations,
+//       },
+//     });
+
+//   } catch (err) {
+//     await connection.rollback();
+
+//     return res.status(400).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+// pay with customer with payType
+export const collectPaymentByCustomer = async (req, res) => {
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const {
+      customer_id,
+      pay_upi = 0,
+      pay_cheque = 0,
+      pay_cash = 0,
+      pay_upi_reference,
+      remarks,
+    } = req.body;
+
+    const collected_by = req.user?.id;
+    const role = req.user?.role;
+
+    // ✅ BASIC VALIDATION
+    if (!customer_id) throw new Error("customer_id required");
+    if (!collected_by) throw new Error("Unauthorized");
+
+    const upi = Number(pay_upi) || 0;
+    const cheque = Number(pay_cheque) || 0;
+    const cash = Number(pay_cash) || 0;
+
+    if (upi < 0 || cheque < 0 || cash < 0) {
+      throw new Error("Invalid payment values");
+    }
+
+    const total_amount = Number((upi + cheque + cash).toFixed(2));
+
+    if (total_amount <= 0) {
+      throw new Error("Payment must be greater than zero");
+    }
+
+    // ✅ UPI VALIDATION
+    if (upi > 0 && !pay_upi_reference) {
+      throw new Error("UPI reference required");
+    }
+
+    if (upi > 0) {
+      const [dup] = await connection.query(
+        `SELECT id FROM chit_collections_payments
+         WHERE pay_upi_reference = ? LIMIT 1`,
+        [pay_upi_reference],
+      );
+
+      if (dup.length) {
+        throw new Error("Duplicate UPI reference");
+      }
+    }
+
+    // ✅ SECURITY CHECK (VERY IMPORTANT)
+    // const [access] = await connection.query(
+    //   `SELECT id FROM user_chit_customer_assignments
+    //    WHERE user_id = ? AND customer_id = ? AND is_active = TRUE`,
+    //   [collected_by, customer_id]
+    // );
+
+    // if (!access.length) {
+    //   throw new Error("You are not assigned to this customer");
+    // }
+
+    // ✅ GET USER ROLE -- FOR ADMIN BYPASS fetch role
+  //   const [roleRows] = await connection.query(
+  //     `SELECT r.role_name
+  //  FROM users_roles u
+  //  JOIN role_based r ON r.id = u.role_id
+  //  WHERE u.id = ?`,
+  //     [collected_by],
+  //   );
+
+  //   if (!roleRows.length) {
+  //     throw new Error("User role not found");
+  //   }
+
+  //   const role = roleRows[0].role_name;
+
+    // ✅ ADMIN BYPASS
+    if (role !== "ADMIN") {
+      const [access] = await connection.query(
+        `SELECT id FROM user_chit_customer_assignments
+     WHERE user_id = ? AND customer_id = ? AND is_active = TRUE`,
+        [collected_by, customer_id],
+      );
+
+      if (!access.length) {
+        throw new Error("You are not assigned to this customer");
+      }
+    }
+
+    // 🔒 LOCK INSTALLMENTS (RAW LOCK FIRST)
+    const [lockRows] = await connection.query(
+      `SELECT i.id
+       FROM chit_customer_installments i
+       JOIN chit_customer_subscriptions s 
+         ON s.id = i.subscription_id
+       WHERE s.customer_id = ?
+       FOR UPDATE`,
+      [customer_id],
+    );
+
+    if (!lockRows.length) {
+      throw new Error("No installments found");
+    }
+
+    // ✅ FETCH PENDING INSTALLMENTS WITH PAID DATA
+    const [installments] = await connection.query(
+      `SELECT 
+          i.id,
+          i.subscription_id,
+          i.installment_amount,
+          i.due_date,
+          COALESCE(SUM(a.allocated_amount),0) AS paid
+       FROM chit_customer_installments i
+       JOIN chit_customer_subscriptions s 
+         ON s.id = i.subscription_id
+       LEFT JOIN chit_payment_allocations a 
+         ON a.installment_id = i.id
+       WHERE s.customer_id = ?
+       GROUP BY i.id
+       HAVING (i.installment_amount - paid) > 0
+       ORDER BY i.due_date ASC`,
+      [customer_id],
+    );
+
+    if (!installments.length) {
+      throw new Error("No pending dues");
+    }
+
+    let remaining = total_amount;
+    const allocations = [];
+
+    // ✅ AUTO ALLOCATION (OLDEST FIRST)
+    for (const inst of installments) {
+      if (remaining <= 0) break;
+
+      const pending = Number(inst.installment_amount) - Number(inst.paid);
+
+      if (pending <= 0) continue;
+
+      const allocate = Math.min(pending, remaining);
+
+      allocations.push({
+        installment_id: inst.id,
+        subscription_id: inst.subscription_id,
+        allocated_amount: allocate,
+      });
+
+      remaining -= allocate;
+    }
+
+    if (allocations.length === 0) {
+      throw new Error("Nothing to allocate");
+    }
+
+    // ❌ STRICT MODE (no extra money allowed)
+    if (remaining > 0) {
+      throw new Error(`Excess amount ${remaining} not allowed`);
+    }
+
+    // ✅ INSERT PAYMENT
+    const [paymentResult] = await connection.query(
+      `INSERT INTO chit_collections_payments
+       (customer_id, collected_by, payment_type,
+        pay_upi, pay_upi_reference, pay_cheque, pay_cash,
+        total_amount, remarks)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+      [
+        customer_id,
+        collected_by,
+        "CUSTOMER",
+        upi,
+        pay_upi_reference || null,
+        cheque,
+        cash,
+        total_amount,
+        remarks || null,
+      ],
+    );
+
+    const payment_id = paymentResult.insertId;
+
+    // ✅ INSERT ALLOCATIONS
+    for (const item of allocations) {
+      await connection.query(
+        `INSERT INTO chit_payment_allocations
+         (payment_id, installment_id, allocated_amount)
+         VALUES (?,?,?)`,
+        [payment_id, item.installment_id, item.allocated_amount],
+      );
+    }
+
+    await connection.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: "Customer payment allocated successfully",
+      data: {
+        payment_id,
+        total_paid: total_amount,
+        allocations,
+      },
+    });
+  } catch (err) {
+    await connection.rollback();
+
+    return res.status(400).json({
+      success: false,
+      message: err.message || "Payment failed",
+    });
+  } finally {
+    connection.release();
+  }
+};
+
+
+export const collectPaymentBySelectedInstallmentsByCustomer = async (req, res) => {
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const {
+      installments,
+      pay_upi = 0,
+      pay_cheque = 0,
+      pay_cash = 0,
+      pay_upi_reference,
+      remarks,
+    } = req.body;
+
+    const collected_by = req.user?.id;
+    const role = req.user?.role;
+
+    if (!installments || !installments.length) {
+      throw new Error("installments required");
+    }
+
+    if (!collected_by) throw new Error("Unauthorized");
+
+    const upi = Number(pay_upi) || 0;
+    const cheque = Number(pay_cheque) || 0;
+    const cash = Number(pay_cash) || 0;
+
+    const total_amount = upi + cheque + cash;
+
+    if (total_amount <= 0) throw new Error("Invalid payment");
+
+    // ✅ IDS
+    const ids = installments.map(i => i.installment_id);
+
+    // ✅ FETCH INSTALLMENTS
+    const [dbInstallments] = await connection.query(
+      `SELECT 
+          i.id,
+          i.subscription_id,
+          i.installment_amount,
+          s.customer_id,
+          COALESCE(SUM(a.allocated_amount),0) AS paid
+       FROM chit_customer_installments i
+       JOIN chit_customer_subscriptions s 
+         ON s.id = i.subscription_id
+       LEFT JOIN chit_payment_allocations a 
+         ON a.installment_id = i.id
+       WHERE i.id IN (?)
+       GROUP BY i.id
+       FOR UPDATE`,
+      [ids]
+    );
+
+    if (dbInstallments.length !== ids.length) {
+      throw new Error("Invalid installment selection");
+    }
+
+    // 🔥 STRICT CUSTOMER CHECK
+    const uniqueCustomers = [
+      ...new Set(dbInstallments.map(i => i.customer_id)),
+    ];
+
+    if (uniqueCustomers.length !== 1) {
+      throw new Error("All installments must belong to same customer");
+    }
+
+    const customer_id = uniqueCustomers[0];
+
+    let allocation_total = 0;
+    const allocations = [];
+
+    for (const input of installments) {
+      const dbInst = dbInstallments.find(d => d.id === input.installment_id);
+
+      const pending = dbInst.installment_amount - dbInst.paid;
+
+      if (pending <= 0) {
+        throw new Error(`Installment ${dbInst.id} already paid`);
+      }
+
+      if (input.amount <= 0) {
+        throw new Error("Invalid amount");
+      }
+
+      if (input.amount > pending) {
+        throw new Error(
+          `Installment ${dbInst.id} exceeds pending (${pending})`
+        );
+      }
+
+      allocation_total += Number(input.amount);
+
+      allocations.push({
+        installment_id: dbInst.id,
+        subscription_id: dbInst.subscription_id,
+        amount: input.amount,
+      });
+    }
+
+    // ❌ STRICT CHECK
+    if (allocation_total !== total_amount) {
+      throw new Error("Payment mismatch with allocation");
+    }
+
+    // ✅ UPI VALIDATION
+    if (upi > 0 && !pay_upi_reference) {
+      throw new Error("UPI reference required");
+    }
+
+    if (upi > 0) {
+      const [dup] = await connection.query(
+        `SELECT id FROM chit_collections_payments
+         WHERE pay_upi_reference=?`,
+        [pay_upi_reference]
+      );
+
+      if (dup.length) {
+        throw new Error("Duplicate UPI reference");
+      }
+    }
+
+    // 🔐 ACCESS CHECK
+    if (role !== "ADMIN") {
+      const [access] = await connection.query(
+        `SELECT id FROM user_chit_customer_assignments
+         WHERE user_id=? AND customer_id=? AND is_active=TRUE`,
+        [collected_by, customer_id]
+      );
+
+      if (!access.length) {
+        throw new Error("You are not assigned to this customer");
+      }
+    }
+
+    // 🔥 DETERMINE subscription_id
+    const uniqueSubs = [
+      ...new Set(allocations.map(a => a.subscription_id)),
+    ];
+
+    const subscription_id =
+      uniqueSubs.length === 1 ? uniqueSubs[0] : null;
+
+    // ✅ INSERT PAYMENT
+    const [paymentResult] = await connection.query(
+      `INSERT INTO chit_collections_payments
+      (subscription_id, customer_id, collected_by, payment_type,
+       pay_upi, pay_upi_reference, pay_cheque, pay_cash,
+       total_amount, remarks)
+      VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      [
+        subscription_id,
+        customer_id,
+        collected_by,
+        "INSTALLMENT",
+        upi,
+        pay_upi_reference || null,
+        cheque,
+        cash,
+        total_amount,
+        remarks || null,
+      ]
+    );
+
+    const payment_id = paymentResult.insertId;
+
+    // ✅ ALLOCATIONS
+    for (const item of allocations) {
+      await connection.query(
+        `INSERT INTO chit_payment_allocations
+         (payment_id, installment_id, allocated_amount)
+         VALUES (?,?,?)`,
+        [payment_id, item.installment_id, item.amount]
+      );
+    }
+
+    await connection.commit();
+
+    return res.json({
+      success: true,
+      message: "Customer installment payment successful",
+      data: {
+        payment_id,
+        total_paid: total_amount,
+        subscription_id,
+        allocations,
+      },
+    });
+
+  } catch (err) {
+    await connection.rollback();
+
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  } finally {
+    connection.release();
+  }
+};

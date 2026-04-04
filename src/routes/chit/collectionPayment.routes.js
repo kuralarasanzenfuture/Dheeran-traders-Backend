@@ -15,7 +15,10 @@ import {
   collectPaymentByInstallment,
   collectPayment,
   collectPaymentAutoAllocate,
-  collectPaymentByCustomer
+  collectPaymentByCustomer,
+  collectPaymentBySelectedInstallmentsBySubscription,
+  collectPaymentBySelectedInstallmentsByInstallment,
+  collectPaymentBySelectedInstallmentsByCustomer
 } from "../../controllers/chit/collectionPayment.controller.js";
 import { protect, verifyToken } from "../../middlewares/auth.middleware.js";
 
@@ -30,10 +33,16 @@ router.post("/collect-auto", collectPaymentAutoAllocate);
 // 🔥 Smart payment (recommended)
 router.post("/collect/subscription", collectPaymentBySubscription);
 
+router.post("/collect/selected-installments-by-subscription", collectPaymentBySelectedInstallmentsBySubscription);
+
 // 🔧 Manual payment (specific installment)
 router.post("/collect/installment", collectPaymentByInstallment);
 
+router.post("/collect/selected-installments-by-installment", collectPaymentBySelectedInstallmentsByInstallment);
+
 router.post("/collect/customer", collectPaymentByCustomer);
+
+router.post("/collect/selected-installments-by-customer", collectPaymentBySelectedInstallmentsByCustomer);
 
 
 export default router;

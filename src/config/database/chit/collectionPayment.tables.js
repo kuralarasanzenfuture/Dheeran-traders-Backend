@@ -1,13 +1,62 @@
 export const createCollectionPaymentTables = async (db) => {
-  await db.query(`
+//   await db.query(`
+//     CREATE TABLE IF NOT EXISTS chit_collections_payments (
+//     id INT AUTO_INCREMENT PRIMARY KEY,
+
+//     subscription_id INT NULL,
+    
+//     customer_id INT NOT NULL,
+
+//     collected_by INT NOT NULL,  -- logged-in user ID
+
+//     payment_datetime DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+//     pay_upi DECIMAL(12,2) DEFAULT 0,
+//     pay_upi_reference VARCHAR(255) UNIQUE,
+//     pay_cheque DECIMAL(12,2) DEFAULT 0,
+//     pay_cash DECIMAL(12,2) DEFAULT 0,
+
+//     total_amount DECIMAL(12,2) NOT NULL,
+
+//     remarks TEXT,
+
+//     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+//     FOREIGN KEY (subscription_id)
+//         REFERENCES chit_customer_subscriptions(id)
+//         ON DELETE CASCADE
+//         ON UPDATE CASCADE,
+
+//     FOREIGN KEY (customer_id)
+//         REFERENCES chit_customers(id)
+//         ON DELETE CASCADE
+//         ON UPDATE CASCADE,
+
+//     FOREIGN KEY (collected_by)
+//         REFERENCES users_roles(id)
+//         ON DELETE RESTRICT
+//         ON UPDATE CASCADE,
+
+//     -- ✅ Prevent duplicate UPI
+//     UNIQUE KEY unique_upi (pay_upi_reference),
+
+//     INDEX idx_subscription (subscription_id),
+//     INDEX idx_customer (customer_id),
+//     INDEX idx_collected_by (collected_by)
+// );
+// `);
+
+await db.query(`
     CREATE TABLE IF NOT EXISTS chit_collections_payments (
     id INT AUTO_INCREMENT PRIMARY KEY,
 
-    subscription_id INT NOT NULL,
+    subscription_id INT NULL,
     
     customer_id INT NOT NULL,
 
     collected_by INT NOT NULL,  -- logged-in user ID
+
+    payment_type ENUM('INSTALLMENT','SUBSCRIPTION','CUSTOMER') NOT NULL,
 
     payment_datetime DATETIME DEFAULT CURRENT_TIMESTAMP,
 
@@ -45,6 +94,7 @@ export const createCollectionPaymentTables = async (db) => {
     INDEX idx_collected_by (collected_by)
 );
 `);
+
 
 await db.query(`
     CREATE TABLE IF NOT EXISTS chit_payment_allocations (

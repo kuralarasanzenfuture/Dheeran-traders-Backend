@@ -2221,6 +2221,32 @@ export const getCustomerFullDetails = async (req, res) => {
   }
 };
 
+// export const getBatchSummary = async (req, res) => {
+//   try {
+//     const [rows] = await db.query(`
+//       SELECT 
+//         b.id AS batch_id,
+//         b.batch_name,
+
+//         COUNT(DISTINCT s.customer_id) AS total_customers,
+//         COUNT(s.id) AS total_subscriptions,
+
+//         COUNT(DISTINCT s.plan_id) AS total_plans
+
+//       FROM batches b
+//       LEFT JOIN chit_customer_subscriptions s 
+//         ON s.batch_id = b.id
+
+//       GROUP BY b.id
+//       ORDER BY b.id DESC
+//     `);
+
+//     res.json({ success: true, data: rows });
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
 export const getBatchSummary = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -2231,21 +2257,38 @@ export const getBatchSummary = async (req, res) => {
         COUNT(DISTINCT s.customer_id) AS total_customers,
         COUNT(s.id) AS total_subscriptions,
 
-        COUNT(DISTINCT s.plan_id) AS total_plans
+        COUNT(DISTINCT s.plan_id) AS total_plans,
+
+        -- ✅ Status added
+        CASE
+          WHEN CURDATE() < b.start_date THEN 'WAITING'
+          WHEN CURDATE() BETWEEN b.start_date AND b.end_date THEN 'ACTIVE'
+          ELSE 'CLOSED'
+        END AS status
 
       FROM batches b
+
       LEFT JOIN chit_customer_subscriptions s 
         ON s.batch_id = b.id
 
-      GROUP BY b.id
+      GROUP BY b.id, b.start_date, b.end_date
+
       ORDER BY b.id DESC
     `);
 
-    res.json({ success: true, data: rows });
+    res.json({
+      success: true,
+      data: rows
+    });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
+
 
 export const getBatchSummaryById = async (req, res) => {
   try {

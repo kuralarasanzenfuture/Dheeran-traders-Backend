@@ -2289,7 +2289,6 @@ export const getBatchSummary = async (req, res) => {
   }
 };
 
-
 export const getBatchSummaryById = async (req, res) => {
   try {
     const { batch_id } = req.params; // use params for specific API

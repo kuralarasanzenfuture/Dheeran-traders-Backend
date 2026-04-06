@@ -7,9 +7,9 @@ import {
   deleteCategory,
   getCategoriesByBrand,
   getBrandCategoryDropdown,
-} from "../../controllers/billing/category.controller.js";
+} from "../../../controllers/billing/products/category.controller.js";
 
-import { protect, verifyToken } from "../../middlewares/auth.middleware.js";
+import { protect, verifyToken } from "../../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 

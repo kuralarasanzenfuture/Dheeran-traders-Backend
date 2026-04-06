@@ -25,8 +25,63 @@
 //     }
 //   };
 // };
+// --------------------------------------------------------------------
 
-import { canAccess } from "../utils/permission.js";
+export const checkPermission = (moduleCode, actionCode) => {
+  return async (req, res, next) => {
+    try {
+      const user_id = req.user?.id;
+
+      if (!user_id) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // 🔥 Single optimized query
+      const [rows] = await db.query(`
+        SELECT 
+          COALESCE(up.is_allowed, rp.is_allowed, 0) AS allowed
+        FROM users_roles u
+        JOIN modules m ON m.code = ?
+        JOIN module_actions ma 
+          ON ma.module_id = m.id AND ma.action_code = ?
+        LEFT JOIN user_permissions up 
+          ON up.user_id = u.id 
+          AND up.module_id = m.id 
+          AND up.action_id = ma.id
+        LEFT JOIN role_permissions rp 
+          ON rp.role_id = u.role_id 
+          AND rp.module_id = m.id 
+          AND rp.action_id = ma.id
+        WHERE u.id = ?
+        LIMIT 1
+      `, [moduleCode, actionCode, user_id]);
+
+      if (!rows.length || rows[0].allowed !== 1) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      next();
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Permission check failed" });
+    }
+  };
+};
+// router.post(
+//   "/products",
+//   checkPermission("BILLING_PRODUCTS", "CREATE"),
+//   createProduct
+// );
+
+// router.get(
+//   "/products",
+//   checkPermission("BILLING_PRODUCTS", "VIEW"),
+//   getProducts
+// );
+
+
+import { canAccess } from "../../utils/permission.js";
 
 const methodToAction = {
   GET: "VIEW",

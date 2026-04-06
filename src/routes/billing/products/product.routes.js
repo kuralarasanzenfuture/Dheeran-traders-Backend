@@ -6,10 +6,10 @@ import {
   updateProduct,
   deleteProduct,
   updateProductStock,
-} from "../../controllers/billing/product.controller.js";
+} from "../../../controllers/billing/products/product.controller.js";
 
-import { protect, adminOnly, verifyToken } from "../../middlewares/auth.middleware.js";
-import { verifyAdminPassword } from "../../middlewares/verifyAdminPassword.js";
+import { protect, adminOnly, verifyToken } from "../../../middlewares/auth.middleware.js";
+import { verifyAdminPassword } from "../../../middlewares/verifyAdminPassword.js";
 
 
 const router = express.Router();

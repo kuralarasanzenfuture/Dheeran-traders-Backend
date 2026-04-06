@@ -2,7 +2,97 @@ import db from "../../../config/db.js";
 
 
 // ✅ SAVE (Bulk)
+// export const saveUserPermissions = async (req, res) => {
+//   try {
+//     const { user_id, permissions } = req.body;
+
+//     if (!user_id || !Array.isArray(permissions)) {
+//       return res.status(400).json({ message: "Invalid data" });
+//     }
+
+//     // ✅ Check user
+//     const [[user]] = await db.query(
+//       `SELECT id, role_id FROM users_roles WHERE id = ?`,
+//       [user_id]
+//     );
+
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     // ✅ Check role
+//     const [[role]] = await db.query(
+//       `SELECT role_name FROM role_based WHERE id = ?`,
+//       [user.role_id]
+//     );
+
+//     // ❌ Block ADMIN override
+//     if (role?.role_name === "ADMIN") {
+//       return res.status(403).json({
+//         message: "Cannot override ADMIN user permissions"
+//       });
+//     }
+
+//     for (const perm of permissions) {
+//       const { module_id, action_id, is_allowed } = perm;
+
+//       if (!module_id || !action_id) {
+//         return res.status(400).json({
+//           message: "Invalid permission data"
+//         });
+//       }
+
+//       // ✅ Validate module
+//       const [[module]] = await db.query(
+//         `SELECT id FROM modules WHERE id = ?`,
+//         [module_id]
+//       );
+
+//       if (!module) {
+//         return res.status(400).json({
+//           message: `Invalid module_id: ${module_id}`
+//         });
+//       }
+
+//       // ✅ Validate action belongs to module
+//       const [[action]] = await db.query(
+//         `SELECT id FROM module_actions 
+//          WHERE id = ? AND module_id = ?`,
+//         [action_id, module_id]
+//       );
+
+//       if (!action) {
+//         return res.status(400).json({
+//           message: `Invalid action ${action_id} for module ${module_id}`
+//         });
+//       }
+
+//       // ✅ Upsert
+//       await db.query(`
+//         INSERT INTO user_permissions (user_id, module_id, action_id, is_allowed)
+//         VALUES (?, ?, ?, ?)
+//         ON DUPLICATE KEY UPDATE is_allowed = VALUES(is_allowed)
+//       `, [user_id, module_id, action_id, is_allowed]);
+//     }
+
+// /*************  ✨ Windsurf Command ⭐  *************/
+// /**
+//  * Update a single user permission
+//  * @param {Object} req.body - user_id, module_id, action_id, is_allowed
+//  * @returns {Object} - success, message
+//  * @throws {Error} - 400 if missing fields, 404 if user not found, 403 if ADMIN user, 400 if invalid module or action, 500 if server error
+//  */
+// /*******  e3c3d00a-3bc1-459c-bbe3-e205f05cf911  *******/    res.json({ message: "User permissions saved successfully" });
+
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 export const saveUserPermissions = async (req, res) => {
+  const connection = await db.getConnection();
+
   try {
     const { user_id, permissions } = req.body;
 
@@ -10,83 +100,84 @@ export const saveUserPermissions = async (req, res) => {
       return res.status(400).json({ message: "Invalid data" });
     }
 
-    // ✅ Check user
-    const [[user]] = await db.query(
+    await connection.beginTransaction();
+
+    // ✅ Validate user
+    const [[user]] = await connection.query(
       `SELECT id, role_id FROM users_roles WHERE id = ?`,
       [user_id]
     );
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      throw new Error("User not found");
     }
 
-    // ✅ Check role
-    const [[role]] = await db.query(
-      `SELECT role_name FROM role_based WHERE id = ?`,
-      [user.role_id]
+    // 🔒 Strong ADMIN protection
+    const ADMIN_ROLE_ID = 1;
+    if (user.role_id === ADMIN_ROLE_ID) {
+      throw new Error("Cannot override ADMIN user permissions");
+    }
+
+    // ✅ Fetch all modules & actions once
+    const [modules] = await connection.query(`SELECT id FROM modules`);
+    const [actions] = await connection.query(
+      `SELECT id, module_id FROM module_actions`
     );
 
-    // ❌ Block ADMIN override
-    if (role?.role_name === "ADMIN") {
-      return res.status(403).json({
-        message: "Cannot override ADMIN user permissions"
-      });
-    }
+    const moduleSet = new Set(modules.map(m => m.id));
+    const actionMap = new Map();
+
+    actions.forEach(a => {
+      actionMap.set(a.id, a.module_id);
+    });
+
+    // ✅ Prepare bulk insert
+    const values = [];
 
     for (const perm of permissions) {
       const { module_id, action_id, is_allowed } = perm;
 
       if (!module_id || !action_id) {
-        return res.status(400).json({
-          message: "Invalid permission data"
-        });
+        throw new Error("Invalid permission data");
       }
 
-      // ✅ Validate module
-      const [[module]] = await db.query(
-        `SELECT id FROM modules WHERE id = ?`,
-        [module_id]
-      );
-
-      if (!module) {
-        return res.status(400).json({
-          message: `Invalid module_id: ${module_id}`
-        });
+      if (!moduleSet.has(module_id)) {
+        throw new Error(`Invalid module_id: ${module_id}`);
       }
 
-      // ✅ Validate action belongs to module
-      const [[action]] = await db.query(
-        `SELECT id FROM module_actions 
-         WHERE id = ? AND module_id = ?`,
-        [action_id, module_id]
-      );
-
-      if (!action) {
-        return res.status(400).json({
-          message: `Invalid action ${action_id} for module ${module_id}`
-        });
+      if (actionMap.get(action_id) !== module_id) {
+        throw new Error(`Invalid action ${action_id} for module ${module_id}`);
       }
 
-      // ✅ Upsert
-      await db.query(`
-        INSERT INTO user_permissions (user_id, module_id, action_id, is_allowed)
-        VALUES (?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE is_allowed = VALUES(is_allowed)
-      `, [user_id, module_id, action_id, is_allowed]);
+      values.push([user_id, module_id, action_id, is_allowed]);
     }
 
-/*************  ✨ Windsurf Command ⭐  *************/
-/**
- * Update a single user permission
- * @param {Object} req.body - user_id, module_id, action_id, is_allowed
- * @returns {Object} - success, message
- * @throws {Error} - 400 if missing fields, 404 if user not found, 403 if ADMIN user, 400 if invalid module or action, 500 if server error
- */
-/*******  e3c3d00a-3bc1-459c-bbe3-e205f05cf911  *******/    res.json({ message: "User permissions saved successfully" });
+    // 🔥 Bulk upsert (massive performance gain)
+    if (values.length > 0) {
+      await connection.query(`
+        INSERT INTO user_permissions (user_id, module_id, action_id, is_allowed)
+        VALUES ?
+        ON DUPLICATE KEY UPDATE is_allowed = VALUES(is_allowed)
+      `, [values]);
+    }
+
+    await connection.commit();
+
+    res.json({
+      message: "User permissions saved successfully",
+      total: permissions.length
+    });
 
   } catch (error) {
+    await connection.rollback();
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+
+    res.status(500).json({
+      message: error.message || "Server error"
+    });
+
+  } finally {
+    connection.release();
   }
 };
 

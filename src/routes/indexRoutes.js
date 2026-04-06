@@ -10,12 +10,12 @@ import moduleRoutes from "./roles/module.routes.js";
 import moduleActionRoutes from "./roles/moduleAction.routes.js";
 
 import userRoutes from "./billing/user.routes.js";
-import productRoutes from "./billing/product.routes.js";
-import categoryRoutes from "./billing/category.routes.js";
-import brandRoutes from "./billing/brand.routes.js";
+import productRoutes from "./billing/products/product.routes.js";
+import categoryRoutes from "./billing/products/category.routes.js";
+import brandRoutes from "./billing/products/brand.routes.js";
 import customerRoutes from "./billing/customer.routes.js";
 import vendorRoutes from "./billing/vendor.routes.js";
-import quantityRoutes from "./billing/quantity.routes.js";
+import quantityRoutes from "./billing/products/quantity.routes.js";
 import employeeRoutes from "./billing/employee.routes.js";
 import companyBankRoutes from "./billing/companyBank.routes.js";
 import vendorStockRoutes from "./billing/vendorStock.routes.js";

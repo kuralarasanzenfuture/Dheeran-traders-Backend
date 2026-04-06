@@ -205,7 +205,7 @@ export const getAllUsers = async (req, res) => {
     console.error(err);
     res.status(500).json({
       message: "Internal server error",
-      error: err,
+      error: err.message,
     });
   }
 };
@@ -248,6 +248,82 @@ export const getUserById = async (req, res) => {
 
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ message: "Internal server error", error: err });
+    res.status(500).json({ message: "Internal server error", error: err.message });
+  }
+};
+
+export const getMyProfile = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const [rows] = await db.query(
+      `
+      SELECT 
+        u.id,
+        u.username,
+        u.email,
+        u.phone,
+        u.status,
+        u.created_at,
+        u.last_login_at,
+
+        r.role_name,
+
+        e.employee_code,
+        e.employee_name,
+        e.email AS employee_email,
+        e.phone AS employee_phone,
+        e.gender,
+        e.date_of_birth,
+        e.address,
+        e.aadhar_number,
+        e.pan_number,
+        e.bank_name,
+        e.bank_account_number,
+        e.ifsc_code,
+        e.pan_card_image,
+        e.aadhar_front_image,
+        e.aadhar_back_image,
+        e.bank_passbook_image,
+        e.marksheet_10_image,
+        e.marksheet_12_image,
+        e.college_marksheet_image,
+        e.emergency_contact_name,
+        e.emergency_contact_phone,
+        e.emergency_contact_relation
+
+      FROM users_roles u
+      JOIN role_based r ON r.id = u.role_id
+      LEFT JOIN employees_details e ON e.user_id = u.id
+
+      WHERE u.id = ?
+    `,
+      [userId],
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: rows[0],
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch profile" || err.message,
+    });
   }
 };

@@ -2,7 +2,79 @@ import db from "../../../config/db.js";
 
 // Assign / Update permissions (bulk)
 
+// export const saveRolePermissions = async (req, res) => {
+//   try {
+//     const { role_id, permissions } = req.body;
+
+//     if (!role_id || !Array.isArray(permissions)) {
+//       return res.status(400).json({ message: "Invalid data" });
+//     }
+
+//     // ✅ 1. Check role exists
+//     const [[role]] = await db.query(
+//       `SELECT id, role_name FROM role_based WHERE id = ?`,
+//       [role_id]
+//     );
+
+//     if (!role) {
+//       return res.status(404).json({ message: "Role not found" });
+//     }
+
+//     // ❌ 2. Block ADMIN role
+//     if (role.role_name === "ADMIN") {
+//       return res.status(403).json({
+//         message: "Admin permissions cannot be modified or create"
+//       });
+//     }
+
+//     for (const perm of permissions) {
+
+//       const { module_id, action_id, is_allowed } = perm;
+
+//       // ✅ 3. Validate module exists
+//       const [[module]] = await db.query(
+//         `SELECT id FROM modules WHERE id = ?`,
+//         [module_id]
+//       );
+
+//       if (!module) {
+//         return res.status(400).json({
+//           message: `Invalid module_id: ${module_id}`
+//         });
+//       }
+
+//       // ✅ 4. Validate action belongs to module
+//       const [[action]] = await db.query(
+//         `SELECT id FROM module_actions 
+//          WHERE id = ? AND module_id = ?`,
+//         [action_id, module_id]
+//       );
+
+//       if (!action) {
+//         return res.status(400).json({
+//           message: `Invalid action_id ${action_id} for module ${module_id}`
+//         });
+//       }
+
+//       // ✅ 5. Insert / Update
+//       await db.query(`
+//         INSERT INTO role_permissions (role_id, module_id, action_id, is_allowed)
+//         VALUES (?, ?, ?, ?)
+//         ON DUPLICATE KEY UPDATE is_allowed = VALUES(is_allowed)
+//       `, [role_id, module_id, action_id, is_allowed]);
+//     }
+
+//     res.json({ message: "Permissions saved successfully" });
+
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 export const saveRolePermissions = async (req, res) => {
+  const connection = await db.getConnection();
+
   try {
     const { role_id, permissions } = req.body;
 
@@ -10,67 +82,65 @@ export const saveRolePermissions = async (req, res) => {
       return res.status(400).json({ message: "Invalid data" });
     }
 
-    // ✅ 1. Check role exists
-    const [[role]] = await db.query(
-      `SELECT id, role_name FROM role_based WHERE id = ?`,
-      [role_id]
-    );
-
-    if (!role) {
-      return res.status(404).json({ message: "Role not found" });
-    }
-
-    // ❌ 2. Block ADMIN role
-    if (role.role_name === "ADMIN") {
+    // 🔒 Admin protection
+    const ADMIN_ROLE_ID = 1;
+    if (role_id === ADMIN_ROLE_ID) {
       return res.status(403).json({
-        message: "Admin permissions cannot be modified or create"
+        message: "Admin permissions cannot be modified"
       });
     }
 
-    for (const perm of permissions) {
+    await connection.beginTransaction();
 
+    // ✅ Fetch once
+    const [modules] = await connection.query(`SELECT id FROM modules`);
+    const [actions] = await connection.query(`SELECT id, module_id FROM module_actions`);
+
+    const moduleSet = new Set(modules.map(m => m.id));
+    const actionMap = new Map();
+
+    actions.forEach(a => {
+      actionMap.set(a.id, a.module_id);
+    });
+
+    // ✅ Process
+    for (const perm of permissions) {
       const { module_id, action_id, is_allowed } = perm;
 
-      // ✅ 3. Validate module exists
-      const [[module]] = await db.query(
-        `SELECT id FROM modules WHERE id = ?`,
-        [module_id]
-      );
-
-      if (!module) {
-        return res.status(400).json({
-          message: `Invalid module_id: ${module_id}`
-        });
+      if (!moduleSet.has(module_id)) {
+        throw new Error(`Invalid module_id: ${module_id}`);
       }
 
-      // ✅ 4. Validate action belongs to module
-      const [[action]] = await db.query(
-        `SELECT id FROM module_actions 
-         WHERE id = ? AND module_id = ?`,
-        [action_id, module_id]
-      );
-
-      if (!action) {
-        return res.status(400).json({
-          message: `Invalid action_id ${action_id} for module ${module_id}`
-        });
+      if (actionMap.get(action_id) !== module_id) {
+        throw new Error(`Invalid action ${action_id} for module ${module_id}`);
       }
 
-      // ✅ 5. Insert / Update
-      await db.query(`
+      await connection.query(`
         INSERT INTO role_permissions (role_id, module_id, action_id, is_allowed)
         VALUES (?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE is_allowed = VALUES(is_allowed)
       `, [role_id, module_id, action_id, is_allowed]);
     }
 
-    res.json({ message: "Permissions saved successfully" });
+    await connection.commit();
+
+    res.json({
+      message: "Permissions saved successfully",
+      total: permissions.length
+    });
 
   } catch (error) {
+    await connection.rollback();
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+
+    res.status(500).json({
+      message: error.message || "Server error"
+    });
+  } finally {
+    connection.release();
   }
 };
+
 
 export const updatetogglePermission = async (req, res) => {
   try {

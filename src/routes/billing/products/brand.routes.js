@@ -5,9 +5,9 @@ import {
   getBrandById,
   updateBrand,
   deleteBrand,
-} from "../../controllers/billing/brand.controller.js";
+} from "../../../controllers/billing/products/brand.controller.js";
 
-import { protect, adminOnly, verifyToken } from "../../middlewares/auth.middleware.js";
+import { protect, adminOnly, verifyToken } from "../../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 

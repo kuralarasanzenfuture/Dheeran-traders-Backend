@@ -6,8 +6,8 @@ import {
   updateQuantity,
   deleteQuantity,
   getQuantitiesByCategory,
-} from "../../controllers/billing/quantityController.js";
-import { protect, verifyToken } from "../../middlewares/auth.middleware.js";
+} from "../../../controllers/billing/products/quantityController.js";
+import { protect, verifyToken } from "../../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 

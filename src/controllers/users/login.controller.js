@@ -1018,6 +1018,239 @@ LOGIN USER
 //   }
 // };
 
+// export const loginUser = async (req, res) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     let { login_id, password } = req.body;
+
+//     if (!login_id || !password) {
+//       return res.status(400).json({
+//         message: "Required fields missing",
+//       });
+//     }
+
+//     login_id = login_id.trim().toLowerCase();
+
+//     /* =========================
+//        1️⃣ GET USER + ROLE
+//     ========================= */
+//     const [users] = await connection.query(
+//       `
+//       SELECT
+//         u.id,
+//         u.username,
+//         u.email,
+//         u.phone,
+//         u.password,
+//         u.role_id,
+//         u.status,
+//         u.token_version,
+//         u.last_login_at,
+
+//         r.role_name,
+//         r.status AS role_status
+
+//       FROM users_roles u
+//       JOIN role_based r ON u.role_id = r.id
+
+//       WHERE LOWER(u.username)=?
+//          OR LOWER(u.email)=?
+//          OR u.phone=?
+//       `,
+//       [login_id, login_id, login_id],
+//     );
+
+//     if (!users.length) {
+//       return res.status(401).json({
+//         message: "Invalid credentials",
+//       });
+//     }
+
+//     const user = users[0];
+
+//     /* =========================
+//        2️⃣ USER STATUS CHECK
+//     ========================= */
+//     if (user.status !== "active") {
+//       return res.status(403).json({
+//         message: "User is inactive",
+//       });
+//     }
+
+//     /* =========================
+//        3️⃣ ROLE STATUS CHECK 🔥
+//     ========================= */
+//     if (user.role_status !== "active") {
+//       return res.status(403).json({
+//         message: "Your role is inactive. Contact admin.",
+//       });
+//     }
+
+//     /* =========================
+//        4️⃣ PASSWORD CHECK
+//     ========================= */
+//     const valid = await bcrypt.compare(password, user.password);
+
+//     if (!valid) {
+//       return res.status(401).json({
+//         message: "Invalid credentials",
+//       });
+//     }
+
+//     /* =========================
+//        5️⃣ LOAD PERMISSIONS
+//     ========================= */
+//     const [permRows] = await connection.query(
+//       `
+//       SELECT
+//         m.code AS module_code,
+//         ma.action_code,
+//         COALESCE(up.is_allowed, rp.is_allowed, FALSE) AS is_allowed
+//       FROM modules m
+//       JOIN module_actions ma ON ma.module_id = m.id
+
+//       LEFT JOIN role_permissions rp
+//         ON rp.module_id = m.id
+//         AND rp.action_id = ma.id
+//         AND rp.role_id = ?
+
+//       LEFT JOIN user_permissions up
+//         ON up.module_id = m.id
+//         AND up.action_id = ma.id
+//         AND up.user_id = ?
+//       `,
+//       [user.role_id, user.id],
+//     );
+
+//     const permissions = {};
+//     permRows.forEach((p) => {
+//       const key = `${p.module_code}_${p.action_code}`;
+//       permissions[key] = p.is_allowed === 1;
+//     });
+
+//     /* =========================
+//        6️⃣ TOKEN GENERATION
+//     ========================= */
+//     const sessionId = uuidv4();
+
+//     const accessToken = jwt.sign(
+//       {
+//         id: user.id,
+//         role_id: user.role_id,
+//         role: user.role_name,
+//         session_id: sessionId,
+//         token_version: user.token_version, // 🔥 critical
+//         permissions,
+//       },
+//       process.env.JWT_ACCESS_SECRET,
+//       { expiresIn: process.env.ACCESS_TOKEN_EXPIRES },
+//     );
+
+//     const refreshToken = jwt.sign(
+//       {
+//         id: user.id,
+//         session_id: sessionId,
+//       },
+//       process.env.JWT_REFRESH_SECRET,
+//       { expiresIn: process.env.REFRESH_TOKEN_EXPIRES },
+//     );
+
+//     await connection.beginTransaction();
+
+//     /* =========================
+//        7️⃣ STORE REFRESH TOKEN
+//     ========================= */
+//     await connection.query(
+//       `
+//       INSERT INTO user_refresh_tokens
+//       (user_id, session_id, refresh_token, ip_address, user_agent, expires_at)
+//       VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))
+//       `,
+//       [
+//         user.id,
+//         sessionId,
+//         refreshToken,
+//         req.ip,
+//         req.headers["user-agent"] || "unknown",
+//       ],
+//     );
+
+//     /* =========================
+//        8️⃣ LOGIN HISTORY
+//     ========================= */
+//     await connection.query(
+//       `
+//       INSERT INTO login_history
+//       (user_id, session_id, ip_address, user_agent)
+//       VALUES (?, ?, ?, ?)
+//       `,
+//       [user.id, sessionId, req.ip, req.headers["user-agent"] || "unknown"],
+//     );
+
+//     /* =========================
+//        9️⃣ UPDATE LAST LOGIN
+//     ========================= */
+//     await connection.query(
+//       `
+//       UPDATE users_roles
+//       SET last_login_at = NOW()
+//       WHERE id = ?
+//       `,
+//       [user.id],
+//     );
+
+//     await connection.commit();
+
+//     /* =========================
+//        🔟 CLEAN RESPONSE
+//     ========================= */
+//     return res.json({
+//       message: "Login success",
+
+//       accessToken,
+//       refreshToken,
+//       sessionId,
+
+//       user: {
+//         id: user.id,
+//         username: user.username,
+//         email: user.email,
+//         phone: user.phone,
+//         role_id: user.role_id,
+//         role_name: user.role_name,
+//       },
+
+//       permissions,
+
+//       last_login_at: new Date(),
+//     });
+//   } catch (error) {
+//     await connection.rollback();
+//     console.error(error);
+
+//     return res.status(500).json({
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+// ----------------------------------------------------------------------------
+
+// 🔥 helper for real IP
+const getClientIp = (req) => {
+  return (
+    req.headers["x-forwarded-for"]?.split(",")[0] ||
+    req.socket?.remoteAddress ||
+    req.ip
+  );
+};
+
+// 🔥 helper for real IP Suspicious
+
 export const loginUser = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -1025,12 +1258,13 @@ export const loginUser = async (req, res) => {
     let { login_id, password } = req.body;
 
     if (!login_id || !password) {
-      return res.status(400).json({
-        message: "Required fields missing",
-      });
+      return res.status(400).json({ message: "Required fields missing" });
     }
 
     login_id = login_id.trim().toLowerCase();
+
+    const ip = getClientIp(req);
+    const userAgent = req.headers["user-agent"] || "unknown";
 
     /* =========================
        1️⃣ GET USER + ROLE
@@ -1062,41 +1296,63 @@ export const loginUser = async (req, res) => {
     );
 
     if (!users.length) {
-      return res.status(401).json({
-        message: "Invalid credentials",
-      });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const user = users[0];
 
     /* =========================
-       2️⃣ USER STATUS CHECK
+       2️⃣ STATUS CHECKS
     ========================= */
     if (user.status !== "active") {
-      return res.status(403).json({
-        message: "User is inactive",
-      });
+      return res.status(403).json({ message: "User is inactive" });
     }
 
-    /* =========================
-       3️⃣ ROLE STATUS CHECK 🔥
-    ========================= */
     if (user.role_status !== "active") {
-      return res.status(403).json({
-        message: "Your role is inactive. Contact admin.",
-      });
+      return res
+        .status(403)
+        .json({ message: "Your role is inactive. Contact admin." });
     }
 
     /* =========================
-       4️⃣ PASSWORD CHECK
+       3️⃣ PASSWORD CHECK
     ========================= */
     const valid = await bcrypt.compare(password, user.password);
 
     if (!valid) {
-      return res.status(401).json({
-        message: "Invalid credentials",
-      });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
+
+    /* =========================
+       4️⃣ SUSPICIOUS LOGIN CHECK (BEFORE INSERT)
+    ========================= */
+    const [lastLogins] = await connection.query(
+      `
+      SELECT ip_address, user_agent 
+      FROM login_history 
+      WHERE user_id=? 
+      ORDER BY login_time DESC 
+      LIMIT 5
+      `,
+      [user.id],
+    );
+
+    // const isSuspicious = lastLogins.some(
+    //   (l) => l.ip_address !== ip || l.user_agent !== userAgent
+    // );
+    //or
+    // const mismatchCount = lastLogins.filter(
+    //   (l) => l.ip_address !== ip || l.user_agent !== userAgent,
+    // ).length;
+
+    // const isSuspicious = mismatchCount >= 3;
+    //or
+
+    const isKnownDevice = lastLogins.some(
+      (l) => l.ip_address === ip && l.user_agent === userAgent,
+    );
+
+    const isSuspicious = !isKnownDevice && lastLogins.length >= 3;
 
     /* =========================
        5️⃣ LOAD PERMISSIONS
@@ -1125,12 +1381,32 @@ export const loginUser = async (req, res) => {
 
     const permissions = {};
     permRows.forEach((p) => {
-      const key = `${p.module_code}_${p.action_code}`;
-      permissions[key] = p.is_allowed === 1;
+      permissions[`${p.module_code}_${p.action_code}`] = p.is_allowed === 1;
     });
 
     /* =========================
-       6️⃣ TOKEN GENERATION
+       6️⃣ LIMIT ACTIVE SESSIONS (MAX 5)
+    ========================= */
+    const [activeSessions] = await connection.query(
+      `
+      SELECT id FROM user_refresh_tokens
+      WHERE user_id=? AND is_active=1
+      ORDER BY created_at ASC
+      `,
+      [user.id],
+    );
+
+    if (activeSessions.length >= 5) {
+      const oldest = activeSessions[0];
+
+      await connection.query(
+        `UPDATE user_refresh_tokens SET is_active=0 WHERE id=?`,
+        [oldest.id],
+      );
+    }
+
+    /* =========================
+       7️⃣ GENERATE TOKENS
     ========================= */
     const sessionId = uuidv4();
 
@@ -1140,7 +1416,7 @@ export const loginUser = async (req, res) => {
         role_id: user.role_id,
         role: user.role_name,
         session_id: sessionId,
-        token_version: user.token_version, // 🔥 critical
+        token_version: user.token_version,
         permissions,
       },
       process.env.JWT_ACCESS_SECRET,
@@ -1159,7 +1435,7 @@ export const loginUser = async (req, res) => {
     await connection.beginTransaction();
 
     /* =========================
-       7️⃣ STORE REFRESH TOKEN
+       8️⃣ STORE REFRESH TOKEN
     ========================= */
     await connection.query(
       `
@@ -1167,17 +1443,11 @@ export const loginUser = async (req, res) => {
       (user_id, session_id, refresh_token, ip_address, user_agent, expires_at)
       VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))
       `,
-      [
-        user.id,
-        sessionId,
-        refreshToken,
-        req.ip,
-        req.headers["user-agent"] || "unknown",
-      ],
+      [user.id, sessionId, refreshToken, ip, userAgent],
     );
 
     /* =========================
-       8️⃣ LOGIN HISTORY
+       9️⃣ LOGIN HISTORY
     ========================= */
     await connection.query(
       `
@@ -1185,29 +1455,24 @@ export const loginUser = async (req, res) => {
       (user_id, session_id, ip_address, user_agent)
       VALUES (?, ?, ?, ?)
       `,
-      [user.id, sessionId, req.ip, req.headers["user-agent"] || "unknown"],
+      [user.id, sessionId, ip, userAgent],
     );
 
     /* =========================
-       9️⃣ UPDATE LAST LOGIN
+       🔟 UPDATE LAST LOGIN
     ========================= */
     await connection.query(
-      `
-      UPDATE users_roles 
-      SET last_login_at = NOW() 
-      WHERE id = ?
-      `,
+      `UPDATE users_roles SET last_login_at=NOW() WHERE id=?`,
       [user.id],
     );
 
     await connection.commit();
 
     /* =========================
-       🔟 CLEAN RESPONSE
+       ✅ RESPONSE
     ========================= */
     return res.json({
       message: "Login success",
-
       accessToken,
       refreshToken,
       sessionId,
@@ -1221,9 +1486,9 @@ export const loginUser = async (req, res) => {
         role_name: user.role_name,
       },
 
-      permissions,
-
+      permissions, // optional
       last_login_at: new Date(),
+      is_suspicious: isSuspicious,
     });
   } catch (error) {
     await connection.rollback();
@@ -1237,3 +1502,33 @@ export const loginUser = async (req, res) => {
     connection.release();
   }
 };
+
+// 🔥 When will this return true?
+
+// It becomes true if ANY of the last 5 logins differ from current login.
+
+// That means:
+
+// ✅ Case 1 — Different device
+// Previous: Chrome (Windows)
+// Now: Mobile Safari
+// 👉 user_agent changed → true
+// ✅ Case 2 — Different IP
+// Previous: 192.168.1.10 (home WiFi)
+// Now: 49.x.x.x (mobile data)
+// 👉 IP changed → true
+// ✅ Case 3 — VPN / Office / Public network
+
+// 👉 IP mismatch → true
+
+// ⚠️ Case 4 — Same user, normal behavior (FALSE POSITIVE)
+
+// This is where your logic is weak.
+
+// Example:
+
+// User logs in from:
+// Home WiFi
+// Office WiFi
+
+// 👉 Your system will always mark as suspicious

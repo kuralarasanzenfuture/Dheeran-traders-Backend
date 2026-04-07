@@ -10,6 +10,7 @@ import {
 } from "../../../controllers/billing/products/category.controller.js";
 
 import { protect, verifyToken } from "../../../middlewares/auth.middleware.js";
+import { checkPermission } from "../../../middlewares/permission/permission.middleware.js";
 
 const router = express.Router();
 
@@ -20,10 +21,14 @@ router.get("/brand-category", getBrandCategoryDropdown);
 router.get("/brand/:brand_id", getCategoriesByBrand);
 
 // CRUD
-router.post("/", createCategory);
-router.get("/", getCategories);
+router.post("/", checkPermission("BILLING_CATEGORY", "CREATE"), createCategory);
+router.get("/", checkPermission("BILLING_CATEGORY", "VIEW"), getCategories);
 router.get("/:id", getCategoryById);
-router.put("/:id", updateCategory);
-router.delete("/:id", deleteCategory);
+router.put("/:id", checkPermission("BILLING_CATEGORY", "EDIT"), updateCategory);
+router.delete(
+  "/:id",
+  checkPermission("BILLING_CATEGORY", "DELETE"),
+  deleteCategory,
+);
 
 export default router;

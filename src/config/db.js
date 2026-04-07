@@ -11,6 +11,8 @@ const db = mysql.createPool({
   database: process.env.DB_NAME || "deeran_traders",
   waitForConnections: true,
   connectionLimit: 10,
+  timezone: "+05:30",
+
 });
 
 export default db;

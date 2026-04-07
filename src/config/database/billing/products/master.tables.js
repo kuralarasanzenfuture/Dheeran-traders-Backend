@@ -13,7 +13,6 @@ export const createMasterTables = async (db) => {
   // QUANTITY TABLE
   await createQuantityTable(db);
 
-// 4️⃣ PRODUCTS TABLE
-    await createProductTables(db);
-
+  // 4️⃣ PRODUCTS TABLE
+  await createProductTables(db);
 };

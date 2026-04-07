@@ -155,45 +155,100 @@ LOGOUT USER
 //   }
 // };
 
+// export const logoutUser = async (req, res) => {
+//   try {
+//     const { refreshToken } = req.body;
+
+//     if (!refreshToken) {
+//       return res.status(400).json({ message: "Token required" });
+//     }
+
+//     const [rows] = await db.query(
+//       `SELECT * FROM user_refresh_tokens WHERE refresh_token=?`,
+//       [refreshToken],
+//     );
+
+//     if (!rows.length) {
+//       return res.status(400).json({ message: "Invalid token" });
+//     }
+
+//     const sessionId = rows[0].session_id;
+//     const userId = rows[0].user_id;
+
+//     // 🔒 deactivate only this session
+//     await db.query(
+//       `UPDATE user_refresh_tokens 
+//        SET is_active=0 
+//        WHERE session_id=?`,
+//       [sessionId],
+//     );
+
+//     // 📜 update logout history
+//     await db.query(
+//       `UPDATE login_history
+//        SET logout_time=NOW()
+//        WHERE session_id=? AND logout_time IS NULL`,
+//       [sessionId],
+//     );
+
+//     res.json({ message: "Logged out from this device" });
+//   } catch (err) {
+//     res.status(500).json({ message: "Internal server error", error: err.message });
+//   }
+// };
+// -------------------------------------------------
 export const logoutUser = async (req, res) => {
+  const conn = await db.getConnection();
+
   try {
     const { refreshToken } = req.body;
+    const userId = req.user.id;
 
     if (!refreshToken) {
       return res.status(400).json({ message: "Token required" });
     }
 
-    const [rows] = await db.query(
-      `SELECT * FROM user_refresh_tokens WHERE refresh_token=?`,
-      [refreshToken],
+    const [rows] = await conn.query(
+      `SELECT * FROM user_refresh_tokens 
+       WHERE refresh_token=? AND is_active=1`,
+      [refreshToken]
     );
 
     if (!rows.length) {
       return res.status(400).json({ message: "Invalid token" });
     }
 
-    const sessionId = rows[0].session_id;
-    const userId = rows[0].user_id;
+    const tokenData = rows[0];
 
-    // 🔒 deactivate only this session
-    await db.query(
+    if (tokenData.user_id !== userId) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    await conn.beginTransaction();
+
+    await conn.query(
       `UPDATE user_refresh_tokens 
        SET is_active=0 
        WHERE session_id=?`,
-      [sessionId],
+      [tokenData.session_id]
     );
 
-    // 📜 update logout history
-    await db.query(
+    await conn.query(
       `UPDATE login_history
        SET logout_time=NOW()
        WHERE session_id=? AND logout_time IS NULL`,
-      [sessionId],
+      [tokenData.session_id]
     );
 
+    await conn.commit();
+
     res.json({ message: "Logged out from this device" });
+
   } catch (err) {
-    res.status(500).json({ message: "Internal server error", error: err.message });
+    await conn.rollback();
+    res.status(500).json({ message: "Internal server error" });
+  } finally {
+    conn.release();
   }
 };
 
@@ -218,26 +273,72 @@ export const logoutUser = async (req, res) => {
 //   }
 // };
 
+// export const logoutAllDevices = async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+
+//   await db.query(
+//     `UPDATE user_refresh_tokens 
+//      SET is_active=0 
+//      WHERE user_id=?`,
+//     [userId],
+//   );
+
+//   await db.query(
+//     `UPDATE login_history
+//      SET logout_time=NOW()
+//      WHERE user_id=? AND logout_time IS NULL`,
+//     [userId],
+//   );
+
+//   res.json({ message: "Logged out from all devices" });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+// ----------------------------------------------------------
+
 export const logoutAllDevices = async (req, res) => {
+  const conn = await db.getConnection();
+
   try {
     const userId = req.user.id;
 
-  await db.query(
-    `UPDATE user_refresh_tokens 
-     SET is_active=0 
-     WHERE user_id=?`,
-    [userId],
-  );
+    await conn.beginTransaction();
 
-  await db.query(
-    `UPDATE login_history
-     SET logout_time=NOW()
-     WHERE user_id=? AND logout_time IS NULL`,
-    [userId],
-  );
+    // 🔥 kill refresh tokens
+    await conn.query(
+      `UPDATE user_refresh_tokens 
+       SET is_active=0 
+       WHERE user_id=?`,
+      [userId]
+    );
 
-  res.json({ message: "Logged out from all devices" });
+    // 🔥 kill access tokens (IMPORTANT)
+    await conn.query(
+      `UPDATE users_roles 
+       SET token_version = token_version + 1 
+       WHERE id=?`,
+      [userId]
+    );
+
+    // 📜 update history
+    await conn.query(
+      `UPDATE login_history
+       SET logout_time=NOW()
+       WHERE user_id=? AND logout_time IS NULL`,
+      [userId]
+    );
+
+    await conn.commit();
+
+    res.json({ message: "Logged out from all devices" });
+
   } catch (error) {
+    await conn.rollback();
     res.status(500).json({ message: error.message });
+  } finally {
+    conn.release();
   }
 };
+

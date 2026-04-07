@@ -16,4 +16,4 @@ export const createPermissionsTable = async (db) => {
   // ✅ 4. Create user_permissions
   await createUserPermissionsTable(db);
 
-};
+};[]

@@ -275,44 +275,89 @@ export const adminOnly = (req, res, next) => {
 
 // Authorization: Bearer ACCESS_TOKEN
 
-export const verifyToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+// export const verifyToken = (req, res, next) => {
+//   const authHeader = req.headers.authorization;
 
-  if (!authHeader) {
-    return res.status(401).json({
-      message: "Access token required",
-      code: "NO_TOKEN",
-    });
-  }
+//   if (!authHeader) {
+//     return res.status(401).json({
+//       message: "Access token required",
+//       code: "NO_TOKEN",
+//     });
+//   }
 
-  if (!authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({
-      message: "Invalid auth format",
-      code: "INVALID_FORMAT",
-    });
-  }
+//   if (!authHeader.startsWith("Bearer ")) {
+//     return res.status(401).json({
+//       message: "Invalid auth format",
+//       code: "INVALID_FORMAT",
+//     });
+//   }
 
-  const token = authHeader.split(" ")[1];
+//   const token = authHeader.split(" ")[1];
 
+//   try {
+//     const decoded = jwt.verify(token, ACCESS_SECRET);
+
+//     req.user = decoded; // includes permission
+//     next();
+//   } catch (error) {
+//     if (error.name === "TokenExpiredError") {
+//       return res.status(401).json({
+//         message: "Access token expired",
+//         code: "TOKEN_EXPIRED",
+//       });
+//     }
+
+//     return res.status(401).json({
+//       message: "Invalid token",
+//       code: "INVALID_TOKEN",
+//     });
+//   }
+// };
+
+export const verifyToken = async (req, res, next) => {
   try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
     const decoded = jwt.verify(token, ACCESS_SECRET);
 
-    req.user = decoded; // includes permission
-    next();
-  } catch (error) {
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({
-        message: "Access token expired",
-        code: "TOKEN_EXPIRED",
+    // 🔥 CHECK USER STATUS + TOKEN VERSION
+    const [[user]] = await db.query(
+      `SELECT status, token_version FROM users_roles WHERE id=?`,
+      [decoded.id]
+    );
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    if (user.status !== "active") {
+      return res.status(403).json({
+        message: "User is inactive",
       });
     }
 
+    if (user.token_version !== decoded.token_version) {
+      return res.status(401).json({
+        message: "Session expired (forced logout)",
+      });
+    }
+
+    req.user = decoded;
+    next();
+
+  } catch (error) {
     return res.status(401).json({
-      message: "Invalid token",
-      code: "INVALID_TOKEN",
+      message: "Invalid or expired token",
     });
   }
 };
+
 
 // export const verifyToken = (req, res, next) => {
 //   const requestId = uuidv4(); // unique request tracking

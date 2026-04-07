@@ -130,7 +130,7 @@ export const MODULE_CONFIG = [
   {
     name: "Billing",
     code: "BILLING",
-    actions: ["VIEW", "CREATE"], // ✅ FIXED
+    actions: ["VIEW", "CREATE"],
     children: [
       {
         name: "Dashboard",

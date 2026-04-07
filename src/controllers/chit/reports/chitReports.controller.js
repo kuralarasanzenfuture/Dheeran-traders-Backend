@@ -534,7 +534,7 @@ export const getAssignedCustomerReport = async (req, res) => {
 //   }
 // };
 
-export const getCollectionReport = async (req, res) => {
+export const getCollectionReportDateRange = async (req, res) => {
   try {
     const { from_date, to_date } = req.query;
 
@@ -722,6 +722,156 @@ const result = Array.from(customersMap.values());
       to_date,
       count: formatted.length,
     //   data: formatted,
+      data: result
+    });
+
+  } catch (err) {
+    console.error("Collection Report Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
+
+export const getCollectionReport = async (req, res) => {
+  try {
+
+    const [rows] = await db.query(`
+      SELECT
+        c.id AS customer_id,
+        c.name AS customer_name,
+        c.phone,
+        c.address,
+
+        u.username AS collector_name,
+        u.email AS collector_email,
+        u.phone AS collector_phone,
+
+        b.batch_name,
+        p.plan_name,
+
+        i.installment_number,
+        DATE_FORMAT(i.due_date, '%Y-%m-%d') AS due_date,
+
+        COALESCE(SUM(pa.allocated_amount), 0) AS total_paid,
+
+        COALESCE(SUM((cp.pay_cash * pa.allocated_amount) / NULLIF(cp.total_amount,0)), 0) AS cash_amount,
+        COALESCE(SUM((cp.pay_upi * pa.allocated_amount) / NULLIF(cp.total_amount,0)), 0) AS upi_amount,
+        COALESCE(SUM((cp.pay_cheque * pa.allocated_amount) / NULLIF(cp.total_amount,0)), 0) AS cheque_amount,
+
+        GROUP_CONCAT(DISTINCT cp.pay_upi_reference) AS upi_references,
+
+        i.installment_amount,
+
+        (i.installment_amount - COALESCE(SUM(pa.allocated_amount), 0)) AS pending_amount,
+
+        DATE_FORMAT(MAX(cp.payment_datetime), '%Y-%m-%d') AS paid_date
+
+      FROM chit_payment_allocations pa
+
+      JOIN chit_collections_payments cp 
+        ON cp.id = pa.payment_id
+
+      JOIN chit_customer_installments i 
+        ON i.id = pa.installment_id
+
+      JOIN chit_customer_subscriptions s 
+        ON s.id = i.subscription_id
+
+      JOIN chit_customers c 
+        ON c.id = s.customer_id
+
+      JOIN batches b 
+        ON b.id = s.batch_id
+
+      JOIN plans p 
+        ON p.id = s.plan_id
+
+      LEFT JOIN users_roles u 
+        ON u.id = cp.collected_by
+
+      GROUP BY 
+        i.id,
+        c.id,
+        u.username,
+        b.batch_name,
+        p.plan_name
+
+      ORDER BY c.id, i.due_date ASC
+    `);
+
+    // 🔹 TREE FORMAT
+    const customersMap = new Map();
+
+    for (const row of rows) {
+      const custId = row.customer_id;
+
+      if (!customersMap.has(custId)) {
+        customersMap.set(custId, {
+          customer_id: custId,
+          customer_name: row.customer_name,
+          phone: row.phone,
+          address: row.address,
+
+          summary: {
+            total_amount: 0,
+            total_paid: 0,
+            total_pending: 0,
+            total_cash: 0,
+            total_upi: 0,
+            total_cheque: 0
+          },
+
+          collections: []
+        });
+      }
+
+      const customer = customersMap.get(custId);
+
+      const installment = {
+        collector_name: row.collector_name,
+        collector_email: row.collector_email,
+        collector_phone: row.collector_phone,
+
+        batch_name: row.batch_name,
+        plan_name: row.plan_name,
+
+        installment_number: row.installment_number,
+        due_date: row.due_date,
+        paid_date: row.paid_date,
+
+        installment_amount: Number(row.installment_amount || 0),
+
+        total_paid: Number(row.total_paid || 0),
+        pending_amount: Number(row.pending_amount || 0),
+
+        cash_amount: Number(row.cash_amount || 0),
+        upi_amount: Number(row.upi_amount || 0),
+        cheque_amount: Number(row.cheque_amount || 0),
+
+        upi_references: row.upi_references
+          ? row.upi_references.split(",")
+          : []
+      };
+
+      customer.collections.push(installment);
+
+      // 🔥 Summary
+      customer.summary.total_amount += installment.installment_amount;
+      customer.summary.total_paid += installment.total_paid;
+      customer.summary.total_pending += installment.pending_amount;
+
+      customer.summary.total_cash += installment.cash_amount;
+      customer.summary.total_upi += installment.upi_amount;
+      customer.summary.total_cheque += installment.cheque_amount;
+    }
+
+    const result = Array.from(customersMap.values());
+
+    return res.json({
+      success: true,
+      count: rows.length,
       data: result
     });
 

@@ -4,6 +4,7 @@ import {
   getAssignedCustomerReport,
   getBatchReport,
   getCollectionReport,
+  getCollectionReportDateRange,
   getCollectorPendingReport,
   getCustomerReport,
   getMonthlyCollectionReport,
@@ -23,6 +24,8 @@ router.get("/customer-report", getCustomerReport);
 router.get("/plan-report", getPlanReport);
 
 router.get("/assigned-customer-report", getAssignedCustomerReport);
+
+router.get("/collection-report-date-range", getCollectionReportDateRange);
 
 router.get("/collection-report", getCollectionReport);
 

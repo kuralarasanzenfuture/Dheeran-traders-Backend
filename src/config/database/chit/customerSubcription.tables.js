@@ -62,7 +62,8 @@ export const createCustomerSubcriptionTables = async (db) => {
                         INDEX customer_id (customer_id),
                         INDEX batch_id (batch_id),
                         INDEX plan_id (plan_id),
-                        INDEX agent_staff_id (agent_staff_id)
+                        INDEX agent_staff_id (agent_staff_id),
+                        INDEX idx_customer_batch (customer_id, batch_id)
                 )
                 `);
 

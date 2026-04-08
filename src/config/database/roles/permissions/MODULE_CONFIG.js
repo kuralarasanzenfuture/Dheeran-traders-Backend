@@ -172,29 +172,29 @@ export const MODULE_CONFIG = [
           {
             name: "Pending List",
             code: "BILLING_PENDING",
-            actions: ["VIEW", "EDIT"]
+            actions: ["VIEW", "CREATE"]
           },
           {
             name: "Stock Maintenance",
             code: "BILLING_STOCK",
-            actions: ["VIEW", "CREATE", "EDIT"]
+            actions: ["VIEW", "CREATE", "EDIT", "DELETE"]
           },
           {
             name: "Current Stock",
             code: "BILLING_CURRENT_STOCK",
-            actions: ["VIEW"]
+            actions: ["VIEW", "EDIT", "DELETE"]
           }
         ]
       },
       {
         name: "Customers",
         code: "BILLING_CUSTOMERS",
-        actions: ["VIEW", "CREATE", "EDIT"]
+        actions: ["VIEW", "CREATE", "EDIT", "DELETE"]
       },
       {
         name: "Vendors",
         code: "BILLING_VENDORS",
-        actions: ["VIEW", "CREATE", "EDIT"]
+        actions: ["VIEW", "CREATE", "EDIT", "DELETE"]
       },
       {
         name: "Report",
@@ -224,7 +224,7 @@ export const MODULE_CONFIG = [
   {
     name: "Chitfund",
     code: "CHIT",
-    actions: ["VIEW"], // ✅ FIXED
+    actions: ["VIEW"],
     children: [
       { name: "Dashboard", code: "CHIT_DASHBOARD", actions: ["VIEW"] },
       { name: "Chit Plans", code: "CHIT_PLANS", actions: ["VIEW", "CREATE", "EDIT", "DELETE"] },

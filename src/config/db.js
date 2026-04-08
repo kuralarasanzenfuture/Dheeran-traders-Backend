@@ -12,6 +12,7 @@ const db = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   timezone: "+05:30",
+  dateStrings: true   // ✅ returns string instead of Date object
 
 });
 

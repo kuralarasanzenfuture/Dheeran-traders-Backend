@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS chit_customer_installments (
 
     INDEX idx_installment_number (installment_number),
 
-    INDEX idx_due_date (due_date)
+    INDEX idx_due_date (due_date),
+    INDEX idx_subscription_due_date (subscription_id, due_date)
 );
 `);
 

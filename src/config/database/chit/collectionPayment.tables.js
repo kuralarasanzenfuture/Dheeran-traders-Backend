@@ -91,7 +91,13 @@ await db.query(`
 
     INDEX idx_subscription (subscription_id),
     INDEX idx_customer (customer_id),
-    INDEX idx_collected_by (collected_by)
+    INDEX idx_collected_by (collected_by),
+
+    INDEX idx_payment_type (payment_type),
+
+    INDEX idx_payment_datetime (payment_datetime),
+
+    INDEX idx_customer_datetime (customer_id, payment_datetime)
 );
 `);
 

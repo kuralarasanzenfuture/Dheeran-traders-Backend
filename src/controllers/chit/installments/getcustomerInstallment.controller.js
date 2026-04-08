@@ -1545,8 +1545,16 @@ export const getCollectorDueList = async (req, res) => {
 //         c.id AS customer_id,
 //         c.name AS customer_name,
 //         c.phone,
+//         c.phone,
 //         c.place,
+//         c.aadhar,
+//         c.pan_number,
+//         c.door_no,
 //         c.address,
+//         c.state,
+//         c.district,
+//         c.pincode,
+
 
 //         b.batch_name,
 //         p2.plan_name
@@ -1628,7 +1636,13 @@ export const getCollectorDueList = async (req, res) => {
 //           customer_name: row.customer_name,
 //           phone: row.phone,
 //           place: row.place,
+//           aadhar: row.aadhar,
+//           pan_number: row.pan_number,
+//           door_no: row.door_no,
 //           address: row.address,
+//           state: row.state,
+//           district: row.district,
+//           pincode: row.pincode,
 
 //           summary: {
 //             total_subscriptions: 0,
@@ -1836,8 +1850,16 @@ export const getCollectorDueList = async (req, res) => {
 //         c.id AS customer_id,
 //         c.name AS customer_name,
 //         c.phone,
+//         c.phone,
 //         c.place,
+//         c.aadhar,
+//         c.pan_number,
+//         c.door_no,
 //         c.address,
+//         c.state,
+//         c.district,
+//         c.pincode,
+
 
 //         b.batch_name,
 //         p2.plan_name
@@ -1920,7 +1942,13 @@ export const getCollectorDueList = async (req, res) => {
 //           customer_name: row.customer_name,
 //           phone: row.phone,
 //           place: row.place,
+//           aadhar: row.aadhar,
+//           pan_number: row.pan_number,
+//           door_no: row.door_no,
 //           address: row.address,
+//           state: row.state,
+//           district: row.district,
+//           pincode: row.pincode,
 
 //           summary: {
 //             total_subscriptions: 0,
@@ -2102,8 +2130,16 @@ export const getCollectorDueList = async (req, res) => {
 //         c.id AS customer_id,
 //         c.name AS customer_name,
 //         c.phone,
+//         c.phone,
 //         c.place,
+//         c.aadhar,
+//         c.pan_number,
+//         c.door_no,
 //         c.address,
+//         c.state,
+//         c.district,
+//         c.pincode,
+
 
 //         b.batch_name,
 //         p2.plan_name,
@@ -2166,7 +2202,13 @@ export const getCollectorDueList = async (req, res) => {
 //           customer_name: row.customer_name,
 //           phone: row.phone,
 //           place: row.place,
+//           aadhar: row.aadhar,
+//           pan_number: row.pan_number,
+//           door_no: row.door_no,
 //           address: row.address,
+//           state: row.state,
+//           district: row.district,
+//           pincode: row.pincode,
 
 //           summary: {
 //             total_subscriptions: 0,
@@ -2412,8 +2454,16 @@ export const getCollectorDueListTree = async (req, res) => {
         c.id AS customer_id,
         c.name AS customer_name,
         c.phone,
+        c.phone,
         c.place,
+        c.aadhar,
+        c.pan_number,
+        c.door_no,
         c.address,
+        c.state,
+        c.district,
+        c.pincode,
+
 
         b.batch_name,
         p2.plan_name,
@@ -2473,7 +2523,13 @@ export const getCollectorDueListTree = async (req, res) => {
           customer_name: row.customer_name,
           phone: row.phone,
           place: row.place,
+          aadhar: row.aadhar,
+          pan_number: row.pan_number,
+          door_no: row.door_no,
           address: row.address,
+          state: row.state,
+          district: row.district,
+          pincode: row.pincode,
 
           summary: {
             total_subscriptions: 0,

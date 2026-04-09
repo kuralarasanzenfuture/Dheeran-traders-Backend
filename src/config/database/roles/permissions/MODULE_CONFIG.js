@@ -130,13 +130,14 @@ export const MODULE_CONFIG = [
   {
     name: "Billing",
     code: "BILLING",
-    actions: ["VIEW", "CREATE"],
+    actions: ["VIEW"],
     children: [
       {
-        name: "Dashboard",
-        code: "BILLING_DASHBOARD",
-        actions: ["VIEW"]
+        name: "Billing page",
+        code: "BILLING_page",
+        actions: ["VIEW", "CREATE"],
       },
+      { name: "Dashboard", code: "BILLING_DASHBOARD", actions: ["VIEW"] },
       {
         name: "Products",
         code: "BILLING_PRODUCTS",
@@ -145,24 +146,24 @@ export const MODULE_CONFIG = [
           {
             name: "Add Product",
             code: "BILLING_ADD_PRODUCT",
-            actions: ["VIEW", "CREATE", "EDIT", "DELETE"]
+            actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
           },
           {
             name: "Brand",
             code: "BILLING_BRAND",
-            actions: ["VIEW", "CREATE", "EDIT", "DELETE"]
+            actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
           },
           {
             name: "Categories",
             code: "BILLING_CATEGORIES",
-            actions: ["VIEW", "CREATE", "EDIT", "DELETE"]
+            actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
           },
           {
             name: "Quantity",
             code: "BILLING_QUANTITY",
-            actions: ["VIEW", "CREATE", "EDIT", "DELETE"]
-          }
-        ]
+            actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
+          },
+        ],
       },
       {
         name: "Accounts",
@@ -172,29 +173,29 @@ export const MODULE_CONFIG = [
           {
             name: "Pending List",
             code: "BILLING_PENDING",
-            actions: ["VIEW", "CREATE"]
+            actions: ["VIEW", "CREATE"],
           },
           {
             name: "Stock Maintenance",
             code: "BILLING_STOCK",
-            actions: ["VIEW", "CREATE", "EDIT", "DELETE"]
+            actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
           },
           {
             name: "Current Stock",
             code: "BILLING_CURRENT_STOCK",
-            actions: ["VIEW", "EDIT", "DELETE"]
-          }
-        ]
+            actions: ["VIEW", "EDIT", "DELETE"],
+          },
+        ],
       },
       {
         name: "Customers",
         code: "BILLING_CUSTOMERS",
-        actions: ["VIEW", "CREATE", "EDIT", "DELETE"]
+        actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
       },
       {
         name: "Vendors",
         code: "BILLING_VENDORS",
-        actions: ["VIEW", "CREATE", "EDIT", "DELETE"]
+        actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
       },
       {
         name: "Report",
@@ -204,21 +205,31 @@ export const MODULE_CONFIG = [
           {
             name: "Customer Billing Report",
             code: "BILLING_REPORT_CUSTOMER",
-            actions: ["VIEW","CREATE", "EDIT", "DELETE", "EXPORT"]
+            actions: ["VIEW", "CREATE", "EDIT", "DELETE", "EXPORT"],
           },
           {
             name: "Product Wise Report",
             code: "BILLING_REPORT_PRODUCT",
-            actions: ["VIEW", "EXPORT"]
+            actions: ["VIEW", "EXPORT"],
           },
           {
             name: "Daily Sales Report",
             code: "BILLING_REPORT_DAILY",
-            actions: ["VIEW", "EXPORT"]
-          }
-        ]
+            actions: ["VIEW", "EXPORT"],
+          },
+        ],
+      },
+      {
+        name: "bank details",
+        code: "BILLING_BANK_DETAILS",
+        actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
+      },
+      {
+        name: "company details",
+        code: "BILLING_COMPANY_DETAILS",
+        actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
       }
-    ]
+    ],
   },
 
   {
@@ -227,12 +238,36 @@ export const MODULE_CONFIG = [
     actions: ["VIEW"],
     children: [
       { name: "Dashboard", code: "CHIT_DASHBOARD", actions: ["VIEW"] },
-      { name: "Chit Plans", code: "CHIT_PLANS", actions: ["VIEW", "CREATE", "EDIT", "DELETE"] },
-      { name: "Chit Customers", code: "CHIT_CUSTOMERS", actions: ["VIEW", "CREATE", "EDIT", "DELETE"] },
-      { name: "Chit Batches", code: "CHIT_BATCHES", actions: ["VIEW", "CREATE", "EDIT", "DELETE"] },
-      { name: "Agent / Staff", code: "CHIT_AGENT", actions: ["VIEW", "CREATE", "EDIT", "DELETE"] },
-      { name: "Assigned user to customer", code: "CHIT_ASSIGN_USER", actions: ["VIEW", "CREATE"] },
-      { name: "Collections", code: "CHIT_COLLECTIONS", actions: ["VIEW", "CREATE"] },
+      {
+        name: "Chit Plans",
+        code: "CHIT_PLANS",
+        actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
+      },
+      {
+        name: "Chit Customers",
+        code: "CHIT_CUSTOMERS",
+        actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
+      },
+      {
+        name: "Chit Batches",
+        code: "CHIT_BATCHES",
+        actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
+      },
+      {
+        name: "Agent / Staff",
+        code: "CHIT_AGENT",
+        actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
+      },
+      {
+        name: "Assigned user to customer",
+        code: "CHIT_ASSIGN_USER",
+        actions: ["VIEW", "CREATE"],
+      },
+      {
+        name: "Collections",
+        code: "CHIT_COLLECTIONS",
+        actions: ["VIEW", "CREATE"],
+      },
       {
         name: "Report",
         code: "CHIT_REPORT",
@@ -241,16 +276,15 @@ export const MODULE_CONFIG = [
           {
             name: "Customer Report",
             code: "CHIT_REPORT_CUSTOMER",
-            actions: ["VIEW", "EXPORT"]
+            actions: ["VIEW", "EXPORT"],
           },
           {
             name: "Daily Report",
             code: "CHIT_REPORT_DAILY",
-            actions: ["VIEW", "EXPORT"]
-          }
-        ]
-      }
-    ]
-  }
+            actions: ["VIEW", "EXPORT"],
+          },
+        ],
+      },
+    ],
+  },
 ];
-

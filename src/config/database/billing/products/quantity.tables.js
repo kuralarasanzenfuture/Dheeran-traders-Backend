@@ -22,7 +22,7 @@ export const createQuantityTable = async (db) => {
   ) ENGINE=InnoDB
 `);
 
-    await seedQuantities(db);
+    // await seedQuantities(db);
 
 };
 

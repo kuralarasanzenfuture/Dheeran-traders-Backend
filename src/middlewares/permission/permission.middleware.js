@@ -62,12 +62,12 @@ export const checkPermission = (moduleCode, actionCode) => {
         [moduleCode, actionCode, user_id],
       );
 
-      console.log({
-        moduleCode,
-        actionCode,
-        user_id,
-      });
-      console.log(rows);
+      // console.log({
+      //   moduleCode,
+      //   actionCode,
+      //   user_id,
+      // });
+      // console.log(rows);
 
       if (!rows.length || rows[0].allowed !== 1) {
         return res.status(403).json({ message: "Forbidden access denied" });

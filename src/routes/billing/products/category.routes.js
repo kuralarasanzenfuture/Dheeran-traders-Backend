@@ -21,13 +21,13 @@ router.get("/brand-category", getBrandCategoryDropdown);
 router.get("/brand/:brand_id", getCategoriesByBrand);
 
 // CRUD
-router.post("/", checkPermission("BILLING_CATEGORY", "CREATE"), createCategory);
-router.get("/", checkPermission("BILLING_CATEGORY", "VIEW"), getCategories);
+router.post("/", createCategory);
+router.get("/", getCategories);
 router.get("/:id", getCategoryById);
-router.put("/:id", checkPermission("BILLING_CATEGORY", "EDIT"), updateCategory);
+router.put("/:id", updateCategory);
 router.delete(
   "/:id",
-  checkPermission("BILLING_CATEGORY", "DELETE"),
+
   deleteCategory,
 );
 

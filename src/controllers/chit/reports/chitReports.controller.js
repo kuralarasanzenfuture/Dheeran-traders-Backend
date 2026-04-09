@@ -1255,3 +1255,321 @@ export const getCollectorPendingReport = async (req, res) => {
     });
   }
 };
+
+
+export const getCollectorPerformance = async (req, res) => {
+//   Total collections
+// Today collection
+// Total customers handled
+// Recovery rate
+// Overdue handled
+  try {
+    const { from_date, to_date } = req.query;
+
+    const from = `${from_date} 00:00:00`;
+    const to = `${to_date} 23:59:59`;
+
+    const [rows] = await db.query(`
+      SELECT
+        u.id AS collector_id,
+        u.username,
+
+        COUNT(DISTINCT cp.customer_id) AS total_customers,
+
+        SUM(cp.total_amount) AS total_collection,
+
+        SUM(
+          CASE 
+            WHEN DATE(cp.payment_datetime) = CURDATE()
+            THEN cp.total_amount ELSE 0
+          END
+        ) AS today_collection
+
+      FROM chit_collections_payments cp
+      JOIN users_roles u ON u.id = cp.collected_by
+
+      WHERE cp.payment_datetime BETWEEN ? AND ?
+
+      GROUP BY u.id
+      ORDER BY total_collection DESC
+    `, [from, to]);
+
+    return res.json({
+      success: true,
+      data: rows
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+// Date-wise collection
+// Perfect for line chart
+export const getDailyAnalytics = async (req, res) => {
+  try {
+    const { from_date, to_date } = req.query;
+
+    const [rows] = await db.query(`
+      SELECT
+        DATE(cp.payment_datetime) AS date,
+        SUM(cp.total_amount) AS total_collection
+
+      FROM chit_collections_payments cp
+      WHERE cp.payment_datetime BETWEEN ? AND ?
+
+      GROUP BY DATE(cp.payment_datetime)
+      ORDER BY date ASC
+    `, [`${from_date} 00:00:00`, `${to_date} 23:59:59`]);
+
+    return res.json({
+      success: true,
+      data: rows
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// Month-wise revenue
+// Used for bar chart
+export const getMonthlyAnalytics = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT
+        DATE_FORMAT(cp.payment_datetime, '%Y-%m') AS month,
+        SUM(cp.total_amount) AS total_collection
+
+      FROM chit_collections_payments cp
+      GROUP BY month
+      ORDER BY month ASC
+    `);
+
+    return res.json({
+      success: true,
+      data: rows
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getDashboard = async (req, res) => {
+  try {
+
+    // 🔹 TOTAL COLLECTION
+    const [[total]] = await db.query(`
+      SELECT SUM(total_amount) AS total_collection
+      FROM chit_collections_payments
+    `);
+
+    // 🔹 TODAY COLLECTION
+    const [[today]] = await db.query(`
+      SELECT SUM(total_amount) AS today_collection
+      FROM chit_collections_payments
+      WHERE DATE(payment_datetime) = CURDATE()
+    `);
+
+    // 🔹 INSTALLMENT STATUS
+    const [[inst]] = await db.query(`
+      SELECT
+        SUM(i.installment_amount) AS total_amount,
+        SUM(IFNULL(p.total_paid,0)) AS total_paid,
+        SUM(i.installment_amount - IFNULL(p.total_paid,0)) AS pending_amount,
+
+        SUM(
+          CASE WHEN i.due_date < CURDATE()
+          THEN (i.installment_amount - IFNULL(p.total_paid,0))
+          ELSE 0 END
+        ) AS overdue_amount
+
+      FROM chit_customer_installments i
+
+      LEFT JOIN (
+        SELECT installment_id, SUM(allocated_amount) total_paid
+        FROM chit_payment_allocations
+        GROUP BY installment_id
+      ) p ON p.installment_id = i.id
+    `);
+
+    // 🔹 PAYMENT MODE SPLIT
+    const [[mode]] = await db.query(`
+      SELECT
+        SUM(pay_upi) AS total_upi,
+        SUM(pay_cash) AS total_cash,
+        SUM(pay_cheque) AS total_cheque
+      FROM chit_collections_payments
+    `);
+
+    const recovery_rate = inst.total_amount > 0
+      ? ((inst.total_paid / inst.total_amount) * 100).toFixed(2)
+      : 0;
+
+    return res.json({
+      success: true,
+      data: {
+        total_collection: Number(total.total_collection || 0),
+        today_collection: Number(today.today_collection || 0),
+
+        total_amount: Number(inst.total_amount || 0),
+        total_paid: Number(inst.total_paid || 0),
+        pending_amount: Number(inst.pending_amount || 0),
+        overdue_amount: Number(inst.overdue_amount || 0),
+
+        recovery_rate,
+
+        payment_modes: {
+          upi: Number(mode.total_upi || 0),
+          cash: Number(mode.total_cash || 0),
+          cheque: Number(mode.total_cheque || 0)
+        }
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+export const getMobileDashboard = async (req, res) => {
+  try {
+    const user_id = req.user?.id;
+    if (!user_id) throw new Error("Unauthorized");
+
+    // 🔹 Get assigned customers
+    const [customers] = await db.query(`
+      SELECT customer_id
+      FROM user_chit_customer_assignments
+      WHERE user_id = ? AND is_active = TRUE
+    `, [user_id]);
+
+    if (!customers.length) {
+      return res.json({
+        success: true,
+        message: "No assigned customers",
+        data: {}
+      });
+    }
+
+    const customerIds = customers.map(c => c.customer_id);
+
+    // 🔹 MAIN DASHBOARD QUERY (FAST)
+    const [rows] = await db.query(`
+      SELECT
+        i.id AS installment_id,
+        i.installment_amount,
+        i.due_date,
+
+        IFNULL(p.total_paid, 0) AS paid_amount,
+        (i.installment_amount - IFNULL(p.total_paid,0)) AS pending_amount,
+
+        IFNULL(p.today_collection,0) AS today_collection
+
+      FROM chit_customer_installments i
+
+      JOIN chit_customer_subscriptions s 
+        ON s.id = i.subscription_id
+
+      LEFT JOIN (
+        SELECT 
+          pa.installment_id,
+          SUM(pa.allocated_amount) AS total_paid,
+
+          SUM(
+            CASE 
+              WHEN DATE(cp.payment_datetime) = CURDATE()
+              THEN pa.allocated_amount
+              ELSE 0
+            END
+          ) AS today_collection
+
+        FROM chit_payment_allocations pa
+        JOIN chit_collections_payments cp 
+          ON cp.id = pa.payment_id
+
+        GROUP BY pa.installment_id
+      ) p ON p.installment_id = i.id
+
+      WHERE s.customer_id IN (?)
+    `, [customerIds]);
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    // 🔥 CALCULATE METRICS
+    let total_amount = 0;
+    let total_paid = 0;
+    let total_pending = 0;
+
+    let today_collection = 0;
+
+    let pending_count = 0;
+    let overdue_count = 0;
+    let paid_count = 0;
+
+    let overdue_amount = 0;
+
+    rows.forEach(r => {
+      const amount = Number(r.installment_amount);
+      const paid = Number(r.paid_amount);
+      const pending = Number(r.pending_amount);
+
+      total_amount += amount;
+      total_paid += paid;
+      total_pending += pending;
+
+      today_collection += Number(r.today_collection || 0);
+
+      // 🔹 Status logic
+      if (paid >= amount) {
+        paid_count++;
+      } else if (r.due_date < today) {
+        overdue_count++;
+        overdue_amount += pending;
+      } else {
+        pending_count++;
+      }
+    });
+
+    // 🔥 FINAL METRICS
+    const response = {
+      customers_count: customerIds.length,
+
+      total_amount,
+      total_paid,
+      total_pending,
+
+      today_collection,
+
+      pending_count,
+      overdue_count,
+      paid_count,
+
+      overdue_amount,
+
+      overdue_percentage:
+        total_amount > 0
+          ? ((overdue_amount / total_amount) * 100).toFixed(2)
+          : 0,
+
+      recovery_rate:
+        total_amount > 0
+          ? ((total_paid / total_amount) * 100).toFixed(2)
+          : 0
+    };
+
+    return res.json({
+      success: true,
+      data: response
+    });
+
+  } catch (err) {
+    console.error("Dashboard Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
+

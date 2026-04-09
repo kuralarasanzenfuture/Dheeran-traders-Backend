@@ -6,11 +6,17 @@ import {
   getCollectionReport,
   getCollectionReportDateRange,
   getCollectorPendingReport,
+  getCollectorPerformance,
   getCustomerReport,
+  getDailyAnalytics,
+  getDashboard,
+  getMobileDashboard,
+  getMonthlyAnalytics,
   getMonthlyCollectionReport,
   getPendingAndOverdueReport,
   getPlanReport,
 } from "../../../controllers/chit/reports/chitReports.controller.js";
+import { verifyToken } from "../../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
@@ -34,5 +40,19 @@ router.get("/collection-report-monthly", getMonthlyCollectionReport);
 router.get("/collection-report-Pending-Overdue", getPendingAndOverdueReport);
 
 router.get("/collection-collector-pending-report", getCollectorPendingReport);
+
+// 👨‍💼 Collector Performance
+router.get("/collector-performance", getCollectorPerformance);
+
+// 📅 Daily Analytics
+router.get("/daily-analytics", getDailyAnalytics);
+
+// 📅 Monthly Analytics
+router.get("/monthly-analytics", getMonthlyAnalytics);
+
+// 📊 Dashboard
+router.get("/dashboard", getDashboard);
+
+router.get("/mobile-dashboard",verifyToken, getMobileDashboard);
 
 export default router;

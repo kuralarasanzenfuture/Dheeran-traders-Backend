@@ -24,7 +24,7 @@ const router = express.Router();
 router.use(verifyToken);
 
 /* CREATE INVOICE */
-router.post("/", checkPermission("BILLING", "CREATE"), createCustomerBilling);
+router.post("/", createCustomerBilling);
 
 router.get("/", getAllCustomerBillings);
 

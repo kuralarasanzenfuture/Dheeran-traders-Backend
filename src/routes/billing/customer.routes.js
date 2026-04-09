@@ -13,13 +13,12 @@ const router = express.Router();
 
 router.use(verifyToken);
 
-router.post("/", checkPermission("BILLING_CUSTOMER", "CREATE"), createCustomer);
-router.get("/", checkPermission("BILLING_CUSTOMER", "VIEW"), getCustomers);
+router.post("/", createCustomer);
+router.get("/", getCustomers);
 router.get("/:id", getCustomerById);
-router.put("/:id", checkPermission("BILLING_CUSTOMER", "EDIT"), updateCustomer);
+router.put("/:id", updateCustomer);
 router.delete(
   "/:id",
-  checkPermission("BILLING_CUSTOMER", "DELETE"),
   deleteCustomer,
 );
 

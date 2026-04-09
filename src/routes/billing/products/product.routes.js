@@ -20,11 +20,11 @@ const router = express.Router();
 
 router.use(verifyToken);
 
-router.post("/", checkPermission("BILLING_ADD_PRODUCT", "CREATE"), createProduct);
-router.get("/", checkPermission("BILLING_ADD_PRODUCT", "VIEW"), getProducts);
+router.post("/", createProduct);
+router.get("/", getProducts);
 router.get("/:id", getProductById);
-router.put("/:id", checkPermission("BILLING_ADD_PRODUCT", "EDIT"), updateProduct);
-router.delete("/:id",checkPermission("BILLING_ADD_PRODUCT", "DELETE"), deleteProduct);
+router.put("/:id", updateProduct);
+router.delete("/:id", deleteProduct);
 /* 🔥 ONLY STOCK UPDATE */
 router.patch("/update-stock/:id", verifyAdminPassword, updateProductStock);
 

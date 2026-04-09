@@ -13,10 +13,10 @@ const router = express.Router();
 
 router.use(verifyToken);
 
-router.post("/create", checkPermission("CHIT_AGENT", "CREATE"), createAgentStaff);
-router.get("/", checkPermission("CHIT_AGENT", "VIEW"), getAgentStaff);
+router.post("/create", createAgentStaff);
+router.get("/", getAgentStaff);
 router.get("/:id", getAgentStaffById);
-router.put("/:id", checkPermission("CHIT_AGENT", "EDIT"), updateAgentStaff);
-router.delete("/:id",checkPermission("CHIT_AGENT", "DELETE"), deleteAgentStaff);
+router.put("/:id", updateAgentStaff);
+router.delete("/:id", deleteAgentStaff);
 
 export default router;

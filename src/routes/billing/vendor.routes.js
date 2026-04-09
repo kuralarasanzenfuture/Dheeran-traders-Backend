@@ -13,10 +13,10 @@ const router = express.Router();
 
 router.use(verifyToken);
 
-router.post("/",checkPermission("BILLING_VENDOR", "CREATE"), createVendor);
-router.get("/",checkPermission("BILLING_VENDOR", "VIEW"), getVendors);
+router.post("/", createVendor);
+router.get("/", getVendors);
 router.get("/:id", getVendorById);
-router.put("/:id",checkPermission("BILLING_VENDOR", "EDIT"), updateVendor);
-router.delete("/:id",checkPermission("BILLING_VENDOR", "DELETE"), deleteVendor);
+router.put("/:id", updateVendor);
+router.delete("/:id", deleteVendor);
 
 export default router;

@@ -1433,6 +1433,146 @@ export const getDashboard = async (req, res) => {
 };
 
 
+// export const getMobileDashboard = async (req, res) => {
+//   try {
+//     const user_id = req.user?.id;
+//     if (!user_id) throw new Error("Unauthorized");
+
+//     // 🔹 Get assigned customers
+//     const [customers] = await db.query(`
+//       SELECT customer_id
+//       FROM user_chit_customer_assignments
+//       WHERE user_id = ? AND is_active = TRUE
+//     `, [user_id]);
+
+//     if (!customers.length) {
+//       return res.json({
+//         success: true,
+//         message: "No assigned customers",
+//         data: {}
+//       });
+//     }
+
+//     const customerIds = customers.map(c => c.customer_id);
+
+//     // 🔹 MAIN DASHBOARD QUERY (FAST)
+//     const [rows] = await db.query(`
+//       SELECT
+//         i.id AS installment_id,
+//         i.installment_amount,
+//         i.due_date,
+
+//         IFNULL(p.total_paid, 0) AS paid_amount,
+//         (i.installment_amount - IFNULL(p.total_paid,0)) AS pending_amount,
+
+//         IFNULL(p.today_collection,0) AS today_collection
+
+//       FROM chit_customer_installments i
+
+//       JOIN chit_customer_subscriptions s 
+//         ON s.id = i.subscription_id
+
+//       LEFT JOIN (
+//         SELECT 
+//           pa.installment_id,
+//           SUM(pa.allocated_amount) AS total_paid,
+
+//           SUM(
+//             CASE 
+//               WHEN DATE(cp.payment_datetime) = CURDATE()
+//               THEN pa.allocated_amount
+//               ELSE 0
+//             END
+//           ) AS today_collection
+
+//         FROM chit_payment_allocations pa
+//         JOIN chit_collections_payments cp 
+//           ON cp.id = pa.payment_id
+
+//         GROUP BY pa.installment_id
+//       ) p ON p.installment_id = i.id
+
+//       WHERE s.customer_id IN (?)
+//     `, [customerIds]);
+
+//     const today = new Date().toISOString().slice(0, 10);
+
+//     // 🔥 CALCULATE METRICS
+//     let total_amount = 0;
+//     let total_paid = 0;
+//     let total_pending = 0;
+
+//     let today_collection = 0;
+
+//     let pending_count = 0;
+//     let overdue_count = 0;
+//     let paid_count = 0;
+
+//     let overdue_amount = 0;
+
+//     rows.forEach(r => {
+//       const amount = Number(r.installment_amount);
+//       const paid = Number(r.paid_amount);
+//       const pending = Number(r.pending_amount);
+
+//       total_amount += amount;
+//       total_paid += paid;
+//       total_pending += pending;
+
+//       today_collection += Number(r.today_collection || 0);
+
+//       // 🔹 Status logic
+//       if (paid >= amount) {
+//         paid_count++;
+//       } else if (r.due_date < today) {
+//         overdue_count++;
+//         overdue_amount += pending;
+//       } else {
+//         pending_count++;
+//       }
+//     });
+
+//     // 🔥 FINAL METRICS
+//     const response = {
+//       customers_count: customerIds.length,
+
+//       total_amount,
+//       total_paid,
+//       total_pending,
+
+//       today_collection,
+
+//       pending_count,
+//       overdue_count,
+//       paid_count,
+
+//       overdue_amount,
+
+//       overdue_percentage:
+//         total_amount > 0
+//           ? ((overdue_amount / total_amount) * 100).toFixed(2)
+//           : 0,
+
+//       recovery_rate:
+//         total_amount > 0
+//           ? ((total_paid / total_amount) * 100).toFixed(2)
+//           : 0
+//     };
+
+//     return res.json({
+//       success: true,
+//       data: response
+//     });
+
+//   } catch (err) {
+//     console.error("Dashboard Error:", err);
+//     return res.status(500).json({
+//       success: false,
+//       message: err.message
+//     });
+//   }
+// };
+
 export const getMobileDashboard = async (req, res) => {
   try {
     const user_id = req.user?.id;
@@ -1455,12 +1595,12 @@ export const getMobileDashboard = async (req, res) => {
 
     const customerIds = customers.map(c => c.customer_id);
 
-    // 🔹 MAIN DASHBOARD QUERY (FAST)
+    // 🔹 MAIN QUERY
     const [rows] = await db.query(`
       SELECT
         i.id AS installment_id,
         i.installment_amount,
-        i.due_date,
+        DATE(i.due_date) AS due_date,
 
         IFNULL(p.total_paid, 0) AS paid_amount,
         (i.installment_amount - IFNULL(p.total_paid,0)) AS pending_amount,
@@ -1475,6 +1615,7 @@ export const getMobileDashboard = async (req, res) => {
       LEFT JOIN (
         SELECT 
           pa.installment_id,
+
           SUM(pa.allocated_amount) AS total_paid,
 
           SUM(
@@ -1497,7 +1638,7 @@ export const getMobileDashboard = async (req, res) => {
 
     const today = new Date().toISOString().slice(0, 10);
 
-    // 🔥 CALCULATE METRICS
+    // 🔥 METRICS
     let total_amount = 0;
     let total_paid = 0;
     let total_pending = 0;
@@ -1510,10 +1651,18 @@ export const getMobileDashboard = async (req, res) => {
 
     let overdue_amount = 0;
 
+    // 🔥 NEW
+    let today_pending_amount = 0;
+    let today_overdue_amount = 0;
+
+    let today_pending_count = 0;
+    let today_overdue_count = 0;
+
     rows.forEach(r => {
       const amount = Number(r.installment_amount);
       const paid = Number(r.paid_amount);
       const pending = Number(r.pending_amount);
+      const dueDate = r.due_date;
 
       total_amount += amount;
       total_paid += paid;
@@ -1521,18 +1670,30 @@ export const getMobileDashboard = async (req, res) => {
 
       today_collection += Number(r.today_collection || 0);
 
-      // 🔹 Status logic
+      // 🔹 STATUS
       if (paid >= amount) {
         paid_count++;
-      } else if (r.due_date < today) {
+      } 
+      else if (dueDate < today) {
         overdue_count++;
         overdue_amount += pending;
-      } else {
+
+        // 🔥 TODAY OVERDUE
+        today_overdue_amount += pending;
+        today_overdue_count++;
+      } 
+      else if (dueDate === today) {
+        pending_count++;
+
+        // 🔥 TODAY PENDING
+        today_pending_amount += pending;
+        today_pending_count++;
+      } 
+      else {
         pending_count++;
       }
     });
 
-    // 🔥 FINAL METRICS
     const response = {
       customers_count: customerIds.length,
 
@@ -1547,6 +1708,13 @@ export const getMobileDashboard = async (req, res) => {
       paid_count,
 
       overdue_amount,
+
+      // 🔥 NEW FIELDS
+      today_pending_amount,
+      today_pending_count,
+
+      today_overdue_amount,
+      today_overdue_count,
 
       overdue_percentage:
         total_amount > 0
@@ -1572,4 +1740,3 @@ export const getMobileDashboard = async (req, res) => {
     });
   }
 };
-

@@ -13,10 +13,10 @@ const router = express.Router();
 
 router.use(verifyToken);
 
-router.post("/",checkPermission("CHIT_CUSTOMERS", "CREATE"),  createChitCustomer);
-router.get("/", checkPermission("CHIT_CUSTOMERS", "VIEW"), getChitCustomers);
+router.post("/",  createChitCustomer);
+router.get("/", getChitCustomers);
 router.get("/:id", getChitCustomerById);
-router.put("/:id", checkPermission("CHIT_CUSTOMERS", "EDIT"), updateChitCustomer);
-router.delete("/:id", checkPermission("CHIT_CUSTOMERS", "DELETE"), deleteChitCustomer);
+router.put("/:id", updateChitCustomer);
+router.delete("/:id", deleteChitCustomer);
 
 export default router;

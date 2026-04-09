@@ -14,10 +14,10 @@ const router = express.Router();
 
 router.use(verifyToken);
 
-router.post("/create",checkPermission("CHIT_PLANS", "CREATE"), createPlan);
-router.get("/", checkPermission("CHIT_PLANS", "VIEW"), getAllPlans);
+router.post("/create", createPlan);
+router.get("/", getAllPlans);
 router.get("/:id", getPlanById);
-router.put("/:id", checkPermission("CHIT_PLANS", "EDIT"), updatePlan);
-router.delete("/:id",checkPermission("CHIT_PLANS", "DELETE"), deletePlan);
+router.put("/:id", updatePlan);
+router.delete("/:id", deletePlan);
 
 export default router;

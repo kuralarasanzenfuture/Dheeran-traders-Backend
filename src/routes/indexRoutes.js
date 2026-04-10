@@ -91,7 +91,7 @@ router.use("/batch-plans", batchPlanRoutes);
 router.use("/chit-customers", chitCustomersRoutes);
 router.use("/chit-agent-staff", chitAgentsAndStaffRoutes);
 router.use("/customer-subscriptions", chitCustomerSubscriptionsRoutes);
-router.use("/chit/payment", collectionPaymentRoutes);
+router.use("/chit-payment", collectionPaymentRoutes);
 router.use("/installments", customerInstallmentRoutes);
 router.use("/chit-reports", chitReportRoutes);
 

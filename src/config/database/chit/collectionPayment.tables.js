@@ -46,6 +46,14 @@ export const createCollectionPaymentTables = async (db) => {
 // );
 // `);
 
+// 🔹 Payments table
+// NO subscription_id
+// 🔹 Allocations table
+// has:
+// installment_id
+// subscription_id
+// customer_id
+
 await db.query(`
     CREATE TABLE IF NOT EXISTS chit_collections_payments (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -113,7 +121,8 @@ await db.query(`
 
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
     FOREIGN KEY (payment_id)
         REFERENCES chit_collections_payments(id)
         ON DELETE CASCADE,
@@ -125,7 +134,9 @@ await db.query(`
     UNIQUE KEY unique_payment_installment (payment_id, installment_id),
 
     INDEX idx_payment (payment_id),
-    INDEX idx_installment (installment_id)
+    INDEX idx_installment (installment_id),
+
+    INDEX idx_payment_installment (payment_id, installment_id)
 );
 `);
 

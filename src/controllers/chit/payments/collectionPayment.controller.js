@@ -1,4 +1,4 @@
-import db from "../../config/db.js";
+import db from "../../../config/db.js";
 
 // POST: collect payment pay only what is due only
 // export const collectPayment = async (req, res) => {
@@ -3771,3 +3771,9 @@ export const collectPaymentBySelectedInstallmentsByCustomer = async (req, res) =
     connection.release();
   }
 };
+
+
+
+
+
+

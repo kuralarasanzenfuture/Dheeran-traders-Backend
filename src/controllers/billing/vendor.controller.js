@@ -512,18 +512,31 @@ export const deleteVendor = async (req, res, next) => {
       return res.status(404).json({ message: "Vendor not found" });
     }
 
-    // 🔥 FUTURE SAFE CHECK (important)
-    const [[hasUsage]] = await connection.query(
+    // ✅ CHECK vendor_stocks (REAL DEPENDENCY)
+    const [[stockUsage]] = await connection.query(
+      "SELECT COUNT(*) as count FROM vendor_stocks WHERE vendor_id = ?",
+      [id]
+    );
+
+    if (stockUsage.count > 0) {
+      return res.status(400).json({
+        message: "Cannot delete vendor with stock entries"
+      });
+    }
+
+    // OPTIONAL future table
+    const [[purchaseUsage]] = await connection.query(
       "SELECT COUNT(*) as count FROM vendorPurchases WHERE vendor_id = ?",
       [id]
-    ).catch(() => [[{ count: 0 }]]); // if table not exists yet
+    ).catch(() => [[{ count: 0 }]]);
 
-    if (hasUsage.count > 0) {
+    if (purchaseUsage.count > 0) {
       return res.status(400).json({
         message: "Cannot delete vendor with purchase records"
       });
     }
 
+    // ✅ AUDIT
     await connection.query(
       `INSERT INTO audit_logs
        (table_name, record_id, action, old_data, changed_by, remarks)

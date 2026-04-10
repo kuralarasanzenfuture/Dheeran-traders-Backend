@@ -118,6 +118,9 @@ export const getAllInstallments = async (req, res) => {
                AND DATE(MAX(p.payment_datetime)) < i.due_date THEN 'BEFOREPAID'
 
           WHEN COALESCE(SUM(a.allocated_amount), 0) = i.installment_amount 
+               AND DATE(MAX(p.payment_datetime)) > i.due_date THEN 'OVERDUEPAID'     
+
+          WHEN COALESCE(SUM(a.allocated_amount), 0) = i.installment_amount 
                THEN 'PAID'
 
           ELSE 'PENDING'
@@ -219,6 +222,9 @@ export const getInstallmentsBySubscription = async (req, res) => {
 
           WHEN COALESCE(SUM(a.allocated_amount), 0) = i.installment_amount 
                AND DATE(MAX(p.payment_datetime)) < i.due_date THEN 'BEFOREPAID'
+
+          WHEN COALESCE(SUM(a.allocated_amount), 0) = i.installment_amount 
+               AND DATE(MAX(p.payment_datetime)) > i.due_date THEN 'OVERDUEPAID'
 
           WHEN COALESCE(SUM(a.allocated_amount), 0) = i.installment_amount 
                THEN 'PAID'

@@ -1,4 +1,5 @@
-// import db from "../../config/db.js";
+import db from "../../config/db.js";
+import { AuditLog} from "../../services/audit.service.js";
 
 // // CREATE BATCH
 // export const createBatch = async (req, res) => {
@@ -227,8 +228,7 @@
 //     res.status(500).json({ message: "Server error" });
 //   }
 // };
-
-import db from "../../config/db.js";
+// ------------------------------------------------------------------------------------------
 
 // CREATE BATCH (no status column used)
 // export const createBatch = async (req, res) => {
@@ -355,115 +355,115 @@ import db from "../../config/db.js";
 //   }
 // };
 
-export const createBatch = async (req, res) => {
-  try {
-    const { batch_duration, start_date, end_date } = req.body;
+// export const createBatch = async (req, res) => {
+//   try {
+//     const { batch_duration, start_date, end_date } = req.body;
 
-    if (!start_date || !end_date || !batch_duration) {
-      return res.status(400).json({ message: "Required fields missing" });
-    }
+//     if (!start_date || !end_date || !batch_duration) {
+//       return res.status(400).json({ message: "Required fields missing" });
+//     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+//     const today = new Date();
+//     today.setHours(0, 0, 0, 0);
 
-    const start = new Date(start_date);
-    const end = new Date(end_date);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(0, 0, 0, 0);
+//     const start = new Date(start_date);
+//     const end = new Date(end_date);
+//     start.setHours(0, 0, 0, 0);
+//     end.setHours(0, 0, 0, 0);
 
-    // ❌ start > end
-    if (start > end) {
-      return res.status(400).json({
-        message: "Start date cannot be greater than end date",
-      });
-    }
+//     // ❌ start > end
+//     if (start > end) {
+//       return res.status(400).json({
+//         message: "Start date cannot be greater than end date",
+//       });
+//     }
 
-    // ❌ past start date
-    if (start < today) {
-      return res.status(400).json({
-        message: "Start date cannot be in the past",
-      });
-    }
+//     // ❌ past start date
+//     if (start < today) {
+//       return res.status(400).json({
+//         message: "Start date cannot be in the past",
+//       });
+//     }
 
-    // ❌ same date range
-    const [sameDates] = await db.query(
-      `SELECT id FROM batches WHERE start_date = ? AND end_date = ?`,
-      [start_date, end_date]
-    );
+//     // ❌ same date range
+//     const [sameDates] = await db.query(
+//       `SELECT id FROM batches WHERE start_date = ? AND end_date = ?`,
+//       [start_date, end_date]
+//     );
 
-    if (sameDates.length > 0) {
-      return res.status(409).json({
-        message: "Batch already exists for this date range",
-      });
-    }
+//     if (sameDates.length > 0) {
+//       return res.status(409).json({
+//         message: "Batch already exists for this date range",
+//       });
+//     }
 
-    // ❌ overlap with any batch
-    const [overlap] = await db.query(
-      `
-      SELECT id FROM batches
-      WHERE
-        (? BETWEEN start_date AND end_date)
-        OR (? BETWEEN start_date AND end_date)
-        OR (start_date BETWEEN ? AND ?)
-        OR (end_date BETWEEN ? AND ?)
-      `,
-      [start_date, end_date, start_date, end_date, start_date, end_date]
-    );
+//     // ❌ overlap with any batch
+//     const [overlap] = await db.query(
+//       `
+//       SELECT id FROM batches
+//       WHERE
+//         (? BETWEEN start_date AND end_date)
+//         OR (? BETWEEN start_date AND end_date)
+//         OR (start_date BETWEEN ? AND ?)
+//         OR (end_date BETWEEN ? AND ?)
+//       `,
+//       [start_date, end_date, start_date, end_date, start_date, end_date]
+//     );
 
-    if (overlap.length > 0) {
-      return res.status(409).json({
-        message: "Batch dates overlap with another batch",
-      });
-    }
+//     if (overlap.length > 0) {
+//       return res.status(409).json({
+//         message: "Batch dates overlap with another batch",
+//       });
+//     }
 
-    // 🔢 generate next batch name
-    const [rows] = await db.query(`
-      SELECT MAX(CAST(SUBSTRING(batch_name, 7) AS UNSIGNED)) AS last_no
-      FROM batches
-      WHERE batch_name LIKE 'Batch_%'
-    `);
+//     // 🔢 generate next batch name
+//     const [rows] = await db.query(`
+//       SELECT MAX(CAST(SUBSTRING(batch_name, 7) AS UNSIGNED)) AS last_no
+//       FROM batches
+//       WHERE batch_name LIKE 'Batch_%'
+//     `);
 
-    const nextNo = (rows[0].last_no || 0) + 1;
-    const batch_name = `Batch_${String(nextNo).padStart(2, "0")}`;
+//     const nextNo = (rows[0].last_no || 0) + 1;
+//     const batch_name = `Batch_${String(nextNo).padStart(2, "0")}`;
 
-    // ✅ insert
-    const [result] = await db.query(
-      `INSERT INTO batches (batch_name, batch_duration, start_date, end_date)
-       VALUES (?, ?, ?, ?)`,
-      [batch_name, batch_duration, start_date, end_date]
-    );
+//     // ✅ insert
+//     const [result] = await db.query(
+//       `INSERT INTO batches (batch_name, batch_duration, start_date, end_date)
+//        VALUES (?, ?, ?, ?)`,
+//       [batch_name, batch_duration, start_date, end_date]
+//     );
 
-    const [newBatch] = await db.query(
-      `
-      SELECT 
-        id,
-        batch_name,
-        batch_duration,
-        start_date,
-        end_date,
-        created_at,
-        updated_at,
-        CASE
-          WHEN CURDATE() < start_date THEN 'WAITING'
-          WHEN CURDATE() BETWEEN start_date AND end_date THEN 'ACTIVE'
-          ELSE 'CLOSED'
-        END AS status
-      FROM batches
-      WHERE id = ?
-      `,
-      [result.insertId]
-    );
+//     const [newBatch] = await db.query(
+//       `
+//       SELECT 
+//         id,
+//         batch_name,
+//         batch_duration,
+//         start_date,
+//         end_date,
+//         created_at,
+//         updated_at,
+//         CASE
+//           WHEN CURDATE() < start_date THEN 'WAITING'
+//           WHEN CURDATE() BETWEEN start_date AND end_date THEN 'ACTIVE'
+//           ELSE 'CLOSED'
+//         END AS status
+//       FROM batches
+//       WHERE id = ?
+//       `,
+//       [result.insertId]
+//     );
 
-    res.status(201).json({
-      message: "Batch created successfully",
-      data: newBatch[0],
-    });
+//     res.status(201).json({
+//       message: "Batch created successfully",
+//       data: newBatch[0],
+//     });
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
 
 // GET ALL BATCHES (status calculated by DB)
 // export const getBatches = async (req, res) => {
@@ -801,137 +801,137 @@ export const getBatchById = async (req, res) => {
 //   }
 // };
 
-export const updateBatch = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { batch_duration, start_date, end_date } = req.body;
+// export const updateBatch = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { batch_duration, start_date, end_date } = req.body;
 
-    if (!batch_duration || !start_date || !end_date) {
-      return res.status(400).json({ message: "Required fields missing" });
-    }
+//     if (!batch_duration || !start_date || !end_date) {
+//       return res.status(400).json({ message: "Required fields missing" });
+//     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+//     const today = new Date();
+//     today.setHours(0, 0, 0, 0);
 
-    const start = new Date(start_date);
-    const end = new Date(end_date);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(0, 0, 0, 0);
+//     const start = new Date(start_date);
+//     const end = new Date(end_date);
+//     start.setHours(0, 0, 0, 0);
+//     end.setHours(0, 0, 0, 0);
 
-    // ❌ start > end
-    if (start > end) {
-      return res.status(400).json({
-        message: "Start date cannot be greater than end date",
-      });
-    }
+//     // ❌ start > end
+//     if (start > end) {
+//       return res.status(400).json({
+//         message: "Start date cannot be greater than end date",
+//       });
+//     }
 
-    // ❌ past start date
-    if (start < today) {
-      return res.status(400).json({
-        message: "Start date cannot be in the past",
-      });
-    }
+//     // ❌ past start date
+//     if (start < today) {
+//       return res.status(400).json({
+//         message: "Start date cannot be in the past",
+//       });
+//     }
 
-    // 🔍 get batch
-    const [batch] = await db.query(
-      `SELECT end_date FROM batches WHERE id = ?`,
-      [id]
-    );
+//     // 🔍 get batch
+//     const [batch] = await db.query(
+//       `SELECT end_date FROM batches WHERE id = ?`,
+//       [id]
+//     );
 
-    if (!batch.length) {
-      return res.status(404).json({ message: "Batch not found" });
-    }
+//     if (!batch.length) {
+//       return res.status(404).json({ message: "Batch not found" });
+//     }
 
-    // 🔒 closed batch not editable
-    if (new Date(batch[0].end_date) < today) {
-      return res.status(403).json({
-        message: "Closed batch cannot be modified",
-      });
-    }
+//     // 🔒 closed batch not editable
+//     if (new Date(batch[0].end_date) < today) {
+//       return res.status(403).json({
+//         message: "Closed batch cannot be modified",
+//       });
+//     }
 
-    // ❌ same date range
-    const [sameDates] = await db.query(
-      `SELECT id FROM batches 
-       WHERE start_date = ? AND end_date = ? AND id != ?`,
-      [start_date, end_date, id]
-    );
+//     // ❌ same date range
+//     const [sameDates] = await db.query(
+//       `SELECT id FROM batches 
+//        WHERE start_date = ? AND end_date = ? AND id != ?`,
+//       [start_date, end_date, id]
+//     );
 
-    if (sameDates.length > 0) {
-      return res.status(409).json({
-        message: "Batch already exists for this date range",
-      });
-    }
+//     if (sameDates.length > 0) {
+//       return res.status(409).json({
+//         message: "Batch already exists for this date range",
+//       });
+//     }
 
-    // ❌ overlap with any batch
-    const [overlap] = await db.query(
-      `
-      SELECT id FROM batches
-      WHERE id != ?
-        AND (
-          (? BETWEEN start_date AND end_date)
-          OR (? BETWEEN start_date AND end_date)
-          OR (start_date BETWEEN ? AND ?)
-          OR (end_date BETWEEN ? AND ?)
-        )
-      `,
-      [id, start_date, end_date, start_date, end_date, start_date, end_date]
-    );
+//     // ❌ overlap with any batch
+//     const [overlap] = await db.query(
+//       `
+//       SELECT id FROM batches
+//       WHERE id != ?
+//         AND (
+//           (? BETWEEN start_date AND end_date)
+//           OR (? BETWEEN start_date AND end_date)
+//           OR (start_date BETWEEN ? AND ?)
+//           OR (end_date BETWEEN ? AND ?)
+//         )
+//       `,
+//       [id, start_date, end_date, start_date, end_date, start_date, end_date]
+//     );
 
-    if (overlap.length > 0) {
-      return res.status(409).json({
-        message: "Batch dates overlap with another batch",
-      });
-    }
+//     if (overlap.length > 0) {
+//       return res.status(409).json({
+//         message: "Batch dates overlap with another batch",
+//       });
+//     }
 
-    // ✅ update
-    await db.query(
-      `UPDATE batches
-       SET batch_duration=?, start_date=?, end_date=?
-       WHERE id=?`,
-      [batch_duration, start_date, end_date, id]
-    );
+//     // ✅ update
+//     await db.query(
+//       `UPDATE batches
+//        SET batch_duration=?, start_date=?, end_date=?
+//        WHERE id=?`,
+//       [batch_duration, start_date, end_date, id]
+//     );
 
-    res.json({ message: "Batch updated successfully" });
+//     res.json({ message: "Batch updated successfully" });
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
 
 // DELETE BATCH
 // export const deleteBatch = async (req, res) => {
 // };
 
-export const deleteBatch = async (req, res) => {
-  try {
-    const { id } = req.params;
+// export const deleteBatch = async (req, res) => {
+//   try {
+//     const { id } = req.params;
 
-    // 🔍 get batch first
-    const [batch] = await db.query(
-      `SELECT end_date FROM batches WHERE id = ?`,
-      [id],
-    );
+//     // 🔍 get batch first
+//     const [batch] = await db.query(
+//       `SELECT end_date FROM batches WHERE id = ?`,
+//       [id],
+//     );
 
-    if (batch.length === 0) {
-      return res.status(404).json({ message: "Batch not found" });
-    }
+//     if (batch.length === 0) {
+//       return res.status(404).json({ message: "Batch not found" });
+//     }
 
-    // 🔒 closed check
-    if (new Date(batch[0].end_date) < new Date()) {
-      return res
-        .status(403)
-        .json({ message: "Closed batch cannot be deleted" });
-    }
+//     // 🔒 closed check
+//     if (new Date(batch[0].end_date) < new Date()) {
+//       return res
+//         .status(403)
+//         .json({ message: "Closed batch cannot be deleted" });
+//     }
 
-    await db.query("DELETE FROM batches WHERE id = ?", [id]);
+//     await db.query("DELETE FROM batches WHERE id = ?", [id]);
 
-    res.json({ message: "Batch deleted successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+//     res.json({ message: "Batch deleted successfully" });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
 
 export const getNextBatchName = async (req, res) => {
   try {
@@ -969,5 +969,276 @@ export const getNextBatchName = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ----------------------------- hard delete--------------------------------------------------
+
+export const createBatch = async (req, res) => {
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const { batch_duration, start_date, end_date, remarks } = req.body;
+    const userId = req.user?.id;
+
+    if (!start_date || !end_date || !batch_duration) {
+      return res.status(400).json({ message: "Required fields missing" });
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const start = new Date(start_date);
+    const end = new Date(end_date);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+
+    // ❌ start > end
+    if (start > end) {
+      return res.status(400).json({
+        message: "Start date cannot be greater than end date",
+      });
+    }
+
+    // ❌ past start date
+    if (start < today) {
+      return res.status(400).json({
+        message: "Start date cannot be in the past",
+      });
+    }
+
+    // ❌ overlap check (optimized)
+    const [overlap] = await connection.query(
+      `SELECT id FROM batches
+       WHERE NOT (end_date < ? OR start_date > ?)`,
+      [start_date, end_date]
+    );
+
+    if (overlap.length > 0) {
+      return res.status(409).json({
+        message: "Batch dates overlap with another batch",
+      });
+    }
+
+    // 🔢 generate batch name (⚠️ race condition still possible)
+    const [rows] = await connection.query(`
+      SELECT MAX(CAST(SUBSTRING(batch_name, 7) AS UNSIGNED)) AS last_no
+      FROM batches
+      WHERE batch_name LIKE 'Batch_%'
+    `);
+
+    const nextNo = (rows[0].last_no || 0) + 1;
+    const batch_name = `Batch_${String(nextNo).padStart(2, "0")}`;
+
+    // ✅ insert
+    const [result] = await connection.query(
+      `INSERT INTO batches (batch_name, batch_duration, start_date, end_date, created_by)
+       VALUES (?, ?, ?, ?, ?)`,
+      [batch_name, batch_duration, start_date, end_date, userId]
+    );
+
+    const [newBatchRows] = await connection.query(
+      `SELECT * FROM batches WHERE id = ?`,
+      [result.insertId]
+    );
+
+    const newData = newBatchRows[0];
+
+    // ✅ AUDIT
+    await AuditLog({
+      connection,
+      table: "batches",
+      recordId: result.insertId,
+      action: "INSERT",
+      newData,
+      userId,
+      remarks: remarks || "Batch created"
+    });
+
+    await connection.commit();
+
+    res.status(201).json({
+      message: "Batch created successfully",
+      data: newData,
+    });
+
+  } catch (err) {
+    await connection.rollback();
+    console.error("Create batch error:", err);
+    res.status(500).json({ message: "Server error" });
+  } finally {
+    connection.release();
+  }
+};
+
+export const updateBatch = async (req, res) => {
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const { id } = req.params;
+    const { batch_duration, start_date, end_date, remarks } = req.body;
+    const userId = req.user?.id;
+
+    if (!batch_duration || !start_date || !end_date) {
+      return res.status(400).json({ message: "Required fields missing" });
+    }
+
+    // 🔍 get old data
+    const [oldRows] = await connection.query(
+      `SELECT * FROM batches WHERE id = ?`,
+      [id]
+    );
+
+    if (!oldRows.length) {
+      return res.status(404).json({ message: "Batch not found" });
+    }
+
+    const oldData = oldRows[0];
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const start = new Date(start_date);
+    const end = new Date(end_date);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+
+    if (start > end) {
+      return res.status(400).json({ message: "Start > End invalid" });
+    }
+
+    if (start < today) {
+      return res.status(400).json({ message: "Past start date not allowed" });
+    }
+
+    // 🔒 closed batch
+    if (new Date(oldData.end_date) < today) {
+      return res.status(403).json({ message: "Closed batch cannot be modified" });
+    }
+
+    // ❌ overlap check (same as yours)
+    const [overlap] = await connection.query(
+      `SELECT id FROM batches
+       WHERE id != ?
+       AND (
+         (? BETWEEN start_date AND end_date)
+         OR (? BETWEEN start_date AND end_date)
+         OR (start_date BETWEEN ? AND ?)
+         OR (end_date BETWEEN ? AND ?)
+       )`,
+      [id, start_date, end_date, start_date, end_date, start_date, end_date]
+    );
+
+    if (overlap.length) {
+      return res.status(409).json({ message: "Batch overlap" });
+    }
+
+    // ✅ update
+    await connection.query(
+      `UPDATE batches
+       SET batch_duration=?, start_date=?, end_date=?, updated_by=?
+       WHERE id=?`,
+      [batch_duration, start_date, end_date, userId, id]
+    );
+
+    const [newRows] = await connection.query(
+      `SELECT * FROM batches WHERE id = ?`,
+      [id]
+    );
+
+    const newData = newRows[0];
+
+    // ✅ AUDIT
+    await AuditLog({
+      connection,
+      table: "batches",
+      recordId: id,
+      action: "UPDATE",
+      oldData,
+      newData,
+      userId,
+      remarks: remarks || "Batch updated"
+    });
+
+    await connection.commit();
+
+    res.json({
+      message: "Batch updated",
+      data: newData
+    });
+
+  } catch (err) {
+    await connection.rollback();
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  } finally {
+    connection.release();
+  }
+};
+
+
+export const deleteBatch = async (req, res) => {
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const { id } = req.params;
+    const { remarks } = req.body || {};
+    const userId = req.user?.id;
+
+    // 🔍 get full data (IMPORTANT for audit)
+    const [rows] = await connection.query(
+      `SELECT * FROM batches WHERE id = ?`,
+      [id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ message: "Batch not found" });
+    }
+
+    const oldData = rows[0];
+
+    // 🔒 closed batch check
+    if (new Date(oldData.end_date) < new Date()) {
+      return res.status(403).json({
+        message: "Closed batch cannot be deleted"
+      });
+    }
+
+    // ✅ HARD DELETE
+    await connection.query(
+      `DELETE FROM batches WHERE id = ?`,
+      [id]
+    );
+
+    // ✅ AUDIT (store OLD data only)
+    await AuditLog({
+      connection,
+      table: "batches",
+      recordId: id,
+      action: "DELETE",
+      oldData,
+      userId,
+      remarks: remarks || "Batch hard deleted"
+    });
+
+    await connection.commit();
+
+    res.json({
+      message: "Batch deleted successfully",
+      deleted_data: oldData
+    });
+
+  } catch (err) {
+    await connection.rollback();
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  } finally {
+    connection.release();
   }
 };

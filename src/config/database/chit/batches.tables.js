@@ -19,8 +19,13 @@ export const createBatchTables = async (db) => {
                           batch_duration INT,
                           start_date DATE NOT NULL,
                           end_date DATE NOT NULL,
+                          created_by INT,
+                          updated_by INT,
                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                          INDEX idx_start_date(start_date),
+                          INDEX idx_end_date(end_date)
                   )
           `);
 

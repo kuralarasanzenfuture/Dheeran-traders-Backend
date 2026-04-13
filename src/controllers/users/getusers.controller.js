@@ -248,7 +248,9 @@ export const getUserById = async (req, res) => {
 
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ message: "Internal server error", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
   }
 };
 
@@ -273,9 +275,10 @@ export const getMyProfile = async (req, res) => {
         u.status,
         u.created_at,
         u.last_login_at,
-
+        u.role_id,
         r.role_name,
 
+        e.id AS employee_id,
         e.employee_code,
         e.employee_name,
         e.email AS employee_email,

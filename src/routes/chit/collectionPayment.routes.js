@@ -31,7 +31,7 @@ import { updatePayment } from "../../controllers/chit/payments/updatePayment.con
 
 const router = express.Router();
 
-// router.use(verifyToken);
+router.use(verifyToken);
 
 router.post("/collect", collectPayment);
 

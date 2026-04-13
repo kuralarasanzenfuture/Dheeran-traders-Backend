@@ -347,6 +347,8 @@ export const updatePayment = async (req, res) => {
   } catch (err) {
     await connection.rollback();
 
+    console.error("chit Update payment error:", err.message);
+
     return res.status(400).json({
       success: false,
       message: err.message,

@@ -70,6 +70,7 @@ export const getPaymentById = async (req, res) => {
     });
 
   } catch (err) {
+    console.log("chit getPaymentById", err);
     return res.status(400).json({
       success: false,
       message: err.message,
@@ -147,6 +148,7 @@ export const getAllPayments = async (req, res) => {
     });
 
   } catch (err) {
+    console.log("chit getAllPayments", err);
     return res.status(400).json({
       success: false,
       message: err.message,
@@ -221,6 +223,7 @@ export const getPaymentWithInstallments = async (req, res) => {
     });
 
   } catch (err) {
+    console.log("chit getPaymentWithInstallments", err);
     return res.status(400).json({
       success: false,
       message: err.message,

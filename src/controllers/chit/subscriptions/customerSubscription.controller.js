@@ -1,5 +1,5 @@
-import db from "../../config/db.js";
-import { generateInstallments } from "../../services/generateInstallment.service.js";
+import db from "../../../config/db.js";
+import { generateInstallments } from "../../../services/generateInstallment.service.js";
 
 const VALID_REF = ["AGENT", "STAFF", "OFFICE"];
 
@@ -546,6 +546,8 @@ const checkExists = async (table, id) => {
 // };
 
 //  validation start date must be batch start date and end date must be batch end date
+
+// --------
 export const createCustomerSubscription = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -1080,6 +1082,7 @@ export const createCustomerSubscription = async (req, res) => {
 //   }
 // };
 
+// -------
 export const updateCustomerSubscription = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1420,6 +1423,7 @@ export const updateCustomerSubscription = async (req, res) => {
 //   }
 // };
 
+// --------
 export const deleteCustomerSubscription = async (req, res) => {
   const connection = await db.getConnection();
 

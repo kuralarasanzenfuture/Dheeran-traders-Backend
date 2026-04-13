@@ -1,9 +1,6 @@
 import express from "express";
 
 import {
-  createCustomerSubscription,
-  updateCustomerSubscription,
-  deleteCustomerSubscription,
   getCustomerSubscriptions,
   getCustomerSubscriptionById,
   getCustomerFullDetails,
@@ -11,8 +8,11 @@ import {
   getPlanSummary,
   getBatchDetails,
   getBatchSummaryById
-} from "../../controllers/chit/customerSubcription.controller.js";
+} from "../../controllers/chit/subscriptions/getSubscription.controller.js";
 import { verifyToken } from "../../middlewares/auth.middleware.js";
+import { createCustomerSubscription } from "../../controllers/chit/subscriptions/createSubscription.controller.js";
+import { updateCustomerSubscription } from "../../controllers/chit/subscriptions/updateSubcription.controller.js";
+import { deleteCustomerSubscription } from "../../controllers/chit/subscriptions/deleteSubscription.controller.js";
 
 const router = express.Router();
 

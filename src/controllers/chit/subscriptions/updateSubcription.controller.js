@@ -476,6 +476,251 @@ const checkExists = async (table, id) => {
 
 // -----------------------------------------------------------------------------
 
+// export const updateCustomerSubscription = async (req, res) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const { id } = req.params;
+//     const { remarks } = req.body;
+//     const userId = req.user?.id || null;
+
+//     /* ========================= 1️⃣ GET OLD ========================= */
+
+//     const [[oldSub]] = await connection.query(
+//       `SELECT * FROM chit_customer_subscriptions WHERE id=? FOR UPDATE`,
+//       [id]
+//     );
+
+//     if (!oldSub) {
+//       throw new Error("Subscription not found");
+//     }
+
+//     /* ========================= 2️⃣ PAYMENT CHECK ========================= */
+
+//     const [[alloc]] = await connection.query(
+//       `SELECT COUNT(*) AS count
+//        FROM chit_payment_allocations pa
+//        JOIN chit_customer_installments i 
+//        ON i.id = pa.installment_id
+//        WHERE i.subscription_id = ?`,
+//       [id]
+//     );
+
+//     const hasPayments = alloc.count > 0;
+
+//     /* ========================= 3️⃣ INPUT ========================= */
+
+//     let {
+//       nominee_name,
+//       nominee_phone,
+//       installment_amount,
+//       start_date,
+//       duration,
+//       reference_mode,
+//       agent_staff_id,
+//     } = req.body;
+
+//     installment_amount = Number(installment_amount);
+//     duration = Number(duration);
+
+//     reference_mode = reference_mode?.toUpperCase()?.trim();
+
+//     if (!installment_amount || installment_amount <= 0) {
+//       throw new Error("Invalid installment_amount");
+//     }
+
+//     if (!duration || duration <= 0) {
+//       throw new Error("Invalid duration");
+//     }
+
+//     const start = new Date(start_date);
+//     if (isNaN(start)) throw new Error("Invalid start_date");
+
+//     /* ========================= 4️⃣ FETCH PLAN ========================= */
+
+//     const [[plan]] = await connection.query(
+//       `SELECT duration_days, total_installments, collection_type 
+//        FROM plans WHERE id=?`,
+//       [oldSub.plan_id]
+//     );
+
+//     if (!plan) throw new Error("Plan not found");
+
+//     /* ✅ STRICT RULE */
+//     if (duration !== plan.duration_days) {
+//       throw new Error("Duration must match plan");
+//     }
+
+//     const totalInstallments = plan.total_installments;
+//     const collectionType = plan.collection_type;
+
+//     /* ========================= 5️⃣ AUTO CALCULATE INVESTMENT ========================= */
+
+//     let investment_amount;
+
+//     if (collectionType === "SINGLE") {
+//       investment_amount = installment_amount;
+//     } else {
+//       investment_amount = totalInstallments * installment_amount;
+//     }
+
+//     /* ========================= 6️⃣ AGENT VALIDATION ========================= */
+
+//     if (reference_mode === "AGENT" || reference_mode === "STAFF") {
+//       if (!agent_staff_id) throw new Error("agent_staff_id required");
+//     } else {
+//       agent_staff_id = null;
+//     }
+
+//     /* ========================= 7️⃣ IF PAYMENTS EXIST ========================= */
+
+//     if (hasPayments) {
+//       // 🔒 only allow non-financial update
+//       await connection.query(
+//         `UPDATE chit_customer_subscriptions
+//          SET nominee_name=?, nominee_phone=?, reference_mode=?, agent_staff_id=?, updated_by=?
+//          WHERE id=?`,
+//         [
+//           nominee_name || null,
+//           nominee_phone || null,
+//           reference_mode,
+//           agent_staff_id,
+//           userId,
+//           id,
+//         ]
+//       );
+
+//       await AuditLog({
+//         connection,
+//         table: "chit_customer_subscriptions",
+//         recordId: id,
+//         action: "UPDATE",
+//         oldData: oldSub,
+//         newData: { nominee_name, nominee_phone, reference_mode },
+//         userId,
+//         remarks: "Restricted update (payments exist)",
+//       });
+
+//       await connection.commit();
+
+//       return res.json({
+//         success: true,
+//         message: "Updated (restricted due to payments)",
+//       });
+//     }
+
+//     /* ========================= 8️⃣ CALCULATE END DATE ========================= */
+
+//     let calculatedEnd = new Date(start);
+
+//     for (let i = 1; i < totalInstallments; i++) {
+//       if (collectionType === "DAILY") {
+//         calculatedEnd.setDate(calculatedEnd.getDate() + 1);
+//       } else if (collectionType === "WEEKLY") {
+//         calculatedEnd.setDate(calculatedEnd.getDate() + 7);
+//       } else if (collectionType === "MONTHLY") {
+//         calculatedEnd.setMonth(calculatedEnd.getMonth() + 1);
+//       }
+//     }
+
+//     /* ========================= 9️⃣ UPDATE ========================= */
+
+//     await connection.query(
+//       `UPDATE chit_customer_subscriptions
+//        SET nominee_name=?, nominee_phone=?, installment_amount=?, investment_amount=?,
+//            start_date=?, duration=?, end_date=?, reference_mode=?, agent_staff_id=?, updated_by=?
+//        WHERE id=?`,
+//       [
+//         nominee_name || null,
+//         nominee_phone || null,
+//         installment_amount,
+//         investment_amount,
+//         start,
+//         duration,
+//         calculatedEnd,
+//         reference_mode,
+//         agent_staff_id,
+//         userId,
+//         id,
+//       ]
+//     );
+
+//     /* ========================= 🔟 DELETE OLD INSTALLMENTS ========================= */
+
+//     await connection.query(
+//       `DELETE FROM chit_customer_installments WHERE subscription_id=?`,
+//       [id]
+//     );
+
+//     /* ========================= 1️⃣1️⃣ REGENERATE ========================= */
+
+//     const installmentRows =
+//       collectionType === "SINGLE"
+//         ? [[id, 1, start, installment_amount]]
+//         : generateInstallments({
+//             subscriptionId: id,
+//             startDate: start,
+//             totalInstallments,
+//             collectionType,
+//             installmentAmount: installment_amount,
+//           });
+
+//     await connection.query(
+//       `INSERT INTO chit_customer_installments
+//        (subscription_id, installment_number, due_date, installment_amount, created_by)
+//        VALUES ?`,
+//       [installmentRows.map((r) => [...r, userId])]
+//     );
+
+//     /* ========================= 1️⃣2️⃣ AUDIT ========================= */
+
+//     await AuditLog({
+//       connection,
+//       table: "chit_customer_subscriptions",
+//       recordId: id,
+//       action: "UPDATE",
+//       oldData: oldSub,
+//       newData: {
+//         installment_amount,
+//         investment_amount,
+//         start_date: start,
+//         end_date: calculatedEnd,
+//       },
+//       userId,
+//       remarks: remarks || "Subscription updated",
+//     });
+
+//     await connection.commit();
+
+//     res.json({
+//       success: true,
+//       message: "Subscription updated successfully",
+//     });
+
+//   } catch (error) {
+//     await connection.rollback();
+
+//     console.error("Update error:", error);
+
+//     res.status(400).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+// | Change                                | Action                           |
+// | ------------------------------------- | -------------------------------- |
+// | Only nominee/reference changed        | simple update                    |
+// | Amount/duration changed (no payments) | update + regenerate diff         |
+// | Duration increased                    | ADD new installments             |
+// | Duration decreased                    | DELETE extra unpaid installments |
+// | Amount changed                        | UPDATE only unpaid installments  |
+
 export const updateCustomerSubscription = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -483,34 +728,8 @@ export const updateCustomerSubscription = async (req, res) => {
     await connection.beginTransaction();
 
     const { id } = req.params;
-    const { remarks } = req.body;
-    const userId = req.user?.id || null;
-
-    /* ========================= 1️⃣ GET OLD ========================= */
-
-    const [[oldSub]] = await connection.query(
-      `SELECT * FROM chit_customer_subscriptions WHERE id=? FOR UPDATE`,
-      [id]
-    );
-
-    if (!oldSub) {
-      throw new Error("Subscription not found");
-    }
-
-    /* ========================= 2️⃣ PAYMENT CHECK ========================= */
-
-    const [[alloc]] = await connection.query(
-      `SELECT COUNT(*) AS count
-       FROM chit_payment_allocations pa
-       JOIN chit_customer_installments i 
-       ON i.id = pa.installment_id
-       WHERE i.subscription_id = ?`,
-      [id]
-    );
-
-    const hasPayments = alloc.count > 0;
-
-    /* ========================= 3️⃣ INPUT ========================= */
+    const { remarks } = req.body || {};
+    const userId = req.user?.id;
 
     let {
       nominee_name,
@@ -522,62 +741,45 @@ export const updateCustomerSubscription = async (req, res) => {
       agent_staff_id,
     } = req.body;
 
-    installment_amount = Number(installment_amount);
-    duration = Number(duration);
+    /* =========================
+       1️⃣ LOCK RECORD
+    ========================= */
 
-    reference_mode = reference_mode?.toUpperCase()?.trim();
-
-    if (!installment_amount || installment_amount <= 0) {
-      throw new Error("Invalid installment_amount");
-    }
-
-    if (!duration || duration <= 0) {
-      throw new Error("Invalid duration");
-    }
-
-    const start = new Date(start_date);
-    if (isNaN(start)) throw new Error("Invalid start_date");
-
-    /* ========================= 4️⃣ FETCH PLAN ========================= */
-
-    const [[plan]] = await connection.query(
-      `SELECT duration_days, total_installments, collection_type 
-       FROM plans WHERE id=?`,
-      [oldSub.plan_id]
+    const [[oldSub]] = await connection.query(
+      `SELECT * FROM chit_customer_subscriptions WHERE id=? FOR UPDATE`,
+      [id]
     );
 
-    if (!plan) throw new Error("Plan not found");
+    if (!oldSub) throw new Error("Subscription not found");
 
-    /* ✅ STRICT RULE */
-    if (duration !== plan.duration_days) {
-      throw new Error("Duration must match plan");
-    }
+    /* =========================
+       2️⃣ CHECK PAYMENTS
+    ========================= */
 
-    const totalInstallments = plan.total_installments;
-    const collectionType = plan.collection_type;
+    const [[paymentCheck]] = await connection.query(
+      `SELECT COUNT(*) as count
+       FROM chit_payment_allocations pa
+       JOIN chit_customer_installments i 
+       ON i.id = pa.installment_id
+       WHERE i.subscription_id=?`,
+      [id]
+    );
 
-    /* ========================= 5️⃣ AUTO CALCULATE INVESTMENT ========================= */
+    const hasPayments = paymentCheck.count > 0;
 
-    let investment_amount;
+    /* =========================
+       3️⃣ NORMALIZE
+    ========================= */
 
-    if (collectionType === "SINGLE") {
-      investment_amount = installment_amount;
-    } else {
-      investment_amount = totalInstallments * installment_amount;
-    }
+    installment_amount = Number(installment_amount);
+    duration = Number(duration);
+    reference_mode = reference_mode?.toUpperCase()?.trim();
 
-    /* ========================= 6️⃣ AGENT VALIDATION ========================= */
-
-    if (reference_mode === "AGENT" || reference_mode === "STAFF") {
-      if (!agent_staff_id) throw new Error("agent_staff_id required");
-    } else {
-      agent_staff_id = null;
-    }
-
-    /* ========================= 7️⃣ IF PAYMENTS EXIST ========================= */
+    /* =========================
+       4️⃣ RESTRICTED UPDATE
+    ========================= */
 
     if (hasPayments) {
-      // 🔒 only allow non-financial update
       await connection.query(
         `UPDATE chit_customer_subscriptions
          SET nominee_name=?, nominee_phone=?, reference_mode=?, agent_staff_id=?, updated_by=?
@@ -586,46 +788,142 @@ export const updateCustomerSubscription = async (req, res) => {
           nominee_name || null,
           nominee_phone || null,
           reference_mode,
-          agent_staff_id,
+          reference_mode === "OFFICE" ? null : agent_staff_id,
           userId,
           id,
         ]
       );
 
-      await AuditLog({
-        connection,
-        table: "chit_customer_subscriptions",
-        recordId: id,
-        action: "UPDATE",
-        oldData: oldSub,
-        newData: { nominee_name, nominee_phone, reference_mode },
-        userId,
-        remarks: "Restricted update (payments exist)",
-      });
-
       await connection.commit();
 
       return res.json({
         success: true,
-        message: "Updated (restricted due to payments)",
+        message: "Limited update (payments exist)",
       });
     }
 
-    /* ========================= 8️⃣ CALCULATE END DATE ========================= */
+    /* =========================
+       5️⃣ GET PLAN
+    ========================= */
 
-    let calculatedEnd = new Date(start);
+    const [[plan]] = await connection.query(
+      `SELECT total_installments, collection_type 
+       FROM plans WHERE id=?`,
+      [oldSub.plan_id]
+    );
 
-    for (let i = 1; i < totalInstallments; i++) {
+    const totalInstallments = plan.total_installments;
+    const collectionType = plan.collection_type;
+
+    /* =========================
+       6️⃣ AUTO INVESTMENT CALC
+    ========================= */
+
+    let investment_amount;
+
+    if (collectionType === "SINGLE") {
+      investment_amount = installment_amount;
+      duration = 1;
+    } else {
+      investment_amount = installment_amount * totalInstallments;
+      duration = totalInstallments;
+    }
+
+    /* =========================
+       7️⃣ CALCULATE DATES
+    ========================= */
+
+    let start = new Date(start_date);
+    let dueDate = new Date(start);
+
+    const newInstallments = [];
+
+    for (let i = 1; i <= totalInstallments; i++) {
+      newInstallments.push({
+        installment_number: i,
+        due_date: new Date(dueDate),
+        installment_amount,
+      });
+
       if (collectionType === "DAILY") {
-        calculatedEnd.setDate(calculatedEnd.getDate() + 1);
+        dueDate.setDate(dueDate.getDate() + 1);
       } else if (collectionType === "WEEKLY") {
-        calculatedEnd.setDate(calculatedEnd.getDate() + 7);
+        dueDate.setDate(dueDate.getDate() + 7);
       } else if (collectionType === "MONTHLY") {
-        calculatedEnd.setMonth(calculatedEnd.getMonth() + 1);
+        dueDate.setMonth(dueDate.getMonth() + 1);
       }
     }
 
-    /* ========================= 9️⃣ UPDATE ========================= */
+    const calculatedEnd = newInstallments[newInstallments.length - 1].due_date;
+
+    /* =========================
+       8️⃣ FETCH EXISTING INSTALLMENTS
+    ========================= */
+
+    const [existingInstallments] = await connection.query(
+      `SELECT * FROM chit_customer_installments
+       WHERE subscription_id=?
+       ORDER BY installment_number`,
+      [id]
+    );
+
+    /* =========================
+       9️⃣ SMART DIFF LOGIC
+    ========================= */
+
+    for (let i = 0; i < newInstallments.length; i++) {
+      const newInst = newInstallments[i];
+      const oldInst = existingInstallments[i];
+
+      if (oldInst) {
+        // UPDATE ONLY IF NOT PAID
+        if (oldInst.status !== "PAID") {
+          await connection.query(
+            `UPDATE chit_customer_installments
+             SET due_date=?, installment_amount=?
+             WHERE id=?`,
+            [newInst.due_date, newInst.installment_amount, oldInst.id]
+          );
+        }
+      } else {
+        // ➕ ADD NEW INSTALLMENT
+        await connection.query(
+          `INSERT INTO chit_customer_installments
+           (subscription_id, installment_number, due_date, installment_amount, created_by)
+           VALUES (?,?,?,?,?)`,
+          [
+            id,
+            newInst.installment_number,
+            newInst.due_date,
+            newInst.installment_amount,
+            userId,
+          ]
+        );
+      }
+    }
+
+    /* =========================
+       🔟 DELETE EXTRA (if reduced)
+    ========================= */
+
+    if (existingInstallments.length > newInstallments.length) {
+      const extra = existingInstallments.slice(newInstallments.length);
+
+      for (const inst of extra) {
+        if (inst.status === "PAID") {
+          throw new Error("Cannot remove paid installments");
+        }
+
+        await connection.query(
+          `DELETE FROM chit_customer_installments WHERE id=?`,
+          [inst.id]
+        );
+      }
+    }
+
+    /* =========================
+       1️⃣1️⃣ UPDATE SUBSCRIPTION
+    ========================= */
 
     await connection.query(
       `UPDATE chit_customer_subscriptions
@@ -641,40 +939,15 @@ export const updateCustomerSubscription = async (req, res) => {
         duration,
         calculatedEnd,
         reference_mode,
-        agent_staff_id,
+        reference_mode === "OFFICE" ? null : agent_staff_id,
         userId,
         id,
       ]
     );
 
-    /* ========================= 🔟 DELETE OLD INSTALLMENTS ========================= */
-
-    await connection.query(
-      `DELETE FROM chit_customer_installments WHERE subscription_id=?`,
-      [id]
-    );
-
-    /* ========================= 1️⃣1️⃣ REGENERATE ========================= */
-
-    const installmentRows =
-      collectionType === "SINGLE"
-        ? [[id, 1, start, installment_amount]]
-        : generateInstallments({
-            subscriptionId: id,
-            startDate: start,
-            totalInstallments,
-            collectionType,
-            installmentAmount: installment_amount,
-          });
-
-    await connection.query(
-      `INSERT INTO chit_customer_installments
-       (subscription_id, installment_number, due_date, installment_amount, created_by)
-       VALUES ?`,
-      [installmentRows.map((r) => [...r, userId])]
-    );
-
-    /* ========================= 1️⃣2️⃣ AUDIT ========================= */
+    /* =========================
+       1️⃣2️⃣ AUDIT
+    ========================= */
 
     await AuditLog({
       connection,
@@ -685,24 +958,24 @@ export const updateCustomerSubscription = async (req, res) => {
       newData: {
         installment_amount,
         investment_amount,
-        start_date: start,
+        duration,
         end_date: calculatedEnd,
       },
       userId,
-      remarks: remarks || "Subscription updated",
+      remarks: remarks || "Smart diff subscription update",
     });
 
     await connection.commit();
 
     res.json({
       success: true,
-      message: "Subscription updated successfully",
+      message: "Subscription updated (smart diff)",
     });
 
   } catch (error) {
     await connection.rollback();
 
-    console.error("Update error:", error);
+    console.error("Smart diff subscription update error:", error);
 
     res.status(400).json({
       success: false,
@@ -712,4 +985,3 @@ export const updateCustomerSubscription = async (req, res) => {
     connection.release();
   }
 };
-

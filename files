@@ -89,3 +89,14 @@ src/
 │
 ├── app.js
 └── server.js
+
+
+
+🔹 Get full audit history
+GET /api/audit/record/chit_customer_subscriptions/5
+🔹 Replay current state
+GET /api/audit/replay/chit_customer_subscriptions/5
+🔹 Replay past state
+GET /api/audit/replay/chit_customer_subscriptions/5?datetime=2026-04-10 10:00:00
+🔹 Get all actions by user
+GET /api/audit/user/1

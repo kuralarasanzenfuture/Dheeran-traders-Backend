@@ -39,6 +39,8 @@ import userCustomerAssignmentRoutes from "./chit/userCustomerAssignment.routes.j
 // reports
 import chitReportRoutes from "./chit/reports/chitReports.routes.js";
 
+import auditRoutes from "./audits/auditsLog.routes.js";
+
 // 🔥 middleware
 // import { verifyToken } from "../middlewares/auth.middleware.js";
 // import { validateUserSession } from "../middlewares/session.middleware.js";
@@ -98,5 +100,8 @@ router.use("/chit-reports", chitReportRoutes);
 router.use("/locations", locationRoutes);
 
 router.use("/assigned-customers", userCustomerAssignmentRoutes);
+
+
+router.use("/audits-logs", auditRoutes);
 
 export default router;

@@ -414,3 +414,95 @@ export const getUserPermissionsById = async (req, res) => {
     });
   }
 };
+
+export const getUserOverridePermissions = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    // ✅ Validate
+    if (!user_id || isNaN(user_id)) {
+      return res.status(400).json({
+        message: "Invalid user_id"
+      });
+    }
+
+    // ✅ Check user exists
+    const [[user]] = await db.query(
+      `SELECT * FROM users_roles WHERE id = ?`,
+      [user_id]
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    // ✅ Fetch ONLY overrides
+    const [rows] = await db.query(`
+      SELECT 
+        up.id,
+        up.user_id,
+        up.module_id,
+        m.name AS module_name,
+        m.code AS module_code,
+        m.parent_id,
+
+        up.action_id,
+        ma.action_code,
+        ma.action_name,
+
+        up.is_allowed
+
+      FROM user_permissions up
+
+      JOIN modules m 
+        ON m.id = up.module_id
+
+      JOIN module_actions ma 
+        ON ma.id = up.action_id
+
+      WHERE up.user_id = ?
+
+      ORDER BY m.parent_id, m.id, ma.id
+    `, [user_id]);
+
+    // ✅ Structure: module → actions
+    const structured = [];
+    const moduleMap = {};
+
+    for (const row of rows) {
+      if (!moduleMap[row.module_id]) {
+        moduleMap[row.module_id] = {
+          module_id: row.module_id,
+          module_name: row.module_name,
+          module_code: row.module_code,
+          parent_id: row.parent_id,
+          actions: []
+        };
+        structured.push(moduleMap[row.module_id]);
+      }
+
+      moduleMap[row.module_id].actions.push({
+        action_id: row.action_id,
+        action_code: row.action_code,
+        action_name: row.action_name,
+        is_allowed: !!row.is_allowed
+      });
+    }
+
+    // ✅ Response
+    res.json({
+      success: true,
+      user_id,
+      count: rows.length,
+      overrides: structured
+    });
+
+  } catch (error) {
+    console.error("getUserOverridePermissions error:", error);
+    res.status(500).json({
+      message: "Server error"
+    });
+  }
+};

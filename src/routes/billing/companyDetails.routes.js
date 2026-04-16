@@ -6,7 +6,7 @@ import {
   deleteCompanyDetails,
 } from "../../controllers/billing/companyDetails.controller.js";
 
-import { protect, adminOnly, verifyToken } from "../../middlewares/auth.middleware.js";
+import {adminOnly, verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 

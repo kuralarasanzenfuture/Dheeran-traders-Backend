@@ -7,7 +7,7 @@ import {
   updateCompanyBank,
   deleteCompanyBank,
 } from "../../controllers/billing/companyBankController.js";
-import { protect, verifyToken } from "../../middlewares/auth.middleware.js";
+import { verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
@@ -16,7 +16,7 @@ router.use(verifyToken);
 /* CREATE */
 router.post(
   "/",
-  
+
   uploadBankQR.single("qr_code_image"),
   createCompanyBank,
 );
@@ -26,14 +26,9 @@ router.get("/", getCompanyBanks);
 router.get("/:id", getCompanyBankById);
 
 /* UPDATE */
-router.put(
-  "/:id",
-  protect,
-  uploadBankQR.single("qr_code_image"),
-  updateCompanyBank,
-);
+router.put("/:id", uploadBankQR.single("qr_code_image"), updateCompanyBank);
 
 /* DELETE */
-router.delete("/:id", protect, deleteCompanyBank);
+router.delete("/:id", deleteCompanyBank);
 
 export default router;

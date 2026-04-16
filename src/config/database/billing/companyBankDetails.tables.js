@@ -1,4 +1,26 @@
 export const createCompanyBankDetailsTables = async (db) => {
+  //   await db.query(`
+  //       CREATE TABLE IF NOT EXISTS company_bank_details (
+  //   id INT AUTO_INCREMENT PRIMARY KEY,
+
+  //   bank_name VARCHAR(150) NOT NULL,
+  //   account_name VARCHAR(150) NOT NULL,
+  //   account_number VARCHAR(50) NOT NULL,
+  //   ifsc_code VARCHAR(20) NOT NULL,
+  //   branch VARCHAR(150) NOT NULL,
+
+  //   qr_code_image VARCHAR(255) NOT NULL,
+
+  //   status ENUM('active','inactive') DEFAULT 'active',
+
+  //   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  //   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  //     ON UPDATE CURRENT_TIMESTAMP,
+
+  //   UNIQUE KEY uniq_bank_details (bank_name, account_name, account_number, ifsc_code, branch)
+  // ) ENGINE=InnoDB;
+  //       `);
+
   await db.query(`
       CREATE TABLE IF NOT EXISTS company_bank_details (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -7,45 +29,56 @@ export const createCompanyBankDetailsTables = async (db) => {
   account_name VARCHAR(150) NOT NULL,
   account_number VARCHAR(50) NOT NULL,
   ifsc_code VARCHAR(20) NOT NULL,
-  branch VARCHAR(150) NOT NULL,
+  branch VARCHAR(150) DEFAULT NULL,
 
   qr_code_image VARCHAR(255) NOT NULL,
 
   status ENUM('active','inactive') DEFAULT 'active',
 
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ON UPDATE CURRENT_TIMESTAMP,
+  -- 🔥 CRITICAL: default account (only one allowed)
+  is_primary BOOLEAN DEFAULT FALSE,
 
-  UNIQUE KEY uniq_bank_details (bank_name, account_name, account_number, ifsc_code, branch)
+  -- 🔥 Audit fields
+  created_by INT NULL,
+  updated_by INT NULL,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  -- 🔥 Prevent duplicate accounts
+  UNIQUE KEY uniq_account (account_number, ifsc_code),
+
+  -- 🔥 Only ONE primary account allowed
+  UNIQUE KEY uniq_primary (is_primary),
+
+  INDEX idx_status (status),
+  INDEX idx_primary (is_primary)
 ) ENGINE=InnoDB;
       `);
 
-  await seedCompanyBank(db);
-  
+  // await seedCompanyBank(db);
 };
-
 
 const seedCompanyBank = async (db) => {
   const banks = [
     [
-      'State Bank of India',
-      'DHEERAN TRADERS',
-      '1234567890123456',
-      'SBIN0001234',
-      'Dharmapuri Branch',
-      'uploads/qr/sbi_qr.png',
-      'active'
+      "State Bank of India",
+      "DHEERAN TRADERS",
+      "1234567890123456",
+      "SBIN0001234",
+      "Dharmapuri Branch",
+      "uploads/qr/sbi_qr.png",
+      "active",
     ],
     [
-      'Indian Bank',
-      'DHEERAN TRADERS',
-      '2345678901234567',
-      'IDIB000D001',
-      'Dharmapuri Main',
-      'uploads/qr/indianbank_qr.png',
-      'inactive'
-    ]
+      "Indian Bank",
+      "DHEERAN TRADERS",
+      "2345678901234567",
+      "IDIB000D001",
+      "Dharmapuri Main",
+      "uploads/qr/indianbank_qr.png",
+      "inactive",
+    ],
   ];
 
   for (const bank of banks) {
@@ -60,11 +93,10 @@ const seedCompanyBank = async (db) => {
         branch = VALUES(branch),
         qr_code_image = VALUES(qr_code_image),
         status = VALUES(status)`,
-      bank
+      bank,
     );
   }
 };
-
 
 // const seedCompanyBank = async (db) => {
 //   await db.query(
@@ -83,8 +115,7 @@ const seedCompanyBank = async (db) => {
 //   );
 // };
 
-
-// INSERT INTO company_bank_details 
+// INSERT INTO company_bank_details
 // (bank_name, account_name, account_number, ifsc_code, branch, qr_code_image, status)
 // VALUES
 // (

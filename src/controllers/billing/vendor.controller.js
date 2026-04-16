@@ -340,7 +340,7 @@ export const createVendor = async (req, res, next) => {
     }
 
     first_name = first_name.trim();
-    last_name = last_name?.trim() || null;
+    last_name = last_name?.trim();
 
     if (!/^[0-9]{10,15}$/.test(phone)) {
       throw new Error("Invalid phone number");
@@ -353,7 +353,7 @@ export const createVendor = async (req, res, next) => {
     // 🔍 Duplicate check
     const [exists] = await connection.query(
       "SELECT id FROM vendors WHERE phone = ? OR email = ?",
-      [phone, email || null]
+      [phone, email]
     );
 
     if (exists.length) {
@@ -368,7 +368,7 @@ export const createVendor = async (req, res, next) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         first_name,
-        last_name,
+        last_name || null,
         phone,
         email || null,
         address || null,

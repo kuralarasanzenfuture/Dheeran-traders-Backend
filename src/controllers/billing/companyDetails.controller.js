@@ -60,22 +60,22 @@ import {AuditLog} from "../../services/audit.service.js";
 // };
 
 /* ================= READ ================= */
-// export const getCompanyDetails = async (req, res) => {
-//   try {
-//     const [rows] = await db.query(
-//       "SELECT * FROM company_details ORDER BY id DESC LIMIT 1"
-//     );
+export const getCompanyDetails = async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      "SELECT * FROM company_details ORDER BY id DESC LIMIT 1"
+    );
 
-//     if (!rows.length) {
-//       return res.status(404).json({ message: "No company details found" });
-//     }
+    if (!rows.length) {
+      return res.status(404).json({ message: "No company details found" });
+    }
 
-//     res.json(rows[0]);
-//   } catch (err) {
-//     console.error("Read error:", err);
-//     res.status(500).json({ message: "Failed to fetch company details" });
-//   }
-// };
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Read error:", err);
+    res.status(500).json({ message: "Failed to fetch company details" });
+  }
+};
 
 /* ================= UPDATE ================= */
 // export const updateCompanyDetails = async (req, res) => {
@@ -286,40 +286,40 @@ export const saveCompanyDetails = async (req, res) => {
   }
 };
 
-export const getCompanyDetails = async (req, res) => {
-  try {
-    const [rows] = await db.query(
-      `
-      SELECT * 
-      FROM company_details
-      ORDER BY is_active DESC, id DESC
-      LIMIT 1
-      `
-    );
+// export const getCompanyDetails = async (req, res) => {
+//   try {
+//     const [rows] = await db.query(
+//       `
+//       SELECT * 
+//       FROM company_details
+//       ORDER BY is_active DESC, id DESC
+//       LIMIT 1
+//       `
+//     );
 
-    // console.log("DB RESULT:", rows); // 🔥 DEBUG
+//     // console.log("DB RESULT:", rows); // 🔥 DEBUG
 
-    if (!rows.length) {
-      return res.status(404).json({
-        success: false,
-        message: "No company found"
-      });
-    }
+//     if (!rows.length) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "No company found"
+//       });
+//     }
 
-    res.json({
-      success: true,
-      data: rows[0]
-    });
+//     res.json({
+//       success: true,
+//       rows[0]
+//     });
 
-  } catch (err) {
-    console.error("getCompanyDetails ERROR:", err);
+//   } catch (err) {
+//     console.error("getCompanyDetails ERROR:", err);
 
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
-};
+//     res.status(500).json({
+//       success: false,
+//       message: err.message
+//     });
+//   }
+// };
 
 export const updateCompanyDetails = async (req, res) => {
   const connection = await db.getConnection();

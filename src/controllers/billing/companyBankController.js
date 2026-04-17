@@ -551,3 +551,99 @@ export const deleteCompanyBank = async (req, res) => {
     connection.release();
   }
 };
+
+export const setPrimaryBank = async (req, res) => {
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const { id } = req.params;
+    const userId = req.user?.id || null;
+    const { remarks } = req.body || {};
+
+    /* ================= LOCK TARGET ================= */
+    const [[bank]] = await connection.query(
+      `SELECT * FROM company_bank_details WHERE id=? FOR UPDATE`,
+      [id]
+    );
+
+    if (!bank) {
+      throw new Error("Bank not found");
+    }
+
+    if (bank.status !== "active") {
+      throw new Error("Only active bank can be primary");
+    }
+
+    if (bank.is_primary) {
+      return res.json({
+        success: true,
+        message: "Already primary",
+      });
+    }
+
+    /* ================= RESET OLD PRIMARY ================= */
+    const [oldPrimaryRows] = await connection.query(
+      `SELECT * FROM company_bank_details WHERE is_primary = TRUE FOR UPDATE`
+    );
+
+    const oldPrimary = oldPrimaryRows[0] || null;
+
+    await connection.query(
+      `UPDATE company_bank_details SET is_primary = FALSE WHERE is_primary = TRUE`
+    );
+
+    /* ================= SET NEW PRIMARY ================= */
+    await connection.query(
+      `UPDATE company_bank_details SET is_primary = TRUE WHERE id=?`,
+      [id]
+    );
+
+    /* ================= AUDIT ================= */
+
+    // old primary audit
+    if (oldPrimary) {
+      await AuditLog({
+        connection,
+        table: "company_bank_details",
+        recordId: oldPrimary.id,
+        action: "UPDATE",
+        oldData: { is_primary: true },
+        newData: { is_primary: false },
+        userId,
+        remarks: "Primary removed",
+      });
+    }
+
+    // new primary audit
+    await AuditLog({
+      connection,
+      table: "company_bank_details",
+      recordId: id,
+      action: "UPDATE",
+      oldData: { is_primary: false },
+      newData: { is_primary: true },
+      userId,
+      remarks: remarks || "Set as primary bank",
+    });
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      message: "Primary bank updated successfully",
+    });
+
+  } catch (err) {
+    await connection.rollback();
+    console.error("setPrimaryBank ERROR:", err);
+
+    res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  } finally {
+    connection.release();
+  }
+};

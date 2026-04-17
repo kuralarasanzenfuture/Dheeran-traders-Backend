@@ -1,3 +1,72 @@
+export const createStockManageTables = async (db) => {
+  //   await db.query(`
+  //     CREATE TABLE IF NOT EXISTS billing_stock_inventory_ledger (
+  //       id INT AUTO_INCREMENT PRIMARY KEY,
+
+  //   product_id INT NOT NULL,
+
+  //   change_qty INT NOT NULL, -- +100, -50
+  //   balance_after INT NOT NULL, -- running balance
+
+  //   reference_type ENUM(
+  //     'VENDOR_STOCK',
+  //     'SALE',
+  //     'ADJUSTMENT',
+  //     'RETURN'
+  //   ) NOT NULL,
+
+  //   reference_id INT, -- entry_id / billing_id
+
+  //   remarks TEXT,
+
+  //   created_by INT,
+  //   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  //   INDEX idx_product (product_id),
+
+  //   FOREIGN KEY (product_id) REFERENCES products(id)
+  //     ON DELETE CASCADE
+  // ) ENGINE=InnoDB;
+  //     `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS billing_stock_inventory_ledger (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  product_id INT NOT NULL,
+
+  change_qty INT NOT NULL,
+  balance_after INT NOT NULL,
+
+  reference_type VARCHAR(50) NOT NULL, -- 🔥 flexible (NO ENUM)
+
+  reference_id INT,
+
+  remarks TEXT,
+
+  created_by INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  /* 🔥 PERFORMANCE INDEXES */
+  INDEX idx_product (product_id),
+  INDEX idx_product_id_id (product_id, id),
+
+  /* 🔥 RELATIONS */
+  CONSTRAINT fk_ledger_product
+    FOREIGN KEY (product_id)
+    REFERENCES products(id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_ledger_user
+    FOREIGN KEY (created_by)
+    REFERENCES users_roles(id)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+
+) ENGINE=InnoDB;
+    `);
+};
+
 // CREATE TABLE inventory_ledger (
 //   id INT AUTO_INCREMENT PRIMARY KEY,
 
@@ -171,7 +240,6 @@
 //   remarks: "Vendor stock deleted",
 //   userId,
 // });
-
 
 // 🔥 5. WHY THIS IS SUPERIOR
 // ❌ Your current system

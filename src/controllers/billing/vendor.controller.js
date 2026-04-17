@@ -368,14 +368,14 @@ export const createVendor = async (req, res, next) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         first_name,
-        last_name || null,
+        last_name,
         phone,
-        email || null,
-        address || null,
-        bank_name || null,
-        bank_account_number || null,
-        bank_ifsc_code || null,
-        bank_branch_name || null,
+        email,
+        address,
+        bank_name,
+        bank_account_number,
+        bank_ifsc_code,
+        bank_branch_name,
         userId
       ]
     );

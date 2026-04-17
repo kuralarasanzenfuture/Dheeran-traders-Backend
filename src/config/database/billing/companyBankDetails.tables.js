@@ -56,7 +56,7 @@ export const createCompanyBankDetailsTables = async (db) => {
 ) ENGINE=InnoDB;
       `);
 
-  // await seedCompanyBank(db);
+  await seedCompanyBank(db);
 };
 
 const seedCompanyBank = async (db) => {
@@ -77,13 +77,13 @@ const seedCompanyBank = async (db) => {
       "IDIB000D001",
       "Dharmapuri Main",
       "uploads/qr/indianbank_qr.png",
-      "inactive",
+      "active",
     ],
   ];
 
   for (const bank of banks) {
     await db.query(
-      `INSERT INTO company_bank_details
+      `INSERT IGNORE INTO company_bank_details
       (bank_name, account_name, account_number, ifsc_code, branch, qr_code_image, status)
       VALUES (?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE 

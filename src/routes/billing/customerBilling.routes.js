@@ -1,9 +1,7 @@
 import express from "express";
 import {
   brandWiseReport,
-  createCustomerBilling,
   customerWiseReport,
-  deleteCustomerBilling,
   getAllCustomerBillings,
   getCustomerBillingById,
   getCustomerProductFullData,
@@ -13,11 +11,14 @@ import {
   getPendingBills,
   productWiseReport,
   productWiseReportByDate,
-  updateCustomerBilling,
-} from "../../controllers/billing/customerBilling.controller.js";
+  
+} from "../../controllers/billing/billing/getBilling.controller.js";
 import { verifyAdminPassword } from "../../middlewares/verifyAdminPassword.js";
 import { protect, verifyToken } from "../../middlewares/auth.middleware.js";
 import { checkPermission } from "../../middlewares/permission/permission.middleware.js";
+import { createCustomerBilling } from "../../controllers/billing/billing/createBilling.controller.js";
+import { updateCustomerBilling } from "../../controllers/billing/billing/updateBilling.controller.js";
+import { deleteCustomerBilling } from "../../controllers/billing/billing/deleteBilling.controller.js";
 
 const router = express.Router();
 
@@ -43,7 +44,7 @@ router.get("/next-invoice-number", getNextInvoiceNumber);
 
 router.get("/:id", getCustomerBillingById);
 
-router.put("/:id", verifyAdminPassword, updateCustomerBilling);
-router.delete("/:id", verifyAdminPassword, deleteCustomerBilling);
+router.put("/:id", updateCustomerBilling);
+router.delete("/:id", deleteCustomerBilling);
 
 export default router;

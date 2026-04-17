@@ -643,6 +643,169 @@ export const updateProduct = async (req, res, next) => {
   }
 };
 
+// export const updateProduct = async (req, res, next) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const { id } = req.params;
+//     const userId = req.user?.id;
+//     const { remarks } = req.body;
+
+//     if (!userId) {
+//       return res.status(401).json({ message: "Unauthorized" });
+//     }
+
+//     /* =========================
+//        FETCH OLD DATA
+//     ========================= */
+//     const [[oldData]] = await connection.query(
+//       "SELECT * FROM products WHERE id = ?",
+//       [id]
+//     );
+
+//     if (!oldData) {
+//       return res.status(404).json({ message: "Product not found" });
+//     }
+
+//     /* =========================
+//        ALLOWED FIELDS ONLY
+//     ========================= */
+//     const allowedFields = [
+//       "product_name",
+//       "brand",
+//       "category",
+//       "quantity",
+//       "price",
+//       "hsn_code",
+//       "cgst_rate",
+//       "sgst_rate"
+//     ];
+
+//     let updateData = {};
+
+//     for (const field of allowedFields) {
+//       if (req.body[field] !== undefined) {
+//         updateData[field] = req.body[field];
+//       }
+//     }
+
+//     /* =========================
+//        NO UPDATE CHECK
+//     ========================= */
+//     if (Object.keys(updateData).length === 0) {
+//       return res.status(400).json({
+//         message: "No valid fields provided for update",
+//       });
+//     }
+
+//     /* =========================
+//        NORMALIZATION
+//     ========================= */
+//     if (updateData.brand)
+//       updateData.brand = updateData.brand.trim().toLowerCase();
+
+//     if (updateData.category)
+//       updateData.category = updateData.category.trim().toLowerCase();
+
+//     if (updateData.quantity)
+//       updateData.quantity = updateData.quantity.trim().toLowerCase();
+
+//     if (updateData.product_name)
+//       updateData.product_name = updateData.product_name.trim();
+
+//     /* =========================
+//        VALIDATIONS
+//     ========================= */
+//     if (
+//       updateData.price !== undefined &&
+//       (isNaN(updateData.price) || Number(updateData.price) <= 0)
+//     ) {
+//       throw new Error("Invalid price");
+//     }
+
+//     if (
+//       updateData.cgst_rate !== undefined &&
+//       updateData.sgst_rate !== undefined
+//     ) {
+//       updateData.gst_total_rate =
+//         Number(updateData.cgst_rate) + Number(updateData.sgst_rate);
+//     }
+
+//     /* =========================
+//        DUPLICATE CHECK
+//     ========================= */
+//     const checkName = updateData.product_name || oldData.product_name;
+//     const checkBrand = updateData.brand || oldData.brand;
+//     const checkCategory = updateData.category || oldData.category;
+//     const checkQuantity = updateData.quantity || oldData.quantity;
+
+//     const [duplicate] = await connection.query(
+//       `SELECT id FROM products 
+//        WHERE product_name = ? AND brand = ? AND category = ? AND quantity = ?
+//        AND id != ?`,
+//       [checkName, checkBrand, checkCategory, checkQuantity, id]
+//     );
+
+//     if (duplicate.length > 0) {
+//       return res.status(409).json({
+//         message: "Product already exists with same combination",
+//       });
+//     }
+
+//     /* =========================
+//        FINAL UPDATE
+//     ========================= */
+//     updateData.updated_by = userId;
+
+//     await connection.query(
+//       "UPDATE products SET ? WHERE id = ?",
+//       [updateData, id]
+//     );
+
+//     /* =========================
+//        FETCH NEW DATA
+//     ========================= */
+//     const [[newData]] = await connection.query(
+//       "SELECT * FROM products WHERE id = ?",
+//       [id]
+//     );
+
+//     /* =========================
+//        AUDIT LOG
+//     ========================= */
+//     await connection.query(
+//       `INSERT INTO audit_logs
+//        (table_name, record_id, action, old_data, new_data, changed_by, remarks)
+//        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+//       [
+//         "products",
+//         id,
+//         "UPDATE",
+//         JSON.stringify(oldData),
+//         JSON.stringify(newData),
+//         userId,
+//         remarks || "Product updated",
+//       ]
+//     );
+
+//     await connection.commit();
+
+//     res.json({
+//       message: "Product updated successfully",
+//       data: newData,
+//     });
+
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error("❌ UPDATE PRODUCT ERROR:", err.message);
+//     next(err);
+//   } finally {
+//     connection.release();
+//   }
+// };
+
 export const deleteProduct = async (req, res, next) => {
   const connection = await db.getConnection();
 
@@ -691,6 +854,62 @@ export const deleteProduct = async (req, res, next) => {
   }
 };
 
+// export const updateProductStock = async (req, res, next) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const { stock, remarks } = req.body;
+//     const { id } = req.params;
+//     const userId = req.user?.id;
+
+//     if (stock === undefined || isNaN(stock) || Number(stock) < 0) {
+//       throw new Error("Invalid stock");
+//     }
+
+//     const [[oldData]] = await connection.query(
+//       "SELECT stock FROM products WHERE id = ?",
+//       [id]
+//     );
+
+//     if (!oldData) throw new Error("Product not found");
+
+//     await connection.query(
+//       `UPDATE products SET stock = ?, updated_by = ? WHERE id = ?`,
+//       [stock, userId, id]
+//     );
+
+//     const change = Number(stock) - Number(oldData.stock);
+
+//     await connection.query(
+//       `INSERT INTO audit_logs
+//        (table_name, record_id, action, old_data, new_data, changed_by, remarks)
+//        VALUES (?, ?, 'UPDATE', ?, ?, ?, ?)`,
+//       [
+//         "products",
+//         id,
+//         JSON.stringify({ stock: oldData.stock }),
+//         JSON.stringify({ stock, change }),
+//         userId,
+//         remarks || `Stock ${oldData.stock} → ${stock}`,
+//       ]
+//     );
+
+//     await connection.commit();
+
+//     res.json({ message: "Stock updated", change });
+
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error("Stock update error:", err);
+//     next(err);
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+// implementation of updateProductStock by inventory service
 export const updateProductStock = async (req, res, next) => {
   const connection = await db.getConnection();
 
@@ -701,45 +920,96 @@ export const updateProductStock = async (req, res, next) => {
     const { id } = req.params;
     const userId = req.user?.id;
 
+    /* =========================
+       VALIDATION
+    ========================= */
+    if (!userId) throw new Error("Unauthorized");
+
     if (stock === undefined || isNaN(stock) || Number(stock) < 0) {
       throw new Error("Invalid stock");
     }
 
-    const [[oldData]] = await connection.query(
-      "SELECT stock FROM products WHERE id = ?",
+    /* =========================
+       GET OLD STOCK (LOCK)
+    ========================= */
+    const [[product]] = await connection.query(
+      `SELECT id, stock FROM products WHERE id = ? FOR UPDATE`,
       [id]
     );
 
-    if (!oldData) throw new Error("Product not found");
+    if (!product) throw new Error("Product not found");
 
+    const oldStock = Number(product.stock);
+    const newStock = Number(stock);
+    const changeQty = newStock - oldStock;
+
+    /* =========================
+       NO CHANGE CASE
+    ========================= */
+    if (changeQty === 0) {
+      await connection.rollback();
+      return res.json({ message: "No stock change" });
+    }
+
+    /* =========================
+       UPDATE PRODUCT STOCK
+    ========================= */
     await connection.query(
-      `UPDATE products SET stock = ?, updated_by = ? WHERE id = ?`,
-      [stock, userId, id]
+      `UPDATE products 
+       SET stock = ?, updated_by = ?
+       WHERE id = ?`,
+      [newStock, userId, id]
     );
 
-    const change = Number(stock) - Number(oldData.stock);
+    /* =========================
+       INSERT LEDGER ENTRY
+    ========================= */
+    await connection.query(
+      `INSERT INTO billing_stock_inventory_ledger
+      (product_id, change_qty, balance_after,
+       reference_type, reference_id, remarks, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        changeQty,
+        newStock,
+        "ADJUSTMENT",   // 🔥 important
+        id,             // reference = product itself
+        remarks || `Manual stock update ${oldStock} → ${newStock}`,
+        userId,
+      ]
+    );
 
+    /* =========================
+       AUDIT LOG
+    ========================= */
     await connection.query(
       `INSERT INTO audit_logs
-       (table_name, record_id, action, old_data, new_data, changed_by, remarks)
-       VALUES (?, ?, 'UPDATE', ?, ?, ?, ?)`,
+      (table_name, record_id, action, old_data, new_data, changed_by, remarks)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         "products",
         id,
-        JSON.stringify({ stock: oldData.stock }),
-        JSON.stringify({ stock, change }),
+        "UPDATE",
+        JSON.stringify({ stock: oldStock }),
+        JSON.stringify({ stock: newStock, change: changeQty }),
         userId,
-        remarks || `Stock ${oldData.stock} → ${stock}`,
+        remarks || `Stock updated ${oldStock} → ${newStock}`,
       ]
     );
 
     await connection.commit();
 
-    res.json({ message: "Stock updated", change });
+    res.json({
+      message: "Stock updated successfully",
+      old_stock: oldStock,
+      new_stock: newStock,
+      change: changeQty,
+    });
 
   } catch (err) {
     await connection.rollback();
-    console.error("Stock update error:", err);
+    console.error("❌ STOCK UPDATE ERROR:", err);
     next(err);
   } finally {
     connection.release();

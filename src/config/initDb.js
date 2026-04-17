@@ -29,6 +29,8 @@ import { createAdminTriggers } from "./triggers/admin.trigger.js";
 import { createPermissionsTable } from "./database/roles/permissions/permissions.tables.js";
 import { createUserAssignedCustomerTable } from "./database/chit/userAssignedCustomer.tables.js";
 import { createAuditsTable } from "./database/audits/audits.tables.js";
+import { createStockManageTables } from "./database/billing/stockManage.js";
+import { createReturnBillingTables } from "./database/billing/returnBilling.tables.js";
 
 export const initDatabase = async () => {
   try {
@@ -65,6 +67,8 @@ export const initDatabase = async () => {
     // 4️⃣ MASTER TABLE like BRANDS, CATEGORIES, QUANTITY and PRODUCT
     await createMasterTables(db);
 
+    await createStockManageTables(db);
+
     await createVendorTables(db);
 
     await createCustomerTables(db);
@@ -76,6 +80,8 @@ export const initDatabase = async () => {
     await createVendorStocksTables(db);
 
     await createCustomerBillingTables(db);
+
+    await createReturnBillingTables(db);
 
     await createCompanyDetailsTables(db);
 

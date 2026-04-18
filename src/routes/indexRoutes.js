@@ -22,6 +22,7 @@ import vendorStockRoutes from "./billing/vendorStock.routes.js";
 import customerBillingRoutes from "./billing/customerBilling.routes.js";
 import customerPaymentRoutes from "./billing/customerPayment.routes.js";
 import companyDetailsRoutes from "./billing/companyDetails.routes.js";
+import returnRoutes from "./billing/return.routes.js";
 
 // chit
 import planRoutes from "./chit/plan.routes.js";
@@ -84,6 +85,7 @@ router.use("/vendor-stocks", vendorStockRoutes);
 router.use("/customer-billing", customerBillingRoutes);
 router.use("/customer-payments", customerPaymentRoutes);
 router.use("/company-details", companyDetailsRoutes);
+router.use("/returns", returnRoutes);
 
 // chit
 router.use("/plans", planRoutes);

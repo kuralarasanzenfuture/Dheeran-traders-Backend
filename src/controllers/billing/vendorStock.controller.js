@@ -896,7 +896,6 @@ export const createVendorStock = async (req, res) => {
       remarks,
     } = req.body;
 
-    console.log(req.body);
 
     const userId = req.user?.id;
 

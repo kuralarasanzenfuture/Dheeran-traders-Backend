@@ -1,7 +1,6 @@
 import db from "../../../config/db.js";
 
 
-
 export const getAllCustomerBillings = async (req, res) => {
   try {
     const [billings] = await db.query(`
@@ -11,12 +10,11 @@ export const getAllCustomerBillings = async (req, res) => {
         cb.invoice_date,
         cb.company_gst_number,
         cb.customer_id,
+        c.address AS customer_address,
         cb.customer_name,
         cb.phone_number,
-
         cb.staff_name,
         cb.staff_phone,
-
         cb.subtotal,
         cb.grand_total,
         cb.advance_paid,
@@ -24,9 +22,9 @@ export const getAllCustomerBillings = async (req, res) => {
         cb.cash_amount,
         cb.upi_amount,
         cb.cheque_amount,
-
         cb.created_at
       FROM customerBilling cb
+      LEFT JOIN customers c ON c.id = cb.customer_id
       ORDER BY cb.created_at DESC
     `);
 

@@ -59,7 +59,7 @@ export const createQuantityTable = async (db) => {
 ) ENGINE=InnoDB;
 `);
 
-  // await seedQuantities(db);
+  await seedQuantities(db);
 };
 
 const seedQuantities = async (db) => {
@@ -70,23 +70,23 @@ const seedQuantities = async (db) => {
     ["Daawat", "Premium Basmati Rice", "1kg"],
     ["Daawat", "Premium Basmati Rice", "10kg"],
 
-    ["Fortune", "Sunflower Oil", "1L"],
-    ["Fortune", "Sunflower Oil", "5L"],
+    // ["Fortune", "Sunflower Oil", "1L"],
+    // ["Fortune", "Sunflower Oil", "5L"],
 
-    ["Saffola", "Refined Oil", "1L"],
-    ["Saffola", "Refined Oil", "2L"],
+    // ["Saffola", "Refined Oil", "1L"],
+    // ["Saffola", "Refined Oil", "2L"],
 
-    ["Aashirvaad", "Atta (Wheat Flour)", "1kg"],
-    ["Aashirvaad", "Atta (Wheat Flour)", "5kg"],
+    // ["Aashirvaad", "Atta (Wheat Flour)", "1kg"],
+    // ["Aashirvaad", "Atta (Wheat Flour)", "5kg"],
 
-    ["Amul", "Milk", "500ml"],
-    ["Amul", "Milk", "1L"],
+    // ["Amul", "Milk", "500ml"],
+    // ["Amul", "Milk", "1L"],
 
-    ["Britannia", "Biscuits", "100g"],
-    ["Britannia", "Biscuits", "200g"],
+    // ["Britannia", "Biscuits", "100g"],
+    // ["Britannia", "Biscuits", "200g"],
 
-    ["Haldiram's", "Namkeen", "200g"],
-    ["Haldiram's", "Namkeen", "1kg"],
+    // ["Haldiram's", "Namkeen", "200g"],
+    // ["Haldiram's", "Namkeen", "1kg"],
   ];
 
   for (const [brand, category, qty] of data) {

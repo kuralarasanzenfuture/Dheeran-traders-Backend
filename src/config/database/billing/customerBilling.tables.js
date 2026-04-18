@@ -109,12 +109,19 @@ export const createCustomerBillingTables = async (db) => {
   final_rate DECIMAL(12,2),
   total DECIMAL(12,2) NOT NULL,
 
+  returned_quantity INT DEFAULT 0,
+  
+
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
   /* ⚡ INDEXES */
   INDEX idx_billing (billing_id),
   INDEX idx_product (product_id),
   INDEX idx_billing_product (billing_id, product_id),
+
+  INDEX idx_returned_quantity (returned_quantity),
+
+  CHECK (returned_quantity <= quantity),
 
   /* 🔗 FOREIGN KEYS */
   FOREIGN KEY (billing_id) REFERENCES customerBilling(id) ON DELETE CASCADE,

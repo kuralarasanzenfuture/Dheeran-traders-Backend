@@ -53,7 +53,7 @@ export const createBrandsTable = async (db) => {
 ) ENGINE=InnoDB;
 `);
 
-  // await seedBrands(db);
+  await seedBrands(db);
 };
 
 const seedBrands = async (db) => {
@@ -67,24 +67,24 @@ const seedBrands = async (db) => {
     "Aeroplane Rice",
 
     // Oil
-    "Fortune",
-    "Saffola",
-    "Dhara",
-    "Gemini",
-    "Gold Winner",
-    "Freedom Oil",
+    // "Fortune",
+    // "Saffola",
+    // "Dhara",
+    // "Gemini",
+    // "Gold Winner",
+    // "Freedom Oil",
 
     // Food
-    "Aashirvaad",
-    "Tata Sampann",
-    "Patanjali",
-    "24 Mantra Organic",
-    "MTR Foods",
-    "ITC Master Chef",
-    "Nestle India",
-    "Britannia",
-    "Amul",
-    "Haldiram's",
+    // "Aashirvaad",
+    // "Tata Sampann",
+    // "Patanjali",
+    // "24 Mantra Organic",
+    // "MTR Foods",
+    // "ITC Master Chef",
+    // "Nestle India",
+    // "Britannia",
+    // "Amul",
+    // "Haldiram's",
   ];
 
   for (const name of brands) {

@@ -31,6 +31,7 @@ import { createUserAssignedCustomerTable } from "./database/chit/userAssignedCus
 import { createAuditsTable } from "./database/audits/audits.tables.js";
 import { createStockManageTables } from "./database/billing/stockManage.js";
 import { createReturnBillingTables } from "./database/billing/returnBilling.tables.js";
+import { createCompanyGstNumberTable } from "./database/billing/companygstNumber.tables.js";
 
 export const initDatabase = async () => {
   try {
@@ -84,6 +85,8 @@ export const initDatabase = async () => {
     await createReturnBillingTables(db);
 
     await createCompanyDetailsTables(db);
+
+    await createCompanyGstNumberTable(db);
 
     // chit tables
 

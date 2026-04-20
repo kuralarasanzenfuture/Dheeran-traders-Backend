@@ -568,13 +568,16 @@ export const createCustomerBilling = async (req, res) => {
       newData: auditData,
       userId: userId,
       remarks: "Billing created",
-    })
+    });
 
     await connection.commit();
 
     res.status(201).json({
       message: "Invoice created successfully",
-      id: billing_id,
+      // id: billing_id,
+      invoice: {
+        id: billing_id,
+      },
       invoice_number,
     });
   } catch (err) {

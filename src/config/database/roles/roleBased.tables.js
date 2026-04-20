@@ -65,15 +65,15 @@ await db.query(`
 const seedRoles = async (db) => {
   const roles = [
     ['ADMIN', 'Allows full access to the system'],
-    ['MANAGER', 'Manages operations, reports, and staff'],
-    ['ACCOUNTANT', 'Handles billing, GST, and financial reports'],
-    ['SALES', 'Handles sales and customer transactions'],
-    ['PURCHASE', 'Manages vendor purchases and stock entry'],
-    ['INVENTORY', 'Manages stock, products, and warehouse'],
-    ['CASHIER', 'Handles billing and payment collection'],
-    ['HR', 'Manages employees, payroll, and attendance'],
-    ['SUPERVISOR', 'Monitors daily operations and staff'],
-    ['VIEWER', 'Read-only access to system data'],
+    // ['MANAGER', 'Manages operations, reports, and staff'],
+    // ['ACCOUNTANT', 'Handles billing, GST, and financial reports'],
+    // ['SALES', 'Handles sales and customer transactions'],
+    // ['PURCHASE', 'Manages vendor purchases and stock entry'],
+    // ['INVENTORY', 'Manages stock, products, and warehouse'],
+    // ['CASHIER', 'Handles billing and payment collection'],
+    // ['HR', 'Manages employees, payroll, and attendance'],
+    // ['SUPERVISOR', 'Monitors daily operations and staff'],
+    // ['VIEWER', 'Read-only access to system data'],
   ];
 
   for (const role of roles) {

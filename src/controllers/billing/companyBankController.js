@@ -196,6 +196,142 @@ export const getCompanyBankById = async (req, res) => {
 
 // ------------------------------------ hard delete ---------------------------------------------
 
+// export const createCompanyBank = async (req, res) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const userId = req.user?.id || null;
+
+//     let {
+//       bank_name,
+//       account_name,
+//       account_number,
+//       ifsc_code,
+//       branch,
+//       status = "active",
+//       is_primary = false,
+//       remarks,
+//     } = req.body;
+
+//     /* ================= NORMALIZE ================= */
+
+//     is_primary = is_primary === true || is_primary === "true";
+
+//     /* ================= VALIDATION ================= */
+
+//     if (!bank_name || !account_name || !account_number || !ifsc_code) {
+//       throw new Error("All required fields must be provided");
+//     }
+
+//     if (!req.file) {
+//       throw new Error("QR code image required");
+//     }
+
+//     if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc_code)) {
+//       throw new Error("Invalid IFSC code");
+//     }
+
+//     if (!["active", "inactive"].includes(status)) {
+//       throw new Error("Invalid status");
+//     }
+
+//     /* ================= DUPLICATE CHECK ================= */
+
+//     const [exists] = await connection.query(
+//       `SELECT id FROM company_bank_details 
+//        WHERE account_number = ? AND ifsc_code = ?`,
+//       [account_number, ifsc_code],
+//     );
+
+//     if (exists.length > 0) {
+//       throw new Error("Bank account already exists");
+//     }
+
+//     const qr_code_image = `/uploads/bank-qr/${req.file.filename}`;
+
+//     /* ================= PRIMARY LOGIC ================= */
+
+//     const [[primaryExists]] = await connection.query(
+//       `SELECT COUNT(*) AS count FROM company_bank_details WHERE is_primary = TRUE`,
+//     );
+
+//     // 👉 If no primary exists → force this as primary
+//     if (primaryExists.count === 0) {
+//       is_primary = true;
+//     }
+
+//     // 👉 If setting new primary → remove old one
+//     if (is_primary) {
+//       await connection.query(
+//         `UPDATE company_bank_details SET is_primary = FALSE`,
+//       );
+//     }
+
+//     /* ================= INSERT ================= */
+
+//     const [result] = await connection.query(
+//       `INSERT INTO company_bank_details
+//        (bank_name, account_name, account_number, ifsc_code, branch, qr_code_image, status, is_primary, created_by)
+//        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//       [
+//         bank_name,
+//         account_name,
+//         account_number,
+//         ifsc_code,
+//         branch || null,
+//         qr_code_image,
+//         status,
+//         is_primary ? 1 : 0,
+//         userId,
+//       ],
+//     );
+
+//     const recordId = result.insertId;
+
+//     /* ================= AUDIT ================= */
+
+//     await AuditLog({
+//       connection,
+//       table: "company_bank_details",
+//       recordId,
+//       action: "INSERT",
+//       newData: {
+//         bank_name,
+//         account_name,
+//         account_number,
+//         ifsc_code,
+//         branch,
+//         status,
+//         is_primary,
+//         qr_code_image,
+//       },
+//       userId,
+//       remarks: remarks || "Bank created",
+//     });
+
+//     await connection.commit();
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Bank created successfully",
+//       id: recordId,
+//     });
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error("Create bank error:", err);
+
+//     res.status(400).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+/* primary logic*/
 export const createCompanyBank = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -211,13 +347,8 @@ export const createCompanyBank = async (req, res) => {
       ifsc_code,
       branch,
       status = "active",
-      is_primary = false,
       remarks,
     } = req.body;
-
-    /* ================= NORMALIZE ================= */
-
-    is_primary = is_primary === true || is_primary === "true";
 
     /* ================= VALIDATION ================= */
 
@@ -242,7 +373,7 @@ export const createCompanyBank = async (req, res) => {
     const [exists] = await connection.query(
       `SELECT id FROM company_bank_details 
        WHERE account_number = ? AND ifsc_code = ?`,
-      [account_number, ifsc_code],
+      [account_number, ifsc_code]
     );
 
     if (exists.length > 0) {
@@ -253,20 +384,19 @@ export const createCompanyBank = async (req, res) => {
 
     /* ================= PRIMARY LOGIC ================= */
 
-    const [[primaryExists]] = await connection.query(
-      `SELECT COUNT(*) AS count FROM company_bank_details WHERE is_primary = TRUE`,
+    // 🔒 lock table rows to avoid race condition
+    const [[row]] = await connection.query(
+      `SELECT COUNT(*) AS count 
+       FROM company_bank_details 
+       WHERE is_primary = TRUE 
+       FOR UPDATE`
     );
 
-    // 👉 If no primary exists → force this as primary
-    if (primaryExists.count === 0) {
-      is_primary = true;
-    }
+    let is_primary = false;
 
-    // 👉 If setting new primary → remove old one
-    if (is_primary) {
-      await connection.query(
-        `UPDATE company_bank_details SET is_primary = FALSE`,
-      );
+    // 👉 If no primary exists → make this primary
+    if (row.count === 0) {
+      is_primary = true;
     }
 
     /* ================= INSERT ================= */
@@ -285,7 +415,7 @@ export const createCompanyBank = async (req, res) => {
         status,
         is_primary ? 1 : 0,
         userId,
-      ],
+      ]
     );
 
     const recordId = result.insertId;
@@ -317,7 +447,9 @@ export const createCompanyBank = async (req, res) => {
       success: true,
       message: "Bank created successfully",
       id: recordId,
+      is_primary,
     });
+
   } catch (err) {
     await connection.rollback();
     console.error("Create bank error:", err);

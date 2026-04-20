@@ -48,9 +48,6 @@ export const createCompanyBankDetailsTables = async (db) => {
   -- 🔥 Prevent duplicate accounts
   UNIQUE KEY uniq_account (account_number, ifsc_code),
 
-  -- 🔥 Only ONE primary account allowed
-  UNIQUE KEY uniq_primary (is_primary),
-
   INDEX idx_status (status),
   INDEX idx_primary (is_primary)
 ) ENGINE=InnoDB;

@@ -41,21 +41,4 @@ export const createAgentAndStaffTables = async (db) => {
     INDEX idx_created_at (created_at)
 );
 `);
-
-  await db.query(`
-               INSERT IGNORE INTO chit_agent_and_staff (
-     name, phone, reference_mode, status
- ) VALUES
- (
-     'Suresh Kumar',
-     '9012345678',
-     'AGENT',
-     'active'
- ),
- (
-     'Manikandan R',
-     '9098765432',
-     'STAFF',
-     'active'
- );`);
 };

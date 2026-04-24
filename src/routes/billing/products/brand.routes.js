@@ -19,10 +19,10 @@ const router = express.Router();
 // router.use(protect);
 router.use(verifyToken);
 
-router.post("/", checkPermission("BILLING_BRAND", "CREATE"), createBrand);
-router.get("/", checkPermission("BILLING_BRAND", "VIEW"), getBrands);
+router.post("/", createBrand);
+router.get("/", getBrands);
 router.get("/:id", getBrandById);
-router.put("/:id", checkPermission("BILLING_BRAND", "EDIT"), updateBrand);
-router.delete("/:id", checkPermission("BILLING_BRAND", "DELETE"), deleteBrand);
+router.put("/:id", updateBrand);
+router.delete("/:id", deleteBrand);
 
 export default router;

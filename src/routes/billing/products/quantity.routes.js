@@ -14,14 +14,14 @@ const router = express.Router();
 
 router.use(verifyToken);
 
-router.post("/",checkPermission("BILLING_QUANTITY", "CREATE"), createQuantity);
-router.get("/", checkPermission("BILLING_QUANTITY", "VIEW"), getAllQuantities);
+router.post("/", createQuantity);
+router.get("/", getAllQuantities);
 router.get(
   "/brand/:brand_id/category/:category_id",
   getQuantitiesByCategory
 );
 router.get("/:id", getQuantityById);
-router.put("/:id",checkPermission("BILLING_QUANTITY", "EDIT"), updateQuantity);
-router.delete("/:id",checkPermission("BILLING_QUANTITY", "DELETE"), deleteQuantity);
+router.put("/:id", updateQuantity);
+router.delete("/:id", deleteQuantity);
 
 export default router;

@@ -78,49 +78,5 @@ await db.query(`
 ) ENGINE=InnoDB;
 `);
 
-  await seedCategories(db);
 };
 
-const seedCategories = async (db) => {
-  const categories = [
-    ["India Gate", "Basmati Rice", "1006"],
-    ["India Gate", "Brown Rice", "1006"],
-
-    ["Daawat", "Premium Basmati Rice", "1006"],
-    ["Daawat", "Everyday Rice", "1006"],
-
-    // ["Fortune", "Sunflower Oil", "1512"],
-    // ["Fortune", "Mustard Oil", "1514"],
-    ["Fortune", "Basmati Rice", "1006"],
-
-    // ["Saffola", "Refined Oil", "1512"],
-    // ["Saffola", "Oats", "1104"],
-
-    // ["Aashirvaad", "Atta (Wheat Flour)", "1101"],
-    // ["Aashirvaad", "Spices", "0910"],
-
-    // ["Tata Sampann", "Pulses (Dal)", "0713"],
-    // ["Tata Sampann", "Spices", "0910"],
-
-    // ["Amul", "Milk", "0401"],
-    // ["Amul", "Butter", "0405"],
-    // ["Amul", "Cheese", "0406"],
-
-    // ["Britannia", "Biscuits", "1905"],
-    // ["Britannia", "Bread", "1905"],
-
-    // ["MTR Foods", "Ready to Eat Meals", "2106"],
-    // ["MTR Foods", "Instant Mixes", "1901"],
-
-    // ["Haldiram's", "Namkeen", "2106"],
-    // ["Haldiram's", "Sweets", "1704"],
-  ];
-
-  for (const [brandName, name, hsn] of categories) {
-    await db.query(
-      `INSERT IGNORE INTO categories (brand_id, name, hsn_code)
-       VALUES ((SELECT id FROM brands WHERE name = ?), ?, ?)`,
-      [brandName, name, hsn],
-    );
-  }
-};

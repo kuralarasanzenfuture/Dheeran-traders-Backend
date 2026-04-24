@@ -100,7 +100,26 @@ export const createEmployeeDetailsTables = async (db) => {
         REFERENCES users_roles(id)
         ON DELETE CASCADE,
 
-        UNIQUE KEY uq_employee_code (employee_code)
+        UNIQUE KEY uq_employee_code (employee_code),
+
+        UNIQUE KEY uq_user_id (user_id),
+
+        UNIQUE KEY uq_email (email),
+        UNIQUE KEY uq_phone (phone),
+
+        UNIQUE KEY uq_aadhar_number (aadhar_number),
+        UNIQUE KEY uq_pan_number (pan_number),
+
+        INDEX idx_user_id (user_id),
+        INDEX idx_email (email),
+        INDEX idx_phone (phone),
+        INDEX idx_aadhar_number (aadhar_number),
+        INDEX idx_pan_number (pan_number),
+
+        INDEX idx_status (status),
+
+        INDEX idx_created_at (created_at),
+        INDEX idx_updated_at (updated_at)
 
           )
     `);

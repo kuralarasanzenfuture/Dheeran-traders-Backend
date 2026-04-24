@@ -21,7 +21,7 @@ export const createPlanTables = async (db) => {
 
   //   `);
 
-await db.query(`
+  await db.query(`
   CREATE TABLE IF NOT EXISTS plans (
     id INT AUTO_INCREMENT PRIMARY KEY,
 
@@ -47,7 +47,6 @@ await db.query(`
     INDEX idx_duration_days (duration_days)
 );
   `);
-
 
   await db.query(`
     INSERT IGNORE INTO plans (plan_name, duration_days, collection_type, total_installments)

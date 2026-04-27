@@ -73,24 +73,92 @@ export const getReturnById = async (req, res) => {
 
     const [[returnData]] = await db.query(
       `SELECT * FROM customerBillingReturns WHERE id=?`,
-      [id]
+      [id],
     );
 
     if (!returnData) {
       return res.status(404).json({ message: "Return not found" });
     }
 
-    const [products] = await db.query(
-      `SELECT 
-        rp.*,
-        p.product_name,
-        p.brand,
-        p.category
-      FROM customerBillingReturnsProducts rp
-      JOIN products p ON p.id = rp.product_id
-      WHERE rp.return_id=?`,
-      [id]
-    );
+    // const [products] = await db.query(
+    //   `SELECT
+    //     rp.*,
+    //     p.product_name,
+    //     p.brand,
+    //     p.category,
+    //     p.quantity
+    //   FROM customerBillingReturnsProducts rp
+    //   JOIN products p ON p.id = rp.product_id
+    //   WHERE rp.return_id=?`,
+    //   [id],
+    // );
+
+    // const [products] = await db.query(
+    //   `SELECT
+    //     rp.*,
+    //     p.product_name,
+    //     p.product_brand AS brand,
+    //     p.product_category AS category,
+    //     p.quantity,
+    //     p.product_quantity,
+    //     p.rate AS original_rate,
+    //     p.total AS original_total
+    //   FROM customerBillingReturnsProducts rp
+    //   JOIN customerBillingProducts p ON p.id = rp.product_id
+    //   WHERE rp.return_id = ?`,
+    //   [id],
+    // );
+
+    const [products] = await db.query(`
+  SELECT 
+    rp.*,
+    p.product_name,
+    p.product_brand AS brand,
+    p.product_category AS category,
+    p.quantity,
+    p.product_quantity,
+    p.rate AS original_rate,
+    p.total AS original_total,
+
+    -- 🔥 total paid for billing
+    (cb.advance_paid + COALESCE(SUM(pay.total_amount), 0)) AS total_paid,
+
+    -- 🔥 total pending for billing
+    (
+      cb.grand_total - 
+      (cb.advance_paid + COALESCE(SUM(pay.total_amount), 0))
+    ) AS total_pending_amount,
+
+    -- 🔥 product paid
+    (
+      (p.total / NULLIF(cb.grand_total, 0)) * 
+      (cb.advance_paid + COALESCE(SUM(pay.total_amount), 0))
+    ) AS product_paid_amount,
+
+    -- 🔥 product pending
+    (
+      p.total - 
+      (
+        (p.total / NULLIF(cb.grand_total, 0)) * 
+        (cb.advance_paid + COALESCE(SUM(pay.total_amount), 0))
+      )
+    ) AS product_pending_amount
+
+  FROM customerBillingReturnsProducts rp
+
+  JOIN customerBillingProducts p 
+    ON p.id = rp.billing_product_id
+
+  JOIN customerBilling cb 
+    ON cb.id = p.billing_id
+
+  LEFT JOIN customerBillingPayment pay 
+    ON pay.billing_id = cb.id
+
+  WHERE rp.return_id = ?
+
+  GROUP BY rp.id
+`, [id]);
 
     res.json({
       data: {

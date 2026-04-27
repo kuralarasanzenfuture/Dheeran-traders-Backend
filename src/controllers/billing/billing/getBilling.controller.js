@@ -1,8 +1,85 @@
 import db from "../../../config/db.js";
 
 
+// export const getAllCustomerBillings = async (req, res) => {
+//   try {
+//     const [billings] = await db.query(`
+//       SELECT
+//         cb.id,
+//         cb.invoice_number,
+//         cb.invoice_date,
+//         cb.company_gst_number,
+//         cb.customer_id,
+//         c.address AS customer_address,
+//         cb.customer_name,
+//         cb.phone_number,
+//         cb.staff_name,
+//         cb.staff_phone,
+//         cb.subtotal,
+//         cb.grand_total,
+//         cb.advance_paid,
+//         cb.balance_due,
+//         cb.cash_amount,
+//         cb.upi_amount,
+//         cb.cheque_amount,
+//         cb.created_at
+//       FROM customerBilling cb
+//       LEFT JOIN customers c ON c.id = cb.customer_id
+//       ORDER BY cb.created_at DESC
+//     `);
+
+//     if (!billings.length) return res.json([]);
+
+//     const billingIds = billings.map((b) => b.id);
+
+//     const [products] = await db.query(
+//       `
+//       SELECT
+//         id,
+//         billing_id,
+//         product_id,
+//         product_name,
+//         product_brand,
+//         product_category,
+//         product_quantity,
+
+//         hsn_code,
+//         cgst_rate,
+//         sgst_rate,
+//         gst_total_rate,
+
+//         cgst_amount,
+//         sgst_amount,
+//         gst_total_amount,
+
+//         discount_percent,
+//         discount_amount,
+
+//         quantity,
+//         rate,
+//         final_rate,
+//         total
+//       FROM customerBillingProducts
+//       WHERE billing_id IN (?)
+//     `,
+//       [billingIds],
+//     );
+
+//     const result = billings.map((b) => ({
+//       ...b,
+//       products: products.filter((p) => p.billing_id === b.id),
+//     }));
+
+//     res.json(result);
+//   } catch (err) {
+//     console.error("Billing fetch error:", err);
+//     res.status(500).json({ message: "Failed to fetch billing data" });
+//   }
+// };
+
 export const getAllCustomerBillings = async (req, res) => {
   try {
+    // ✅ 1. BILLINGS
     const [billings] = await db.query(`
       SELECT
         cb.id,
@@ -32,9 +109,11 @@ export const getAllCustomerBillings = async (req, res) => {
 
     const billingIds = billings.map((b) => b.id);
 
+    // ✅ 2. PRODUCTS
     const [products] = await db.query(
       `
       SELECT
+        id, 
         billing_id,
         product_id,
         product_name,
@@ -57,19 +136,57 @@ export const getAllCustomerBillings = async (req, res) => {
         quantity,
         rate,
         final_rate,
-        total
+        total,
+        returned_quantity,
+        (quantity - COALESCE(returned_quantity, 0)) AS remaining_quantity
       FROM customerBillingProducts
       WHERE billing_id IN (?)
     `,
-      [billingIds],
+      [billingIds]
     );
 
-    const result = billings.map((b) => ({
-      ...b,
-      products: products.filter((p) => p.billing_id === b.id),
-    }));
+    // ✅ 3. PAYMENTS
+    const [payments] = await db.query(
+      `
+      SELECT 
+        billing_id,
+        SUM(total_amount) AS paid_amount
+      FROM customerBillingPayment
+      WHERE billing_id IN (?)
+      GROUP BY billing_id
+    `,
+      [billingIds]
+    );
+
+    // 👉 Convert payments to map for fast lookup
+    const paymentMap = {};
+    payments.forEach((p) => {
+      paymentMap[p.billing_id] = Number(p.paid_amount);
+    });
+
+    // ✅ 4. FINAL STRUCTURE
+    const result = billings.map((b) => {
+      const paymentSum = paymentMap[b.id] || 0;
+
+      const total_paid_amount =
+        Number(b.advance_paid || 0) + paymentSum;
+
+      const total_pending_amount =
+        Number(b.grand_total) - total_paid_amount;
+
+      return {
+        ...b,
+
+        // 🔥 ADD THESE
+        total_paid_amount,
+        total_pending_amount,
+
+        products: products.filter((p) => p.billing_id === b.id),
+      };
+    });
 
     res.json(result);
+
   } catch (err) {
     console.error("Billing fetch error:", err);
     res.status(500).json({ message: "Failed to fetch billing data" });
@@ -327,25 +444,55 @@ export const customerWiseReport = async (req, res) => {
 
 export const getPendingBills = async (req, res) => {
   try {
+    // const [billings] = await db.query(`
+    //   SELECT
+    //     cb.id,
+    //     cb.invoice_number,
+    //     cb.invoice_date,
+
+    //     CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')) AS customer_name,
+    //     c.phone AS phone_number,
+
+    //     cb.grand_total,
+    //     cb.advance_paid,
+    //     cb.balance_due,
+
+    //     cb.created_at
+    //   FROM customerBilling cb
+    //   JOIN customers c ON c.id = cb.customer_id
+    //   WHERE cb.balance_due > 0
+    //   ORDER BY cb.created_at DESC
+    // `);
+
     const [billings] = await db.query(`
-      SELECT
-        cb.id,
-        cb.invoice_number,
-        cb.invoice_date,
+  SELECT
+    cb.id,
+    cb.invoice_number,
+    cb.invoice_date,
 
-        CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')) AS customer_name,
-        c.phone AS phone_number,
+    CONCAT(c.first_name, ' ', COALESCE(c.last_name, '')) AS customer_name,
+    c.phone AS phone_number,
 
-        cb.grand_total,
-        cb.advance_paid,
-        cb.balance_due,
+    cb.grand_total,
+    cb.advance_paid,
 
-        cb.created_at
-      FROM customerBilling cb
-      JOIN customers c ON c.id = cb.customer_id
-      WHERE cb.balance_due > 0
-      ORDER BY cb.created_at DESC
-    `);
+    -- 🔥 TOTAL PAID (advance + payments)
+    cb.advance_paid + COALESCE(SUM(p.total_amount), 0) AS total_paid_amount,
+
+    cb.balance_due,
+    cb.created_at
+
+  FROM customerBilling cb
+  JOIN customers c ON c.id = cb.customer_id
+
+  LEFT JOIN customerBillingPayment p 
+    ON p.billing_id = cb.id
+
+  WHERE cb.balance_due > 0
+
+  GROUP BY cb.id
+  ORDER BY cb.created_at DESC
+`);
 
     res.json(billings);
   } catch (err) {

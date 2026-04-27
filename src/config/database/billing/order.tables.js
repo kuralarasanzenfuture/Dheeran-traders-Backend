@@ -11,6 +11,7 @@ export const createOrderTables = async (db) => {
   employee_id INT NOT NULL,
 
   order_date DATE NOT NULL,
+  expected_delivery_date DATE NOT NULL,
   delivery_date DATE NULL,
 
   status ENUM('PENDING','CONFIRMED','BILLED','DELIVERED','CANCELLED') 

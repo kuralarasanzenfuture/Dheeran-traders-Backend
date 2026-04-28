@@ -79,6 +79,223 @@ import db from "../../../config/db.js";
 //   }
 // };
 
+// export const createOrder = async (req, res) => {
+//   const conn = await db.getConnection();
+
+//   try {
+//     await conn.beginTransaction();
+
+//     const {
+//       customer_id,
+//       employee_id,
+//       expected_delivery_date,
+//       products,
+//       remarks,
+//     } = req.body;
+
+//     const userId = req.user?.id;
+//     if (!userId) throw new Error("Unauthorized");
+
+//     const order_date = new Date().toISOString().slice(0, 10);
+
+//     if (
+//       !customer_id ||
+//       !employee_id ||
+//       !expected_delivery_date ||
+//       !Array.isArray(products) ||
+//       products.length === 0
+//     ) {
+//       throw new Error("Invalid input");
+//     }
+
+//     /* ✅ CHECK CUSTOMER */
+//     const [[customer]] = await conn.query(
+//       `SELECT id, first_name AS customer_name FROM customers WHERE id=?`,
+//       [customer_id],
+//     );
+//     if (!customer) throw new Error("Customer not found");
+
+//     /* ✅ CHECK EMPLOYEE */
+//     const [[employee]] = await conn.query(
+//       `SELECT id FROM employees_details WHERE id=?`,
+//       [employee_id],
+//     );
+//     if (!employee) throw new Error("Employee not found");
+
+//     /* 🔢 SAFE ORDER NUMBER */
+//     const order_number = `ORD-${Date.now()}`;
+
+//     /* 🧾 CREATE ORDER */
+//     const [orderResult] = await conn.query(
+//       `INSERT INTO customerOrders 
+//       (order_number, customer_id, customer_name, employee_id, order_date, expected_delivery_date, remarks, created_by)
+//       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+//       [
+//         order_number,
+//         customer_id,
+//         customer.customer_name,
+//         employee_id,
+//         order_date,
+//         expected_delivery_date,
+//         remarks || null,
+//         userId,
+//       ],
+//     );
+
+//     const order_id = orderResult.insertId;
+
+//     /* 📦 PREPARE BULK INSERT */
+//     const values = [];
+
+//     for (const item of products) {
+//       const qty = Number(item.quantity);
+
+//       if (!item.product_id || isNaN(qty) || qty <= 0) {
+//         throw new Error("Invalid product data");
+//       }
+
+//       /* ✅ CHECK PRODUCT */
+//       const [[product]] = await conn.query(
+//         `SELECT id FROM products WHERE id=?`,
+//         [item.product_id],
+//       );
+
+//       if (!product) {
+//         throw new Error(`Product not found: ${item.product_id}`);
+//       }
+
+//       values.push([order_id, item.product_id, qty]);
+//     }
+
+//     /* 🚀 BULK INSERT (FAST) */
+//     await conn.query(
+//       `INSERT INTO customerOrderProducts (order_id, product_id, quantity)
+//        VALUES ?`,
+//       [values],
+//     );
+
+//     await conn.commit();
+
+//     res.status(201).json({
+//       message: "Order created successfully",
+//       order_id,
+//       order_number,
+//     });
+//   } catch (err) {
+//     console.error("Create order error:", err.message);
+//     await conn.rollback();
+//     res.status(400).json({ message: err.message });
+//   } finally {
+//     conn.release();
+//   }
+// };
+
+/* --- remove employee id --- */
+// export const createOrder = async (req, res) => {
+//   const conn = await db.getConnection();
+
+//   try {
+//     await conn.beginTransaction();
+
+//     const {
+//       customer_id,
+//       expected_delivery_date,
+//       products,
+//       remarks,
+//     } = req.body;
+
+//     const userId = req.user?.id;
+//     if (!userId) throw new Error("Unauthorized");
+
+//     const order_date = new Date().toISOString().slice(0, 10);
+
+//     if (
+//       !customer_id ||
+//       !expected_delivery_date ||
+//       !Array.isArray(products) ||
+//       products.length === 0
+//     ) {
+//       throw new Error("Invalid input");
+//     }
+
+//     /* ✅ CHECK CUSTOMER */
+//     const [[customer]] = await conn.query(
+//       `SELECT id, first_name FROM customers WHERE id=?`,
+//       [customer_id]
+//     );
+
+//     if (!customer) throw new Error("Customer not found");
+
+//     /* 🔢 SAFE ORDER NUMBER */
+//     const order_number = `ORD-${Date.now()}`;
+
+//     /* 🧾 CREATE ORDER */
+//     const [orderResult] = await conn.query(
+//       `INSERT INTO customerOrders 
+//       (order_number, customer_id, customer_name, order_date, expected_delivery_date, remarks, created_by)
+//       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+//       [
+//         order_number,
+//         customer_id,
+//         customer.first_name,
+//         order_date,
+//         expected_delivery_date,
+//         remarks || null,
+//         userId,
+//       ]
+//     );
+
+//     const order_id = orderResult.insertId;
+
+//     /* 📦 PREPARE BULK INSERT */
+//     const values = [];
+
+//     for (const item of products) {
+//       const qty = Number(item.quantity);
+
+//       if (!item.product_id || isNaN(qty) || qty <= 0) {
+//         throw new Error("Invalid product data");
+//       }
+
+//       /* ✅ CHECK PRODUCT */
+//       const [[product]] = await conn.query(
+//         `SELECT id FROM products WHERE id=?`,
+//         [item.product_id]
+//       );
+
+//       if (!product) {
+//         throw new Error(`Product not found: ${item.product_id}`);
+//       }
+
+//       values.push([order_id, item.product_id, qty]);
+//     }
+
+//     /* 🚀 BULK INSERT */
+//     await conn.query(
+//       `INSERT INTO customerOrderProducts (order_id, product_id, quantity)
+//        VALUES ?`,
+//       [values]
+//     );
+
+//     await conn.commit();
+
+//     res.status(201).json({
+//       message: "Order created successfully",
+//       order_id,
+//       order_number,
+//     });
+
+//   } catch (err) {
+//     console.error("Create order error:", err.message);
+//     await conn.rollback();
+//     res.status(400).json({ message: err.message });
+//   } finally {
+//     conn.release();
+//   }
+// };
+
+/*-- improve version --- */
+
 export const createOrder = async (req, res) => {
   const conn = await db.getConnection();
 
@@ -87,7 +304,6 @@ export const createOrder = async (req, res) => {
 
     const {
       customer_id,
-      employee_id,
       expected_delivery_date,
       products,
       remarks,
@@ -98,9 +314,9 @@ export const createOrder = async (req, res) => {
 
     const order_date = new Date().toISOString().slice(0, 10);
 
+    /* ✅ VALIDATION */
     if (
       !customer_id ||
-      !employee_id ||
       !expected_delivery_date ||
       !Array.isArray(products) ||
       products.length === 0
@@ -110,39 +326,46 @@ export const createOrder = async (req, res) => {
 
     /* ✅ CHECK CUSTOMER */
     const [[customer]] = await conn.query(
-      `SELECT id, first_name AS customer_name FROM customers WHERE id=?`,
-      [customer_id],
+      `SELECT id, CONCAT(first_name, ' ', COALESCE(last_name,'')) AS customer_name 
+       FROM customers 
+       WHERE id = ?`,
+      [customer_id]
     );
+
     if (!customer) throw new Error("Customer not found");
 
-    /* ✅ CHECK EMPLOYEE */
-    const [[employee]] = await conn.query(
-      `SELECT id FROM employees_details WHERE id=?`,
-      [employee_id],
-    );
-    if (!employee) throw new Error("Employee not found");
+    /* 🔢 GENERATE ORDER NUMBER */
+    const order_number = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    /* 🔢 SAFE ORDER NUMBER */
-    const order_number = `ORD-${Date.now()}`;
-
-    /* 🧾 CREATE ORDER */
+    /* 🧾 INSERT ORDER */
     const [orderResult] = await conn.query(
       `INSERT INTO customerOrders 
-      (order_number, customer_id, customer_name, employee_id, order_date, expected_delivery_date, remarks, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      (order_number, customer_id, customer_name, order_date, expected_delivery_date, remarks, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         order_number,
         customer_id,
         customer.customer_name,
-        employee_id,
         order_date,
         expected_delivery_date,
         remarks || null,
         userId,
-      ],
+      ]
     );
 
     const order_id = orderResult.insertId;
+
+    /* 📦 VALIDATE PRODUCTS (OPTIMIZED) */
+    const productIds = products.map((p) => p.product_id);
+
+    const [dbProducts] = await conn.query(
+      `SELECT id FROM products WHERE id IN (?)`,
+      [productIds]
+    );
+
+    if (dbProducts.length !== productIds.length) {
+      throw new Error("Some products not found");
+    }
 
     /* 📦 PREPARE BULK INSERT */
     const values = [];
@@ -154,54 +377,101 @@ export const createOrder = async (req, res) => {
         throw new Error("Invalid product data");
       }
 
-      /* ✅ CHECK PRODUCT */
-      const [[product]] = await conn.query(
-        `SELECT id FROM products WHERE id=?`,
-        [item.product_id],
-      );
-
-      if (!product) {
-        throw new Error(`Product not found: ${item.product_id}`);
-      }
-
       values.push([order_id, item.product_id, qty]);
     }
 
-    /* 🚀 BULK INSERT (FAST) */
+    /* 🚀 INSERT ORDER PRODUCTS */
     await conn.query(
       `INSERT INTO customerOrderProducts (order_id, product_id, quantity)
        VALUES ?`,
-      [values],
+      [values]
     );
 
+    /* ✅ COMMIT */
     await conn.commit();
 
     res.status(201).json({
+      success: true,
       message: "Order created successfully",
-      order_id,
-      order_number,
+      data: {
+        order_id,
+        order_number,
+      },
     });
+
   } catch (err) {
     console.error("Create order error:", err.message);
+
     await conn.rollback();
-    res.status(400).json({ message: err.message });
+
+    res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+
   } finally {
     conn.release();
   }
 };
 
+// export const getOrders = async (req, res) => {
+//   try {
+//     const [rows] = await db.query(`
+//       SELECT 
+//         o.*,
+//         e.employee_name
+//       FROM customerOrders o
+//       LEFT JOIN employees_details e ON o.employee_id = e.id
+//       ORDER BY o.id DESC
+//     `);
+
+//     res.json(rows);
+//   } catch (err) {
+//     console.error("Get orders error:", err.message);
+//     res.status(500).json({ message: err.message });
+//   }
+// };
+
+/* -- remove employee_id -- */
 export const getOrders = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        o.*,
-        e.employee_name
+        o.id,
+        o.order_number,
+        o.customer_id,
+        o.customer_name,
+        o.order_date,
+        o.expected_delivery_date,
+        o.delivery_date,
+        o.status,
+        o.remarks,
+
+        o.created_by,
+        uc.username AS created_by_name,
+
+        o.updated_by,
+        uu.username AS updated_by_name,
+
+        o.created_at,
+        o.updated_at
+
       FROM customerOrders o
-      LEFT JOIN employees_details e ON o.employee_id = e.id
+
+      LEFT JOIN users_roles uc 
+        ON o.created_by = uc.id
+
+      LEFT JOIN users_roles uu 
+        ON o.updated_by = uu.id
+
       ORDER BY o.id DESC
     `);
 
-    res.json(rows);
+    res.json({
+      count: rows.length,
+      data: rows,
+    });
+
   } catch (err) {
     console.error("Get orders error:", err.message);
     res.status(500).json({ message: err.message });
@@ -382,59 +652,205 @@ export const getOrders = async (req, res) => {
 //   }
 // };
 
+// export const getOrderById = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     // ✅ 1. ORDER + CUSTOMER + EMPLOYEE
+//     const [[row]] = await db.query(
+//       `
+//       SELECT
+//         o.id AS order_id,
+//         o.order_number,
+//         o.customer_id AS order_customer_id,
+//         o.employee_id AS order_employee_id,
+//         o.order_date,
+//         o.expected_delivery_date,
+//         o.delivery_date,
+//         o.status,
+//         o.remarks,
+//         o.created_by,
+//         o.updated_by,
+
+//         -- 👤 CUSTOMER (FULL DATA)
+//        -- c.*,
+//        -- 👤 CUSTOMER (SAFE ALIASING)
+//         c.id AS customer_id,
+//         c.first_name,
+//         c.last_name,
+//         c.phone AS customer_phone,
+//         c.email AS customer_email,
+//         c.address AS customer_address,
+//         c.created_at AS customer_created_at,
+//         c.updated_at AS customer_updated_at,
+
+//         -- 👨‍💼 EMPLOYEE
+//         e.id AS employee_id,
+//         e.employee_name,
+//         e.phone AS employee_phone,
+//         e.email AS employee_email,
+//         e.address AS employee_address
+
+//       FROM customerOrders o
+//       JOIN customers c ON o.customer_id = c.id
+//       JOIN employees_details e ON o.employee_id = e.id
+//       WHERE o.id = ?
+//       `,
+//       [id],
+//     );
+
+//     // ❌ Not found
+//     if (!row) {
+//       return res.status(404).json({ message: "Order not found" });
+//     }
+
+//     // ✅ 2. PRODUCTS
+//     const [productsRaw] = await db.query(
+//       `
+//       SELECT 
+//         op.id AS order_product_id,
+//         op.product_id,
+//         op.quantity,
+
+//         p.product_name,
+//         p.brand,
+//         p.category,
+//         p.price AS rate,
+
+//         -- 💰 CALCULATED TOTAL
+//         (op.quantity * p.price) AS total
+
+//       FROM customerOrderProducts op
+//       JOIN products p ON op.product_id = p.id
+//       WHERE op.order_id = ?
+//       `,
+//       [id],
+//     );
+
+//     // ✅ 3. CALCULATE SUMMARY
+//     const grand_total = productsRaw.reduce(
+//       (sum, item) => sum + Number(item.total),
+//       0,
+//     );
+
+//     const total_items = productsRaw.length;
+
+//     // ✅ 4. FINAL TREE STRUCTURE
+//     const response = {
+//       order: {
+//         order_id: row.order_id,
+//         order_number: row.order_number,
+//         order_customer_id: row.order_customer_id,
+//         order_employee_id: row.order_employee_id,
+//         order_date: row.order_date,
+//         expected_delivery_date: row.expected_delivery_date,
+//         delivery_date: row.delivery_date,
+//         status: row.status,
+//         remarks: row.remarks,
+//         created_by: row.created_by,
+//         updated_by: row.updated_by,
+
+//         // customer: {
+//         //   id: row.customer_id,
+//         //   name: row.customer_name,
+//         //   phone: row.customer_phone,
+//         //   address: row.address,
+//         // },
+
+//         // 👤CUSTOMER
+//         customer: {
+//           id: row.customer_id || row.id, // depending on alias
+//           first_name: row.first_name,
+//           last_name: row.last_name,
+//           name: `${row.first_name} ${row.last_name || ""}`,
+//           phone: row.customer_phone,
+//           email: row.customer_email,
+//           address: row.customer_address,
+//         },
+
+//         employee: {
+//           id: row.employee_id,
+//           name: row.employee_name,
+//           phone: row.employee_phone,
+//           email: row.employee_email,
+//           address: row.employee_address,
+//         },
+
+//         summary: {
+//           total_items,
+//           grand_total,
+//         },
+
+//         products: productsRaw,
+//       },
+//     };
+
+//     // ✅ 5. RESPONSE
+//     res.json(response);
+//   } catch (err) {
+//     console.error("Get order error:", err);
+//     res.status(500).json({ message: err.message });
+//   }
+// };
+
+/* -- remove employee id -- */
+
 export const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // ✅ 1. ORDER + CUSTOMER + EMPLOYEE
+    /* ✅ 1. ORDER + CUSTOMER + USER (CREATED/UPDATED) */
     const [[row]] = await db.query(
       `
       SELECT
         o.id AS order_id,
         o.order_number,
-        o.customer_id AS order_customer_id,
-        o.employee_id AS order_employee_id,
+        o.customer_id,
         o.order_date,
         o.expected_delivery_date,
         o.delivery_date,
         o.status,
         o.remarks,
-        o.created_by,
-        o.updated_by,
 
-        -- 👤 CUSTOMER (FULL DATA)
-       -- c.*,
-       -- 👤 CUSTOMER (SAFE ALIASING)
+        o.created_by,
+        uc.username AS created_by_name,
+
+        o.updated_by,
+        uu.username AS updated_by_name,
+
+        o.created_at,
+        o.updated_at,
+
+        /* 👤 CUSTOMER */
         c.id AS customer_id,
         c.first_name,
         c.last_name,
         c.phone AS customer_phone,
         c.email AS customer_email,
-        c.address AS customer_address,
-        c.created_at AS customer_created_at,
-        c.updated_at AS customer_updated_at,
-
-        -- 👨‍💼 EMPLOYEE
-        e.id AS employee_id,
-        e.employee_name,
-        e.phone AS employee_phone,
-        e.email AS employee_email,
-        e.address AS employee_address
+        c.address AS customer_address
 
       FROM customerOrders o
-      JOIN customers c ON o.customer_id = c.id
-      JOIN employees_details e ON o.employee_id = e.id
+
+      JOIN customers c 
+        ON o.customer_id = c.id
+
+      LEFT JOIN users_roles uc 
+        ON o.created_by = uc.id
+
+      LEFT JOIN users_roles uu 
+        ON o.updated_by = uu.id
+
       WHERE o.id = ?
       `,
-      [id],
+      [id]
     );
 
-    // ❌ Not found
+    /* ❌ NOT FOUND */
     if (!row) {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    // ✅ 2. PRODUCTS
+    /* ✅ 2. PRODUCTS */
     const [productsRaw] = await db.query(
       `
       SELECT 
@@ -447,63 +863,52 @@ export const getOrderById = async (req, res) => {
         p.category,
         p.price AS rate,
 
-        -- 💰 CALCULATED TOTAL
         (op.quantity * p.price) AS total
 
       FROM customerOrderProducts op
       JOIN products p ON op.product_id = p.id
       WHERE op.order_id = ?
       `,
-      [id],
+      [id]
     );
 
-    // ✅ 3. CALCULATE SUMMARY
+    /* ✅ 3. SUMMARY */
     const grand_total = productsRaw.reduce(
       (sum, item) => sum + Number(item.total),
-      0,
+      0
     );
 
     const total_items = productsRaw.length;
 
-    // ✅ 4. FINAL TREE STRUCTURE
+    /* ✅ 4. FINAL STRUCTURE */
     const response = {
       order: {
         order_id: row.order_id,
         order_number: row.order_number,
-        order_customer_id: row.order_customer_id,
-        order_employee_id: row.order_employee_id,
         order_date: row.order_date,
         expected_delivery_date: row.expected_delivery_date,
         delivery_date: row.delivery_date,
         status: row.status,
         remarks: row.remarks,
-        created_by: row.created_by,
-        updated_by: row.updated_by,
 
-        // customer: {
-        //   id: row.customer_id,
-        //   name: row.customer_name,
-        //   phone: row.customer_phone,
-        //   address: row.address,
-        // },
+        created_by: {
+          id: row.created_by,
+          name: row.created_by_name,
+        },
 
-        // 👤CUSTOMER
+        updated_by: {
+          id: row.updated_by,
+          name: row.updated_by_name,
+        },
+
         customer: {
-          id: row.customer_id || row.id, // depending on alias
+          id: row.customer_id,
           first_name: row.first_name,
           last_name: row.last_name,
           name: `${row.first_name} ${row.last_name || ""}`,
           phone: row.customer_phone,
           email: row.customer_email,
           address: row.customer_address,
-        },
-
-        employee: {
-          id: row.employee_id,
-          name: row.employee_name,
-          phone: row.employee_phone,
-          email: row.employee_email,
-          address: row.employee_address,
         },
 
         summary: {
@@ -515,8 +920,9 @@ export const getOrderById = async (req, res) => {
       },
     };
 
-    // ✅ 5. RESPONSE
+    /* ✅ RESPONSE */
     res.json(response);
+
   } catch (err) {
     console.error("Get order error:", err);
     res.status(500).json({ message: err.message });
@@ -617,6 +1023,139 @@ export const getOrderById = async (req, res) => {
 //   }
 // };
 
+// export const updateOrder = async (req, res) => {
+//   const conn = await db.getConnection();
+
+//   try {
+//     await conn.beginTransaction();
+
+//     const { id } = req.params;
+//     const {
+//       customer_id,
+//       employee_id,
+//       expected_delivery_date,
+//       products,
+//       status,
+//       remarks,
+//     } = req.body;
+
+//     const userId = req.user?.id;
+//     if (!userId) throw new Error("Unauthorized");
+
+//     // 🔒 LOCK ORDER
+//     const [[order]] = await conn.query(
+//       `SELECT * FROM customerOrders WHERE id=? FOR UPDATE`,
+//       [id],
+//     );
+
+//     if (!order) throw new Error("Order not found");
+
+//     if (order.status === "BILLED") {
+//       throw new Error("Cannot update billed order");
+//     }
+
+//     if (order.status === "DELIVERED") {
+//       throw new Error("Cannot update delivered order");
+//     }
+
+//     // ✅ CHECK CUSTOMER (only if updating)
+//     if (customer_id) {
+//       const [[customer]] = await conn.query(
+//         `SELECT id FROM customers WHERE id=?`,
+//         [customer_id],
+//       );
+//       if (!customer) throw new Error("Customer not found");
+//     }
+
+//     // ✅ CHECK EMPLOYEE (only if updating)
+//     if (employee_id) {
+//       const [[employee]] = await conn.query(
+//         `SELECT id FROM employees_details WHERE id=?`,
+//         [employee_id],
+//       );
+//       if (!employee) throw new Error("Employee not found");
+//     }
+
+//     // 📦 HANDLE PRODUCTS (optional update)
+//     if (products) {
+//       if (!Array.isArray(products) || products.length === 0) {
+//         throw new Error("Products must be a non-empty array");
+//       }
+
+//       const values = [];
+
+//       for (const item of products) {
+//         const qty = Number(item.quantity);
+
+//         if (!item.product_id || isNaN(qty) || qty <= 0) {
+//           throw new Error("Invalid product data");
+//         }
+
+//         // ✅ CHECK PRODUCT
+//         const [[product]] = await conn.query(
+//           `SELECT id FROM products WHERE id=?`,
+//           [item.product_id],
+//         );
+
+//         if (!product) {
+//           throw new Error(`Product not found: ${item.product_id}`);
+//         }
+
+//         values.push([id, item.product_id, qty]);
+//       }
+
+//       // 🗑 DELETE OLD PRODUCTS
+//       await conn.query(`DELETE FROM customerOrderProducts WHERE order_id=?`, [
+//         id,
+//       ]);
+
+//       // 🚀 BULK INSERT NEW PRODUCTS
+//       await conn.query(
+//         `INSERT INTO customerOrderProducts (order_id, product_id, quantity)
+//          VALUES ?`,
+//         [values],
+//       );
+//     }
+
+//     // 📝 UPDATE ORDER (only changed fields)
+//     await conn.query(
+//       `
+//       UPDATE customerOrders 
+//       SET
+//         customer_id = COALESCE(?, customer_id),
+//         employee_id = COALESCE(?, employee_id),
+//         expected_delivery_date = COALESCE(?, expected_delivery_date),
+//         status = COALESCE(?, status),
+//         remarks = ?,
+//         updated_by = ?
+//       WHERE id = ?
+//       `,
+//       [
+//         customer_id || null,
+//         employee_id || null,
+//         expected_delivery_date || null,
+//         status || null,
+//         remarks ?? order.remarks,
+//         userId,
+//         id,
+//       ],
+//     );
+
+//     await conn.commit();
+
+//     res.json({
+//       message: "Order updated successfully",
+//     });
+//   } catch (err) {
+//     console.error("Update order error:", err.message);
+//     await conn.rollback();
+//     res.status(400).json({ message: err.message });
+//   } finally {
+//     conn.release();
+//   }
+// };
+
+/* -- remove employee_id from updateOrder -- */
 export const updateOrder = async (req, res) => {
   const conn = await db.getConnection();
 
@@ -626,7 +1165,6 @@ export const updateOrder = async (req, res) => {
     const { id } = req.params;
     const {
       customer_id,
-      employee_id,
       expected_delivery_date,
       products,
       status,
@@ -661,14 +1199,6 @@ export const updateOrder = async (req, res) => {
       if (!customer) throw new Error("Customer not found");
     }
 
-    // ✅ CHECK EMPLOYEE (only if updating)
-    if (employee_id) {
-      const [[employee]] = await conn.query(
-        `SELECT id FROM employees_details WHERE id=?`,
-        [employee_id],
-      );
-      if (!employee) throw new Error("Employee not found");
-    }
 
     // 📦 HANDLE PRODUCTS (optional update)
     if (products) {
@@ -717,7 +1247,6 @@ export const updateOrder = async (req, res) => {
       UPDATE customerOrders 
       SET
         customer_id = COALESCE(?, customer_id),
-        employee_id = COALESCE(?, employee_id),
         expected_delivery_date = COALESCE(?, expected_delivery_date),
         status = COALESCE(?, status),
         remarks = ?,
@@ -726,7 +1255,6 @@ export const updateOrder = async (req, res) => {
       `,
       [
         customer_id || null,
-        employee_id || null,
         expected_delivery_date || null,
         status || null,
         remarks ?? order.remarks,

@@ -27,7 +27,7 @@ export const seed = async () => {
   await seedChitAgentStaff(db);
   await seedChitCustomers(db);
 
-  await seedEmployeeDetails(db);
+  // await seedEmployeeDetails(db);
 
   await seedRoles(db);
 };

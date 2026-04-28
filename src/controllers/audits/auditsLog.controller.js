@@ -181,3 +181,103 @@ export const replayAudit = async (req, res) => {
     });
   }
 };
+
+export const getAllAudits = async (req, res) => {
+  try {
+    let {
+      page = 1,
+      limit = 50,
+      table,
+      action,
+      user,
+      from_date,
+      to_date,
+      search
+    } = req.query;
+
+    page = Number(page);
+    limit = Number(limit);
+
+    const offset = (page - 1) * limit;
+
+    let where = [];
+    let params = [];
+
+    /* ================= FILTERS ================= */
+
+    if (table) {
+      where.push("table_name = ?");
+      params.push(table);
+    }
+
+    if (action) {
+      where.push("action = ?");
+      params.push(action);
+    }
+
+    if (user) {
+      where.push("changed_by = ?");
+      params.push(user);
+    }
+
+    if (from_date) {
+      where.push("changed_at >= ?");
+      params.push(from_date);
+    }
+
+    if (to_date) {
+      where.push("changed_at <= ?");
+      params.push(to_date);
+    }
+
+    /* 🔍 search inside JSON (basic) */
+    if (search) {
+      where.push(
+        `(JSON_EXTRACT(old_data, '$') LIKE ? OR JSON_EXTRACT(new_data, '$') LIKE ?)`
+      );
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+
+    /* ================= DATA QUERY ================= */
+
+    const [rows] = await db.query(
+      `
+      SELECT *
+      FROM audit_logs
+      ${whereClause}
+      ORDER BY changed_at DESC
+      LIMIT ? OFFSET ?
+      `,
+      [...params, limit, offset]
+    );
+
+    /* ================= COUNT ================= */
+
+    const [[count]] = await db.query(
+      `
+      SELECT COUNT(*) as total
+      FROM audit_logs
+      ${whereClause}
+      `,
+      params
+    );
+
+    res.json({
+      success: true,
+      page,
+      limit,
+      total: count.total,
+      total_pages: Math.ceil(count.total / limit),
+      data: rows
+    });
+
+  } catch (err) {
+    console.error("Get audits error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};

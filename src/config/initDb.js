@@ -34,6 +34,8 @@ import { createReturnBillingTables } from "./database/billing/returnBilling.tabl
 import { createCompanyGstNumberTable } from "./database/billing/companygstNumber.tables.js";
 import { seed } from "../seed/seedindex.js";
 import { createOrderTables } from "./database/billing/order.tables.js";
+import { createUserBillAssignTable } from "./database/billing/userAssign.tables.js";
+import { createBillingAreasTable } from "./database/billing/areas.tables.js";
 
 export const initDatabase = async () => {
   try {
@@ -91,6 +93,10 @@ export const initDatabase = async () => {
     await createCompanyGstNumberTable(db);
 
     await createOrderTables(db);
+
+    await createUserBillAssignTable(db);
+
+    await createBillingAreasTable(db);
 
     // chit tables
 

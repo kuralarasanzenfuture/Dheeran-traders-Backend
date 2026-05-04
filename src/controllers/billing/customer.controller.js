@@ -1,4 +1,5 @@
 import db from "../../config/db.js";
+import { AuditLog } from "../../services/audit.service.js";
 
 /**
  * CREATE CUSTOMER
@@ -229,21 +230,103 @@ export const getCustomerById = async (req, res) => {
 
 // ------------------------------------hard delete---------------------------------------------
 
+// export const createCustomer = async (req, res, next) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     let { first_name, last_name, phone, email, address, remarks } = req.body;
+//     const userId = req.user?.id;
+
+//     if (!first_name || !phone) {
+//       throw new Error("First name and phone are required");
+//     }
+
+//     first_name = first_name.trim();
+//     last_name = last_name?.trim() || null;
+//     address = address?.trim() || null;
+
+//     if (!/^[0-9]{10,15}$/.test(phone)) {
+//       throw new Error("Invalid phone number");
+//     }
+
+//     if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+//       throw new Error("Invalid email");
+//     }
+
+//     // 🔍 duplicate check
+//     const [exists] = await connection.query(
+//       `SELECT id FROM customers WHERE phone = ? OR email = ?`,
+//       [phone, email || null],
+//     );
+
+//     if (exists.length) {
+//       throw new Error("Customer already exists");
+//     }
+
+//     const [result] = await connection.query(
+//       `INSERT INTO customers
+//        (first_name, last_name, phone, email, address)
+//        VALUES (?, ?, ?, ?, ?)`,
+//       [first_name, last_name, phone, email || null, address],
+//     );
+
+//     const id = result.insertId;
+
+//     // ✅ AUDIT
+//     await connection.query(
+//       `INSERT INTO audit_logs
+//        (table_name, record_id, action, new_data, changed_by, remarks)
+//        VALUES (?, ?, 'INSERT', ?, ?, ?)`,
+//       [
+//         "customers",
+//         id,
+//         JSON.stringify({ first_name, phone, email }),
+//         userId,
+//         remarks || "Customer created",
+//       ],
+//     );
+
+//     await connection.commit();
+
+//     res.status(201).json({ message: "Customer created", id });
+//   } catch (err) {
+//     await connection.rollback();
+//     console.log("create customer error", err);
+
+//     next(err);
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+/* - add place field - */
+
 export const createCustomer = async (req, res, next) => {
   const connection = await db.getConnection();
 
   try {
     await connection.beginTransaction();
 
-    let { first_name, last_name, phone, email, address, remarks } = req.body;
+    let { first_name, last_name, phone, email, place, address, remarks } =
+      req.body;
+
     const userId = req.user?.id;
+
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
 
     if (!first_name || !phone) {
       throw new Error("First name and phone are required");
     }
 
     first_name = first_name.trim();
+    phone = phone.trim();
+    email = email?.trim() || null;
     last_name = last_name?.trim() || null;
+    place = place?.trim() || null;
     address = address?.trim() || null;
 
     if (!/^[0-9]{10,15}$/.test(phone)) {
@@ -254,52 +337,141 @@ export const createCustomer = async (req, res, next) => {
       throw new Error("Invalid email");
     }
 
-    // 🔍 duplicate check
-    const [exists] = await connection.query(
-      `SELECT id FROM customers WHERE phone = ? OR email = ?`,
-      [phone, email || null],
+    // ✅ Check phone separately
+    const [phoneExists] = await connection.query(
+      `SELECT id FROM customers WHERE phone = ?`,
+      [phone],
     );
 
-    if (exists.length) {
-      throw new Error("Customer already exists");
+    if (phoneExists.length) {
+      throw new Error(`Customer with phone ${phone} already exists`);
+    }
+
+    // ✅ Check email separately (only if provided)
+    if (email) {
+      const [emailExists] = await connection.query(
+        `SELECT id FROM customers WHERE email = ?`,
+        [email],
+      );
+
+      if (emailExists.length) {
+        throw new Error(`Customer with email ${email} already exists`);
+      }
     }
 
     const [result] = await connection.query(
       `INSERT INTO customers
-       (first_name, last_name, phone, email, address)
-       VALUES (?, ?, ?, ?, ?)`,
-      [first_name, last_name, phone, email || null, address],
+       (first_name, last_name, phone, email, place, address, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [first_name, last_name, phone, email, place, address, userId],
     );
 
     const id = result.insertId;
 
-    // ✅ AUDIT
-    await connection.query(
-      `INSERT INTO audit_logs
-       (table_name, record_id, action, new_data, changed_by, remarks)
-       VALUES (?, ?, 'INSERT', ?, ?, ?)`,
-      [
-        "customers",
-        id,
-        JSON.stringify({ first_name, phone, email }),
-        userId,
-        remarks || "Customer created",
-      ],
-    );
+    await AuditLog({
+      connection,
+      table: "customers",
+      recordId: id,
+      action: "INSERT",
+      newData: { first_name, last_name, phone, email, place, address },
+      userId,
+      remarks: remarks || "Customer created",
+    });
 
     await connection.commit();
 
-    res.status(201).json({ message: "Customer created", id });
+    return res.status(201).json({ message: "Customer created", id });
   } catch (err) {
     await connection.rollback();
-    console.log("create customer error", err);
-    
-    next(err);
+    console.error("create customer error:", err);
+
+    return res.status(500).json({
+      message: err.message || "error creating customer",
+    });
   } finally {
     connection.release();
   }
 };
 
+// export const updateCustomer = async (req, res, next) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const { id } = req.params;
+//     const userId = req.user?.id;
+//     const { remarks } = req.body;
+
+//     const [[oldData]] = await connection.query(
+//       "SELECT * FROM customers WHERE id = ?",
+//       [id],
+//     );
+
+//     if (!oldData) throw new Error("Customer not found");
+
+//     let data = { ...req.body };
+
+//     if (data.phone && !/^[0-9]{10,15}$/.test(data.phone)) {
+//       throw new Error("Invalid phone");
+//     }
+
+//     if (data.email && !/^\S+@\S+\.\S+$/.test(data.email)) {
+//       throw new Error("Invalid email");
+//     }
+
+//     // 🚫 duplicate check
+//     if (data.phone) {
+//       const [exists] = await connection.query(
+//         "SELECT id FROM customers WHERE phone = ? AND id != ?",
+//         [data.phone, id],
+//       );
+//       if (exists.length) throw new Error("Phone already exists");
+//     }
+
+//     if (data.email) {
+//       const [exists] = await connection.query(
+//         "SELECT id FROM customers WHERE email = ? AND id != ?",
+//         [data.email, id],
+//       );
+//       if (exists.length) throw new Error("Email already exists");
+//     }
+
+//     await connection.query("UPDATE customers SET ? WHERE id = ?", [data, id]);
+
+//     const [[newData]] = await connection.query(
+//       "SELECT * FROM customers WHERE id = ?",
+//       [id],
+//     );
+
+//     await connection.query(
+//       `INSERT INTO audit_logs
+//        (table_name, record_id, action, old_data, new_data, changed_by, remarks)
+//        VALUES (?, ?, 'UPDATE', ?, ?, ?, ?)`,
+//       [
+//         "customers",
+//         id,
+//         JSON.stringify(oldData),
+//         JSON.stringify(newData),
+//         userId,
+//         remarks || "Customer updated",
+//       ],
+//     );
+
+//     await connection.commit();
+
+//     res.json({ message: "Updated", data: newData });
+//   } catch (err) {
+//     await connection.rollback();
+//     console.log("update customer error",err);
+
+//     next(err);
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+/* -- add place --*/
 export const updateCustomer = async (req, res, next) => {
   const connection = await db.getConnection();
 
@@ -310,6 +482,8 @@ export const updateCustomer = async (req, res, next) => {
     const userId = req.user?.id;
     const { remarks } = req.body;
 
+    if (!userId) throw new Error("User not authenticated");
+
     const [[oldData]] = await connection.query(
       "SELECT * FROM customers WHERE id = ?",
       [id],
@@ -317,8 +491,37 @@ export const updateCustomer = async (req, res, next) => {
 
     if (!oldData) throw new Error("Customer not found");
 
-    let data = { ...req.body };
+    // ✅ whitelist fields
+    const allowedFields = [
+      "first_name",
+      "last_name",
+      "phone",
+      "email",
+      "place",
+      "address",
+    ];
 
+    let data = {};
+
+    for (let key of allowedFields) {
+      if (req.body[key] !== undefined) {
+        data[key] = req.body[key];
+      }
+    }
+
+    // ✅ trim
+    if (data.phone) data.phone = data.phone.trim();
+    if (data.email) data.email = data.email.trim();
+    if (data.first_name) data.first_name = data.first_name.trim();
+    if (data.last_name) data.last_name = data.last_name.trim();
+    if (data.place) data.place = data.place.trim();
+    if (data.address) data.address = data.address.trim();
+
+    if (Object.keys(data).length === 0) {
+      throw new Error("No valid fields to update");
+    }
+
+    // ✅ validation
     if (data.phone && !/^[0-9]{10,15}$/.test(data.phone)) {
       throw new Error("Invalid phone");
     }
@@ -327,7 +530,7 @@ export const updateCustomer = async (req, res, next) => {
       throw new Error("Invalid email");
     }
 
-    // 🚫 duplicate check
+    // ✅ duplicate checks
     if (data.phone) {
       const [exists] = await connection.query(
         "SELECT id FROM customers WHERE phone = ? AND id != ?",
@@ -344,6 +547,20 @@ export const updateCustomer = async (req, res, next) => {
       if (exists.length) throw new Error("Email already exists");
     }
 
+    let isChanged = false;
+
+    for (let key in data) {
+      if (data[key] != oldData[key]) {
+        isChanged = true;
+        break;
+      }
+    }
+
+    if (!isChanged) {
+      await connection.rollback();
+      return res.json({ message: "No changes detected" });
+    }
+
     await connection.query("UPDATE customers SET ? WHERE id = ?", [data, id]);
 
     const [[newData]] = await connection.query(
@@ -351,28 +568,28 @@ export const updateCustomer = async (req, res, next) => {
       [id],
     );
 
-    await connection.query(
-      `INSERT INTO audit_logs
-       (table_name, record_id, action, old_data, new_data, changed_by, remarks)
-       VALUES (?, ?, 'UPDATE', ?, ?, ?, ?)`,
-      [
-        "customers",
-        id,
-        JSON.stringify(oldData),
-        JSON.stringify(newData),
-        userId,
-        remarks || "Customer updated",
-      ],
-    );
+    // ✅ audit log
+    await AuditLog({
+      connection,
+      table: "customers",
+      recordId: id,
+      action: "UPDATE",
+      oldData,
+      newData,
+      userId,
+      remarks: remarks || "Customer updated",
+    });
 
     await connection.commit();
 
-    res.json({ message: "Updated", data: newData });
+    return res.json({ message: "Updated", data: newData });
   } catch (err) {
     await connection.rollback();
-    console.log("update customer error",err);
-    
-    next(err);
+    console.error("update customer error", err);
+
+    return res.status(500).json({
+      message: err.message || "error updating customer",
+    });
   } finally {
     connection.release();
   }
@@ -401,26 +618,43 @@ export const deleteCustomer = async (req, res, next) => {
       [id],
     );
 
+    // if (hasBilling.count > 0) {
+    //   // throw new Error("Cannot delete customer with billing records");
+    //   return res.status(400).json({
+    //     message: "Cannot delete customer with billing records",
+    //   });
+    // }
+
     if (hasBilling.count > 0) {
-      // throw new Error("Cannot delete customer with billing records");
+      await connection.rollback(); // ✅ VERY IMPORTANT
       return res.status(400).json({
         message: "Cannot delete customer with billing records",
       });
     }
 
     // ✅ AUDIT FIRST
-    await connection.query(
-      `INSERT INTO audit_logs
-       (table_name, record_id, action, old_data, changed_by, remarks)
-       VALUES (?, ?, 'DELETE', ?, ?, ?)`,
-      [
-        "customers",
-        id,
-        JSON.stringify(oldData),
-        userId,
-        remarks || "Customer hard deleted",
-      ],
-    );
+    // await connection.query(
+    //   `INSERT INTO audit_logs
+    //    (table_name, record_id, action, old_data, changed_by, remarks)
+    //    VALUES (?, ?, 'DELETE', ?, ?, ?)`,
+    //   [
+    //     "customers",
+    //     id,
+    //     JSON.stringify(oldData),
+    //     userId,
+    //     remarks || "Customer hard deleted",
+    //   ],
+    // );
+
+    await AuditLog({
+      connection,
+      table: "customers",
+      recordId: id,
+      action: "DELETE",
+      oldData,
+      userId,
+      remarks: remarks || "Customer hard deleted",
+    });
 
     // 🔥 HARD DELETE
     await connection.query("DELETE FROM customers WHERE id = ?", [id]);
@@ -430,8 +664,8 @@ export const deleteCustomer = async (req, res, next) => {
     res.json({ message: "Customer permanently deleted" });
   } catch (err) {
     await connection.rollback();
-    console.error("DELETE CUSTOMER ERROR:", err)
-    next(err);
+    console.error("DELETE CUSTOMER ERROR:", err);
+    res.status(500).json({ message: err.message || "Error deleting customer" });
   } finally {
     connection.release();
   }

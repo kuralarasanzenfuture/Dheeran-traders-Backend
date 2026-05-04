@@ -1437,3 +1437,38 @@ export const updateOrderStatus = async (req, res) => {
     conn.release();
   }
 };
+
+export const getProductsWithAvailableStock = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        p.id,
+        p.product_name,
+        p.brand,
+        p.category,
+        p.price,
+        p.stock AS actual_stock,
+
+        COALESCE(SUM(op.quantity), 0) AS reserved_qty,
+
+        (p.stock - COALESCE(SUM(op.quantity), 0)) AS available_stock
+
+      FROM products p
+
+      LEFT JOIN customerOrderProducts op 
+        ON op.product_id = p.id
+
+      LEFT JOIN customerOrders o 
+        ON o.id = op.order_id
+        AND o.status IN ('PENDING','CONFIRMED')
+
+      GROUP BY p.id
+      ORDER BY p.id DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Stock fetch error:", err);
+    res.status(500).json({ message: err.message });
+  }
+};

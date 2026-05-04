@@ -1,6 +1,5 @@
 import db from "../../../config/db.js";
 
-
 // export const getAllCustomerBillings = async (req, res) => {
 //   try {
 //     const [billings] = await db.query(`
@@ -142,7 +141,7 @@ export const getAllCustomerBillings = async (req, res) => {
       FROM customerBillingProducts
       WHERE billing_id IN (?)
     `,
-      [billingIds]
+      [billingIds],
     );
 
     // ✅ 3. PAYMENTS
@@ -155,7 +154,7 @@ export const getAllCustomerBillings = async (req, res) => {
       WHERE billing_id IN (?)
       GROUP BY billing_id
     `,
-      [billingIds]
+      [billingIds],
     );
 
     // 👉 Convert payments to map for fast lookup
@@ -168,11 +167,9 @@ export const getAllCustomerBillings = async (req, res) => {
     const result = billings.map((b) => {
       const paymentSum = paymentMap[b.id] || 0;
 
-      const total_paid_amount =
-        Number(b.advance_paid || 0) + paymentSum;
+      const total_paid_amount = Number(b.advance_paid || 0) + paymentSum;
 
-      const total_pending_amount =
-        Number(b.grand_total) - total_paid_amount;
+      const total_pending_amount = Number(b.grand_total) - total_paid_amount;
 
       return {
         ...b,
@@ -186,7 +183,6 @@ export const getAllCustomerBillings = async (req, res) => {
     });
 
     res.json(result);
-
   } catch (err) {
     console.error("Billing fetch error:", err);
     res.status(500).json({ message: "Failed to fetch billing data" });
@@ -549,7 +545,7 @@ export const getNextInvoiceNumber = async (req, res) => {
       ORDER BY created_at DESC 
       LIMIT 1
       `,
-      [`INV/${financialYear}/%`]
+      [`INV/${financialYear}/%`],
     );
 
     let nextNumber = 1;
@@ -578,3 +574,134 @@ export const getNextInvoiceNumber = async (req, res) => {
   }
 };
 
+// export const getAssignedPendingBills = async (req, res) => {
+//   try {
+//     const user_id = req.user?.id;
+
+//     if (!user_id) throw new Error("Unauthorized");
+
+//     const [rows] = await db.query(
+//       `
+//       SELECT
+//         cb.id AS billing_id,
+//         cb.invoice_number,
+//         cb.invoice_date,
+
+//         cb.customer_id,
+//         c.first_name,
+//         c.last_name,
+//         c.phone,
+
+//         cb.grand_total,
+//         cb.advance_paid,
+//         cb.balance_due,
+//         cb.payment_status,
+
+//         cb.created_at
+
+//       FROM customerBilling cb
+
+//       JOIN customers c
+//         ON c.id = cb.customer_id
+
+//       JOIN user_bill_customer_assignments uca
+//         ON uca.customer_id = cb.customer_id
+
+//       WHERE uca.user_id = ?
+//         AND uca.is_active = TRUE
+
+//         AND cb.balance_due > 0
+//         AND cb.status = 'ACTIVE'
+
+//       ORDER BY cb.invoice_date ASC
+//       `,
+//       [user_id]
+//     );
+
+//     return res.json({
+//       success: true,
+//       count: rows.length,
+//       data: rows,
+//     });
+
+//   } catch (err) {
+//     return res.status(400).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// };
+
+export const getAssignedPendingBills = async (req, res) => {
+  try {
+    const user_id = req.user?.id;
+    const role = req.user?.role;
+
+    if (!user_id) throw new Error("Unauthorized");
+
+    let query = `
+      SELECT 
+        cb.id AS billing_id,
+        cb.invoice_number,
+        cb.invoice_date,
+
+        cb.customer_id,
+        c.first_name,
+        c.last_name,
+        c.phone,
+        c.email,
+        c.place,
+        c.address,
+
+
+        cb.grand_total,
+        cb.advance_paid,
+        cb.balance_due,
+        cb.payment_status,
+
+        cb.created_at
+
+      FROM customerBilling cb
+      JOIN customers c ON c.id = cb.customer_id
+    `;
+
+    let params = [];
+
+    // 🔥 USER → only assigned
+    if (role !== "ADMIN") {
+      query += `
+        JOIN user_bill_customer_assignments uca 
+          ON uca.customer_id = cb.customer_id
+
+        WHERE uca.user_id = ?
+          AND uca.is_active = TRUE
+      `;
+      params.push(user_id);
+    } else {
+      // 🔥 ADMIN → all customers
+      query += `
+        WHERE 1=1
+      `;
+    }
+
+    // 🔥 COMMON FILTER
+    query += `
+      AND cb.balance_due > 0
+      AND cb.status = 'ACTIVE'
+      ORDER BY cb.invoice_date ASC
+    `;
+
+    const [rows] = await db.query(query, params);
+
+    return res.json({
+      success: true,
+      count: rows.length,
+      data: rows,
+    });
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};

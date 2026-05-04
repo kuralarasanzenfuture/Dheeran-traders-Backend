@@ -1,4 +1,6 @@
+import e from "express";
 import db from "../../../config/db.js";
+import { AuditLog } from "../../../services/audit.service.js";
 // import { logAudit } from "../../../utils/auditLogger.js";
 /**
  * CREATE BRAND
@@ -39,7 +41,6 @@ import db from "../../../config/db.js";
 //   }
 // };
 
-
 /**
  * GET ALL BRANDS
  */
@@ -57,7 +58,7 @@ import db from "../../../config/db.js";
 // export const getBrands = async (req, res, next) => {
 //   try {
 //     const [rows] = await db.query(
-//       `SELECT * FROM brands 
+//       `SELECT * FROM brands
 //        WHERE deleted_at IS NULL
 //        ORDER BY id DESC`
 //     );
@@ -87,7 +88,6 @@ import db from "../../../config/db.js";
 //     next(err);
 //   }
 // };
-
 
 /**
  * UPDATE BRAND
@@ -123,9 +123,6 @@ import db from "../../../config/db.js";
 //     next(err);
 //   }
 // };
-
-
-
 
 /**
  * DELETE BRAND
@@ -182,7 +179,7 @@ import db from "../../../config/db.js";
 
 //     // 🔥 SOFT DELETE
 //     await connection.query(
-//       `UPDATE brands 
+//       `UPDATE brands
 //        SET deleted_at = NOW(), deleted_by = ?
 //        WHERE id = ?`,
 //       [userId, id]
@@ -190,7 +187,7 @@ import db from "../../../config/db.js";
 
 //     // 🔹 Audit log
 //     await connection.query(
-//       `INSERT INTO audit_logs 
+//       `INSERT INTO audit_logs
 //       (table_name, record_id, action, old_data, changed_by, remarks)
 //       VALUES (?, ?, 'DELETE', ?, ?, ?)`,
 //       [
@@ -215,7 +212,7 @@ import db from "../../../config/db.js";
 // };
 
 // -------------------------- soft delete------------------------------------------------------------
- // issue with soft delete and audit log - create eg: rice and delete rice, but again create rice, it will not create duplicate error
+// issue with soft delete and audit log - create eg: rice and delete rice, but again create rice, it will not create duplicate error
 // export const createBrand = async (req, res, next) => {
 //   const connection = await db.getConnection();
 
@@ -251,7 +248,7 @@ import db from "../../../config/db.js";
 
 //     // ✅ Audit log
 //     await connection.query(
-//       `INSERT INTO audit_logs 
+//       `INSERT INTO audit_logs
 //       (table_name, record_id, action, new_data, changed_by, remarks)
 //       VALUES (?, ?, 'INSERT', ?, ?, ?)`,
 //       [
@@ -339,8 +336,8 @@ import db from "../../../config/db.js";
 
 //     // 🔹 Update
 //     const [updateResult] = await connection.query(
-//       `UPDATE brands 
-//        SET name = ?, updated_by = ? 
+//       `UPDATE brands
+//        SET name = ?, updated_by = ?
 //        WHERE id = ? AND deleted_at IS NULL`,
 //       [name, userId, id]
 //     );
@@ -359,7 +356,7 @@ import db from "../../../config/db.js";
 
 //     // 🔹 Audit log
 //     await connection.query(
-//       `INSERT INTO audit_logs 
+//       `INSERT INTO audit_logs
 //       (table_name, record_id, action, old_data, new_data, changed_by, remarks)
 //       VALUES (?, ?, 'UPDATE', ?, ?, ?, ?)`,
 //       [
@@ -414,7 +411,7 @@ import db from "../../../config/db.js";
 //     const oldData = oldRows[0];
 
 //     const [updateResult] = await connection.query(
-//       `UPDATE brands 
+//       `UPDATE brands
 //        SET deleted_at = NOW(), deleted_by = ?
 //        WHERE id = ? AND deleted_at IS NULL`,
 //       [userId, id]
@@ -425,7 +422,7 @@ import db from "../../../config/db.js";
 //     }
 
 //     await connection.query(
-//       `INSERT INTO audit_logs 
+//       `INSERT INTO audit_logs
 //       (table_name, record_id, action, old_data, changed_by, remarks)
 //       VALUES (?, ?, 'DELETE', ?, ?, ?)`,
 //       [
@@ -453,7 +450,7 @@ import db from "../../../config/db.js";
 // export const getBrands = async (req, res, next) => {
 //   try {
 //     const [rows] = await db.query(
-//       `SELECT * FROM brands 
+//       `SELECT * FROM brands
 //        WHERE deleted_at IS NULL
 //        ORDER BY id DESC`
 //     );
@@ -468,7 +465,7 @@ import db from "../../../config/db.js";
 // export const getBrandById = async (req, res, next) => {
 //   try {
 //     const [rows] = await db.query(
-//       `SELECT * FROM brands 
+//       `SELECT * FROM brands
 //        WHERE id = ? AND deleted_at IS NULL`,
 //       [req.params.id]
 //     );
@@ -483,9 +480,7 @@ import db from "../../../config/db.js";
 //   }
 // };
 
-
 // ---------------------------------------hard delete-------------------------------------------------------
-
 
 export const createBrand = async (req, res, next) => {
   const connection = await db.getConnection();
@@ -512,12 +507,12 @@ export const createBrand = async (req, res, next) => {
     try {
       [result] = await connection.query(
         "INSERT INTO brands (name, created_by) VALUES (?, ?)",
-        [name, userId]
+        [name, userId],
       );
     } catch (err) {
       if (err.code === "ER_DUP_ENTRY") {
         return res.status(400).json({
-          message: "Brand already exists"
+          message: "Brand already exists",
         });
       }
       throw err;
@@ -525,26 +520,35 @@ export const createBrand = async (req, res, next) => {
 
     const brandId = result.insertId;
 
-    const [rows] = await connection.query(
-      "SELECT * FROM brands WHERE id = ?",
-      [brandId]
-    );
+    const [rows] = await connection.query("SELECT * FROM brands WHERE id = ?", [
+      brandId,
+    ]);
 
     const newData = rows[0];
 
     // ✅ Audit
-    await connection.query(
-      `INSERT INTO audit_logs 
-      (table_name, record_id, action, new_data, changed_by, remarks)
-      VALUES (?, ?, 'INSERT', ?, ?, ?)`,
-      [
-        "brands",
-        brandId,
-        JSON.stringify({ name: newData.name }),
-        userId,
-        remarks || "Brand created"
-      ]
-    );
+    // await connection.query(
+    //   `INSERT INTO audit_logs
+    //   (table_name, record_id, action, new_data, changed_by, remarks)
+    //   VALUES (?, ?, 'INSERT', ?, ?, ?)`,
+    //   [
+    //     "brands",
+    //     brandId,
+    //     JSON.stringify({ name: newData.name }),
+    //     userId,
+    //     remarks || "Brand created"
+    //   ]
+    // );
+
+    await AuditLog({
+      connection,
+      table: "brands",
+      recordId: brandId,
+      action: "INSERT",
+      newData: { name: newData.name },
+      userId: userId,
+      remarks: remarks || "Brand created",
+    });
 
     await connection.commit();
 
@@ -552,16 +556,116 @@ export const createBrand = async (req, res, next) => {
       message: "Brand created successfully",
       brand: newData,
     });
-
   } catch (err) {
     await connection.rollback();
-    next(err);
+    console.error(`Error creating brand: ${err.message}`);
+    res.status(500).json({ message: err.message || "Error creating brand" });
   } finally {
     connection.release();
   }
 };
 
-export const updateBrand = async (req, res, next) => {
+// export const updateBrand = async (req, res, next) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const { id } = req.params;
+//     let { name, remarks } = req.body;
+//     const userId = req.user?.id;
+
+//     if (!name || !name.trim()) {
+//       return res.status(400).json({ message: "Brand name is required" });
+//     }
+
+//     if (!userId) {
+//       return res.status(401).json({ message: "Unauthorized" });
+//     }
+
+//     name = name.trim().toLowerCase();
+
+//     const [oldRows] = await connection.query(
+//       "SELECT * FROM brands WHERE id = ?",
+//       [id],
+//     );
+
+//     if (!oldRows.length) {
+//       return res.status(404).json({ message: "Brand not found" });
+//     }
+
+//     const oldData = oldRows[0];
+
+//     if (oldData.name === name) {
+//       return res.status(400).json({
+//         message: "No changes detected",
+//       });
+//     }
+
+//     let updateResult;
+//     try {
+//       [updateResult] = await connection.query(
+//         "UPDATE brands SET name = ?, updated_by = ? WHERE id = ?",
+//         [name, userId, id],
+//       );
+//     } catch (err) {
+//       if (err.code === "ER_DUP_ENTRY") {
+//         return res.status(400).json({
+//           message: "Brand name already exists",
+//         });
+//       }
+//       throw err;
+//     }
+
+//     const [newRows] = await connection.query(
+//       "SELECT * FROM brands WHERE id = ?",
+//       [id],
+//     );
+
+//     const newData = newRows[0];
+
+//     // await connection.query(
+//     //   `INSERT INTO audit_logs
+//     //   (table_name, record_id, action, old_data, new_data, changed_by, remarks)
+//     //   VALUES (?, ?, 'UPDATE', ?, ?, ?, ?)`,
+//     //   [
+//     //     "brands",
+//     //     id,
+//     //     JSON.stringify(oldData),
+//     //     JSON.stringify(newData),
+//     //     userId,
+//     //     remarks || "Brand updated",
+//     //   ],
+//     // );
+
+//     await AuditLog({
+//       connection,
+//       table: "brands",
+//       recordId: id,
+//       action: "UPDATE",
+//       oldData: JSON.stringify(oldData),
+//       newData: JSON.stringify(newData),
+//       userId: userId,
+//       remarks: remarks || "Brand updated",
+//     });
+
+//     await connection.commit();
+
+//     res.json({
+//       message: "Brand updated successfully",
+//       brand: newData,
+//     });
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error(`Error updating brand: ${err.message}`);
+//     res.status(500).json({ message: err.message || "Error updating brand" });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+/* -- changed field */
+export const updateBrand = async (req, res) => {
   const connection = await db.getConnection();
 
   try {
@@ -571,6 +675,7 @@ export const updateBrand = async (req, res, next) => {
     let { name, remarks } = req.body;
     const userId = req.user?.id;
 
+    // ✅ validation
     if (!name || !name.trim()) {
       return res.status(400).json({ message: "Brand name is required" });
     }
@@ -579,77 +684,160 @@ export const updateBrand = async (req, res, next) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    name = name.trim().toLowerCase();
+    // ✅ normalize
+    name = name.trim().replace(/\s+/g, " ").toLowerCase();
 
-    const [oldRows] = await connection.query(
+    // ✅ get old data
+    const [[oldData]] = await connection.query(
       "SELECT * FROM brands WHERE id = ?",
       [id]
     );
 
-    if (!oldRows.length) {
+    if (!oldData) {
+      await connection.rollback();
       return res.status(404).json({ message: "Brand not found" });
     }
 
-    const oldData = oldRows[0];
+    // ✅ detect changes
+    let changedFields = {};
 
-    if (oldData.name === name) {
+    if (oldData.name !== name) {
+      changedFields.name = {
+        old: oldData.name,
+        new: name,
+      };
+    }
+
+    // ✅ no change case
+    if (Object.keys(changedFields).length === 0) {
+      await connection.rollback();
       return res.status(400).json({
-        message: "No changes detected"
+        message: "No changes detected",
       });
     }
 
-    let updateResult;
+    // ✅ update
     try {
-      [updateResult] = await connection.query(
+      await connection.query(
         "UPDATE brands SET name = ?, updated_by = ? WHERE id = ?",
         [name, userId, id]
       );
     } catch (err) {
       if (err.code === "ER_DUP_ENTRY") {
+        await connection.rollback();
         return res.status(400).json({
-          message: "Brand name already exists"
+          message: "Brand name already exists",
         });
       }
       throw err;
     }
 
-    const [newRows] = await connection.query(
+    // ✅ get updated row
+    const [[newData]] = await connection.query(
       "SELECT * FROM brands WHERE id = ?",
       [id]
     );
 
-    const newData = newRows[0];
-
-    await connection.query(
-      `INSERT INTO audit_logs 
-      (table_name, record_id, action, old_data, new_data, changed_by, remarks)
-      VALUES (?, ?, 'UPDATE', ?, ?, ?, ?)`,
-      [
-        "brands",
-        id,
-        JSON.stringify(oldData),
-        JSON.stringify(newData),
-        userId,
-        remarks || "Brand updated"
-      ]
-    );
+    // ✅ audit (only changed fields)
+    await AuditLog({
+      connection,
+      table: "brands",
+      recordId: id,
+      action: "UPDATE",
+      oldData,
+      newData: changedFields, // ✅ only changed fields
+      userId,
+      remarks: remarks || "Brand updated",
+    });
 
     await connection.commit();
 
-    res.json({
+    return res.json({
       message: "Brand updated successfully",
       brand: newData,
     });
 
   } catch (err) {
     await connection.rollback();
-    next(err);
+    console.error("UPDATE BRAND ERROR:", err);
+
+    return res.status(500).json({
+      message: err.message || "Error updating brand",
+    });
   } finally {
     connection.release();
   }
 };
 
-export const deleteBrand = async (req, res, next) => {
+// export const deleteBrand = async (req, res, next) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const { id } = req.params;
+//     const remarks = req.body?.remarks || "Brand deleted";
+//     const userId = req.user?.id;
+
+//     if (!userId) {
+//       return res.status(401).json({ message: "Unauthorized" });
+//     }
+
+//     // ✅ Get existing data
+//     const [rows] = await connection.query("SELECT * FROM brands WHERE id = ?", [
+//       id,
+//     ]);
+
+//     if (!rows.length) {
+//       return res.status(404).json({
+//         message: "Brand not found",
+//       });
+//     }
+
+//     const oldData = rows[0];
+
+//     // ✅ HARD DELETE
+//     const [result] = await connection.query("DELETE FROM brands WHERE id = ?", [
+//       id,
+//     ]);
+
+//     if (!result.affectedRows) {
+//       throw new Error("Delete failed");
+//     }
+
+//     // ✅ Audit log
+//     // await connection.query(
+//     //   `INSERT INTO audit_logs 
+//     //   (table_name, record_id, action, old_data, changed_by, remarks)
+//     //   VALUES (?, ?, 'DELETE', ?, ?, ?)`,
+//     //   ["brands", id, JSON.stringify(oldData), userId, remarks],
+//     // );
+
+//     await AuditLog({
+//       connection,
+//       table: "brands",
+//       recordId: id,
+//       action: "DELETE",
+//       oldData: oldData,
+//       userId: userId,
+//       remarks: remarks,
+//     });
+
+//     await connection.commit();
+
+//     res.json({
+//       message: "Brand deleted permanently",
+//     });
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error(`Error deleting brand: ${err.message}`);
+//     res.status(500).json({ message: err.message || "Error deleting brand" });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+export const deleteBrand = async (req, res) => {
   const connection = await db.getConnection();
 
   try {
@@ -660,24 +848,35 @@ export const deleteBrand = async (req, res, next) => {
     const userId = req.user?.id;
 
     if (!userId) {
+      await connection.rollback(); // ✅ FIX
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // ✅ Get existing data
-    const [rows] = await connection.query(
+    // ✅ get existing data
+    const [[oldData]] = await connection.query(
       "SELECT * FROM brands WHERE id = ?",
       [id]
     );
 
-    if (!rows.length) {
+    if (!oldData) {
+      await connection.rollback(); // ✅ FIX
       return res.status(404).json({
-        message: "Brand not found"
+        message: "Brand not found",
       });
     }
 
-    const oldData = rows[0];
+    // ✅ audit BEFORE delete
+    await AuditLog({
+      connection,
+      table: "brands",
+      recordId: id,
+      action: "DELETE",
+      oldData: oldData, // ✅ FIX
+      userId,
+      remarks,
+    });
 
-    // ✅ HARD DELETE
+    // ✅ delete
     const [result] = await connection.query(
       "DELETE FROM brands WHERE id = ?",
       [id]
@@ -687,29 +886,19 @@ export const deleteBrand = async (req, res, next) => {
       throw new Error("Delete failed");
     }
 
-    // ✅ Audit log
-    await connection.query(
-      `INSERT INTO audit_logs 
-      (table_name, record_id, action, old_data, changed_by, remarks)
-      VALUES (?, ?, 'DELETE', ?, ?, ?)`,
-      [
-        "brands",
-        id,
-        JSON.stringify(oldData),
-        userId,
-        remarks
-      ]
-    );
-
     await connection.commit();
 
-    res.json({
-      message: "Brand deleted permanently"
+    return res.json({
+      message: "Brand deleted permanently",
     });
 
   } catch (err) {
     await connection.rollback();
-    next(err);
+    console.error("DELETE BRAND ERROR:", err);
+
+    return res.status(500).json({
+      message: err.message || "Error deleting brand",
+    });
   } finally {
     connection.release();
   }
@@ -717,21 +906,19 @@ export const deleteBrand = async (req, res, next) => {
 
 export const getBrands = async (req, res, next) => {
   try {
-    const [rows] = await db.query(
-      "SELECT * FROM brands ORDER BY id DESC"
-    );
+    const [rows] = await db.query("SELECT * FROM brands ORDER BY id DESC");
     res.json(rows);
   } catch (err) {
-    next(err);
+    console.error(`Error fetching brands: ${err.message}`);
+    res.status(500).json({ message: err.message || "Error fetching brands" });
   }
 };
 
 export const getBrandById = async (req, res, next) => {
   try {
-    const [rows] = await db.query(
-      "SELECT * FROM brands WHERE id = ?",
-      [req.params.id]
-    );
+    const [rows] = await db.query("SELECT * FROM brands WHERE id = ?", [
+      req.params.id,
+    ]);
 
     if (!rows.length) {
       return res.status(404).json({ message: "Brand not found" });
@@ -739,6 +926,7 @@ export const getBrandById = async (req, res, next) => {
 
     res.json(rows[0]);
   } catch (err) {
-    next(err);
+    console.error(`Error fetching brand: ${err.message}`);
+    res.status(500).json({ message: err.message || "Error fetching brand" });
   }
 };

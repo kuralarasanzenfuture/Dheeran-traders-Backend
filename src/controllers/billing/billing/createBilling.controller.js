@@ -560,7 +560,7 @@ export const createCustomerBilling = async (req, res) => {
     //   ],
     // );
 
-    AuditLog({
+    await AuditLog({
       connection,
       table: "customerBilling",
       recordId: billing_id,

@@ -1,4 +1,6 @@
+import e from "express";
 import db from "../../config/db.js";
+import { AuditLog } from "../../services/audit.service.js";
 
 /**
  * CREATE VENDOR
@@ -290,7 +292,6 @@ export const getVendorById = async (req, res) => {
 //   }
 // };
 
-
 /**
  * DELETE VENDOR
  */
@@ -311,7 +312,6 @@ export const getVendorById = async (req, res) => {
 //   }
 // };
 
-
 // --------------------------------------hard delete-------------------------------------------------------
 
 export const createVendor = async (req, res, next) => {
@@ -330,7 +330,7 @@ export const createVendor = async (req, res, next) => {
       bank_account_number,
       bank_ifsc_code,
       bank_branch_name,
-      remarks
+      remarks,
     } = req.body;
 
     const userId = req.user?.id;
@@ -353,7 +353,7 @@ export const createVendor = async (req, res, next) => {
     // 🔍 Duplicate check
     const [exists] = await connection.query(
       "SELECT id FROM vendors WHERE phone = ? OR email = ?",
-      [phone, email]
+      [phone, email],
     );
 
     if (exists.length) {
@@ -376,43 +376,153 @@ export const createVendor = async (req, res, next) => {
         bank_account_number,
         bank_ifsc_code,
         bank_branch_name,
-        userId
-      ]
+        userId,
+      ],
     );
 
     const vendorId = result.insertId;
 
-    await connection.query(
-      `INSERT INTO audit_logs
-       (table_name, record_id, action, new_data, changed_by, remarks)
-       VALUES (?, ?, 'INSERT', ?, ?, ?)`,
-      [
-        "vendors",
-        vendorId,
-        JSON.stringify({ first_name, phone, email }),
-        userId,
-        remarks || "Vendor created"
-      ]
-    );
+    // await connection.query(
+    //   `INSERT INTO audit_logs
+    //    (table_name, record_id, action, new_data, changed_by, remarks)
+    //    VALUES (?, ?, 'INSERT', ?, ?, ?)`,
+    //   [
+    //     "vendors",
+    //     vendorId,
+    //     JSON.stringify({ first_name, phone, email }),
+    //     userId,
+    //     remarks || "Vendor created"
+    //   ]
+    // );
+
+    await AuditLog({
+      connection,
+      table: "vendors",
+      recordId: vendorId,
+      action: "INSERT",
+      newData: {
+        first_name,
+        last_name,
+        phone,
+        email,
+        address,
+        bank_name,
+        bank_account_number,
+        bank_ifsc_code,
+        bank_branch_name,
+      },
+      userId: userId,
+      remarks: "Vendor created",
+    });
 
     await connection.commit();
 
     res.status(201).json({
       message: "Vendor created",
-      id: vendorId
+      id: vendorId,
     });
-
   } catch (err) {
     await connection.rollback();
     console.error("CREATE VENDOR ERROR:", err);
-    next(err);
+    res.status(500).json({ message: err.message || "error creating vendor" });
   } finally {
     connection.release();
   }
 };
 
+// export const updateVendor = async (req, res, next) => {
+//   const connection = await db.getConnection();
 
-export const updateVendor = async (req, res, next) => {
+//   try {
+//     await connection.beginTransaction();
+
+//     const { id } = req.params;
+//     const userId = req.user?.id;
+//     const { remarks } = req.body;
+
+//     const [[oldData]] = await connection.query(
+//       "SELECT * FROM vendors WHERE id = ?",
+//       [id],
+//     );
+
+//     if (!oldData) throw new Error("Vendor not found");
+
+//     let data = { ...req.body };
+
+//     if (data.phone && !/^[0-9]{10,15}$/.test(data.phone)) {
+//       throw new Error("Invalid phone");
+//     }
+
+//     if (data.email && !/^\S+@\S+\.\S+$/.test(data.email)) {
+//       throw new Error("Invalid email");
+//     }
+
+//     // Duplicate checks
+//     if (data.phone) {
+//       const [exists] = await connection.query(
+//         "SELECT id FROM vendors WHERE phone = ? AND id != ?",
+//         [data.phone, id],
+//       );
+//       if (exists.length) throw new Error("Phone already exists");
+//     }
+
+//     if (data.email) {
+//       const [exists] = await connection.query(
+//         "SELECT id FROM vendors WHERE email = ? AND id != ?",
+//         [data.email, id],
+//       );
+//       if (exists.length) throw new Error("Email already exists");
+//     }
+
+//     await connection.query(
+//       "UPDATE vendors SET ?, updated_by = ? WHERE id = ?",
+//       [data, userId, id],
+//     );
+
+//     const [[newData]] = await connection.query(
+//       "SELECT * FROM vendors WHERE id = ?",
+//       [id],
+//     );
+
+//     // await connection.query(
+//     //   `INSERT INTO audit_logs
+//     //    (table_name, record_id, action, old_data, new_data, changed_by, remarks)
+//     //    VALUES (?, ?, 'UPDATE', ?, ?, ?, ?)`,
+//     //   [
+//     //     "vendors",
+//     //     id,
+//     //     JSON.stringify(oldData),
+//     //     JSON.stringify(newData),
+//     //     userId,
+//     //     remarks || "Vendor updated",
+//     //   ],
+//     // );
+
+//     await AuditLog({
+//       connection,
+//       table: "vendors",
+//       recordId: id,
+//       action: "UPDATE",
+//       oldData,
+//       newData,
+//       userId: userId,
+//       remarks: "Vendor updated",
+//     });
+
+//     await connection.commit();
+
+//     res.json({ message: "Vendor updated", vendor: newData });
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error("UPDATE VENDOR ERROR:", err);
+//     res.status(500).json({ message: err.message || "error updating vendor" });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+
+export const updateVendor = async (req, res) => {
   const connection = await db.getConnection();
 
   try {
@@ -422,30 +532,73 @@ export const updateVendor = async (req, res, next) => {
     const userId = req.user?.id;
     const { remarks } = req.body;
 
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
+
+    // ✅ Get existing vendor
     const [[oldData]] = await connection.query(
       "SELECT * FROM vendors WHERE id = ?",
       [id]
     );
 
-    if (!oldData) throw new Error("Vendor not found");
+    if (!oldData) {
+      throw new Error("Vendor not found");
+    }
 
-    let data = { ...req.body };
+    // ✅ Allowed fields (based on your table)
+    const allowedFields = [
+      "first_name",
+      "last_name",
+      "phone",
+      "email",
+      "address",
+      "bank_name",
+      "bank_account_number",
+      "bank_ifsc_code",
+      "bank_branch_name",
+    ];
 
+    let data = {};
+
+    // ✅ Filter only allowed fields
+    for (let key of allowedFields) {
+      if (req.body[key] !== undefined) {
+        data[key] = req.body[key];
+      }
+    }
+
+    // ✅ Trim values
+    for (let key in data) {
+      if (typeof data[key] === "string") {
+        data[key] = data[key].trim();
+        if (data[key] === "") data[key] = null;
+      }
+    }
+
+    // ✅ Check empty update
+    if (Object.keys(data).length === 0) {
+      throw new Error("No valid fields to update");
+    }
+
+    // ✅ Validation
     if (data.phone && !/^[0-9]{10,15}$/.test(data.phone)) {
-      throw new Error("Invalid phone");
+      throw new Error("Invalid phone number");
     }
 
     if (data.email && !/^\S+@\S+\.\S+$/.test(data.email)) {
       throw new Error("Invalid email");
     }
 
-    // Duplicate checks
+    // ✅ Duplicate checks
     if (data.phone) {
       const [exists] = await connection.query(
         "SELECT id FROM vendors WHERE phone = ? AND id != ?",
         [data.phone, id]
       );
-      if (exists.length) throw new Error("Phone already exists");
+      if (exists.length) {
+        throw new Error(`Phone ${data.phone} already exists`);
+      }
     }
 
     if (data.email) {
@@ -453,41 +606,71 @@ export const updateVendor = async (req, res, next) => {
         "SELECT id FROM vendors WHERE email = ? AND id != ?",
         [data.email, id]
       );
-      if (exists.length) throw new Error("Email already exists");
+      if (exists.length) {
+        throw new Error(`Email ${data.email} already exists`);
+      }
     }
 
+    // ✅ Detect changes
+    let isChanged = false;
+    let changedFields = {};
+
+    for (let key in data) {
+      if (data[key] != oldData[key]) {
+        isChanged = true;
+        changedFields[key] = {
+          old: oldData[key],
+          new: data[key],
+        };
+      }
+    }
+
+    if (!isChanged) {
+      await connection.rollback();
+      return res.json({ message: "No changes detected" });
+    }
+
+    // ✅ Add updated_by
+    data.updated_by = userId;
+
+    // ✅ Update query
     await connection.query(
-      "UPDATE vendors SET ?, updated_by = ? WHERE id = ?",
-      [data, userId, id]
+      "UPDATE vendors SET ? WHERE id = ?",
+      [data, id]
     );
 
+    // ✅ Fetch updated data
     const [[newData]] = await connection.query(
       "SELECT * FROM vendors WHERE id = ?",
       [id]
     );
 
-    await connection.query(
-      `INSERT INTO audit_logs
-       (table_name, record_id, action, old_data, new_data, changed_by, remarks)
-       VALUES (?, ?, 'UPDATE', ?, ?, ?, ?)`,
-      [
-        "vendors",
-        id,
-        JSON.stringify(oldData),
-        JSON.stringify(newData),
-        userId,
-        remarks || "Vendor updated"
-      ]
-    );
+    // ✅ Audit log
+    await AuditLog({
+      connection,
+      table: "vendors",
+      recordId: id,
+      action: "UPDATE",
+      oldData,
+      newData: changedFields,
+      userId,
+      remarks: remarks || "Vendor updated",
+    });
 
     await connection.commit();
 
-    res.json({ message: "Vendor updated", vendor: newData });
+    return res.json({
+      message: "Vendor updated",
+      vendor: newData,
+    });
 
   } catch (err) {
     await connection.rollback();
     console.error("UPDATE VENDOR ERROR:", err);
-    next(err);
+
+    return res.status(500).json({
+      message: err.message || "Error updating vendor",
+    });
   } finally {
     connection.release();
   }
@@ -505,7 +688,7 @@ export const deleteVendor = async (req, res, next) => {
 
     const [[oldData]] = await connection.query(
       "SELECT * FROM vendors WHERE id = ?",
-      [id]
+      [id],
     );
 
     if (!oldData) {
@@ -515,50 +698,58 @@ export const deleteVendor = async (req, res, next) => {
     // ✅ CHECK vendor_stocks (REAL DEPENDENCY)
     const [[stockUsage]] = await connection.query(
       "SELECT COUNT(*) as count FROM vendor_stocks WHERE vendor_id = ?",
-      [id]
+      [id],
     );
 
     if (stockUsage.count > 0) {
       return res.status(400).json({
-        message: "Cannot delete vendor with stock entries"
+        message: "Cannot delete vendor with stock entries",
       });
     }
 
     // OPTIONAL future table
-    const [[purchaseUsage]] = await connection.query(
-      "SELECT COUNT(*) as count FROM vendorPurchases WHERE vendor_id = ?",
-      [id]
-    ).catch(() => [[{ count: 0 }]]);
+    const [[purchaseUsage]] = await connection
+      .query(
+        "SELECT COUNT(*) as count FROM vendorPurchases WHERE vendor_id = ?",
+        [id],
+      )
+      .catch(() => [[{ count: 0 }]]);
 
     if (purchaseUsage.count > 0) {
       return res.status(400).json({
-        message: "Cannot delete vendor with purchase records"
+        message: "Cannot delete vendor with purchase records",
       });
     }
 
     // ✅ AUDIT
-    await connection.query(
-      `INSERT INTO audit_logs
-       (table_name, record_id, action, old_data, changed_by, remarks)
-       VALUES (?, ?, 'DELETE', ?, ?, ?)`,
-      [
-        "vendors",
-        id,
-        JSON.stringify(oldData),
-        userId,
-        remarks || "Vendor deleted"
-      ]
-    );
+    // await connection.query(
+    //   `INSERT INTO audit_logs
+    //    (table_name, record_id, action, old_data, changed_by, remarks)
+    //    VALUES (?, ?, 'DELETE', ?, ?, ?)`,
+    //   [
+    //     "vendors",
+    //     id,
+    //     JSON.stringify(oldData),
+    //     userId,
+    //     remarks || "Vendor deleted",
+    //   ],
+    // );
 
-    await connection.query(
-      "DELETE FROM vendors WHERE id = ?",
-      [id]
-    );
+    await AuditLog({
+      connection,
+      table: "vendors",
+      recordId: id,
+      action: "DELETE",
+      oldData,
+      userId: userId,
+      remarks: "Vendor deleted",
+    });
+
+    await connection.query("DELETE FROM vendors WHERE id = ?", [id]);
 
     await connection.commit();
 
     res.json({ message: "Vendor permanently deleted" });
-
   } catch (err) {
     await connection.rollback();
     console.error("DELETE VENDOR ERROR:", err);
@@ -567,4 +758,3 @@ export const deleteVendor = async (req, res, next) => {
     connection.release();
   }
 };
-

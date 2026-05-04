@@ -3,6 +3,7 @@ import {
   brandWiseReport,
   customerWiseReport,
   getAllCustomerBillings,
+  getAssignedPendingBills,
   getCustomerBillingById,
   getCustomerProductFullData,
   getHighestSellingBrand,
@@ -39,6 +40,8 @@ router.get("/products-by-date", productWiseReportByDate);
 router.get("/brands", brandWiseReport);
 router.get("/customers", customerWiseReport);
 router.get("/pending", getPendingBills);
+router.get("/assigned-pending-bills", getAssignedPendingBills);
+
 router.get("/last-invoice-number", getLastInvoiceNumber);
 router.get("/next-invoice-number", getNextInvoiceNumber);
 

@@ -215,7 +215,7 @@ export const protect = async (req, res, next) => {
 
     const [rows] = await db.query(
       "SELECT id, username, email, role FROM users WHERE id = ?",
-      [decoded.id]
+      [decoded.id],
     );
 
     if (!rows.length) {
@@ -233,15 +233,12 @@ export const protect = async (req, res, next) => {
   }
 };
 
-
 export const adminOnly = (req, res, next) => {
   if (req.user.role !== "admin") {
     return res.status(403).json({ message: "Admin access required" });
   }
   next();
 };
-
-
 
 // export const verifyToken = (req, res, next) => {
 
@@ -319,9 +316,43 @@ export const verifyToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     // console.log("AUTH HEADER:", authHeader);
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Unauthorized" });
+    // if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    //   return res.status(401).json({ message: "Unauthorized" });
+    // }
+
+    if (!authHeader) {
+      return res.status(401).json({
+        message: "Authorization header missing",
+      });
     }
+
+    if (!authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        message: "Invalid authorization format. Use: Bearer <token>",
+      });
+    }
+
+    // const parts = authHeader.split(" ");
+
+    // if (parts.length !== 2) {
+    //   return res.status(401).json({
+    //     message: "Invalid authorization format. Expected: Bearer <token>",
+    //   });
+    // }
+
+    // const [scheme, token] = parts;
+
+    // if (scheme !== "Bearer") {
+    //   return res.status(401).json({
+    //     message: `Invalid auth scheme '${scheme}'. Expected 'Bearer'`,
+    //   });
+    // }
+
+    // if (!token) {
+    //   return res.status(401).json({
+    //     message: "Token missing after Bearer",
+    //   });
+    // }
 
     const token = authHeader.split(" ")[1];
 
@@ -330,7 +361,7 @@ export const verifyToken = async (req, res, next) => {
     // 🔥 CHECK USER STATUS + TOKEN VERSION
     const [[user]] = await db.query(
       `SELECT status, token_version FROM users_roles WHERE id=?`,
-      [decoded.id]
+      [decoded.id],
     );
 
     if (!user) {
@@ -351,14 +382,12 @@ export const verifyToken = async (req, res, next) => {
 
     req.user = decoded;
     next();
-
   } catch (error) {
     return res.status(401).json({
       message: "Invalid or expired token",
     });
   }
 };
-
 
 // export const verifyToken = (req, res, next) => {
 //   const requestId = uuidv4(); // unique request tracking
@@ -430,7 +459,6 @@ export const verifyToken = async (req, res, next) => {
 //     });
 //   }
 // };
-
 
 // 🔹 1. Check cookie and Bearer
 // export const verifyToken = (req, res, next) => {

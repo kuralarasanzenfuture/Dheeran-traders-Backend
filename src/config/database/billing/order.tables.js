@@ -144,6 +144,8 @@ CREATE TABLE IF NOT EXISTS customerOrders (
 
   quantity INT NOT NULL,
 
+  total_amount DECIMAL(12,2) NOT NULL,
+
   /* ⚡ INDEXES */
   INDEX idx_order (order_id),
   INDEX idx_product (product_id),

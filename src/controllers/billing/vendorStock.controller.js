@@ -882,7 +882,7 @@ export const getVendorStockById = async (req, res) => {
 
 /*-------------------------------- implementation -stocks with inventory service-----------------------------------------------------*/
 
-export const createVendorStock = async (req, res) => {
+export const createVendorStock = async (req, res) => {  
   const conn = await db.getConnection();
 
   try {

@@ -127,7 +127,7 @@ import db from "../../../config/db.js";
 
 //     /* 🧾 CREATE ORDER */
 //     const [orderResult] = await conn.query(
-//       `INSERT INTO customerOrders 
+//       `INSERT INTO customerOrders
 //       (order_number, customer_id, customer_name, employee_id, order_date, expected_delivery_date, remarks, created_by)
 //       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 //       [
@@ -231,7 +231,7 @@ import db from "../../../config/db.js";
 
 //     /* 🧾 CREATE ORDER */
 //     const [orderResult] = await conn.query(
-//       `INSERT INTO customerOrders 
+//       `INSERT INTO customerOrders
 //       (order_number, customer_id, customer_name, order_date, expected_delivery_date, remarks, created_by)
 //       VALUES (?, ?, ?, ?, ?, ?, ?)`,
 //       [
@@ -302,12 +302,7 @@ export const createOrder = async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    const {
-      customer_id,
-      expected_delivery_date,
-      products,
-      remarks,
-    } = req.body;
+    const { customer_id, expected_delivery_date, products, remarks } = req.body;
 
     const userId = req.user?.id;
     if (!userId) throw new Error("Unauthorized");
@@ -329,7 +324,7 @@ export const createOrder = async (req, res) => {
       `SELECT id, CONCAT(first_name, ' ', COALESCE(last_name,'')) AS customer_name 
        FROM customers 
        WHERE id = ?`,
-      [customer_id]
+      [customer_id],
     );
 
     if (!customer) throw new Error("Customer not found");
@@ -350,7 +345,7 @@ export const createOrder = async (req, res) => {
         expected_delivery_date,
         remarks || null,
         userId,
-      ]
+      ],
     );
 
     const order_id = orderResult.insertId;
@@ -358,9 +353,15 @@ export const createOrder = async (req, res) => {
     /* 📦 VALIDATE PRODUCTS (OPTIMIZED) */
     const productIds = products.map((p) => p.product_id);
 
+    // 🔴 DUPLICATE CHECK
+    const uniqueIds = new Set(productIds);
+    if (uniqueIds.size !== productIds.length) {
+      throw new Error("Duplicate product_id not allowed");
+    }
+
     const [dbProducts] = await conn.query(
       `SELECT id FROM products WHERE id IN (?)`,
-      [productIds]
+      [productIds],
     );
 
     if (dbProducts.length !== productIds.length) {
@@ -370,21 +371,46 @@ export const createOrder = async (req, res) => {
     /* 📦 PREPARE BULK INSERT */
     const values = [];
 
+    // for (const item of products) {
+    //   const qty = Number(item.quantity);
+
+    //   if (!item.product_id || isNaN(qty) || qty <= 0) {
+    //     throw new Error("Invalid product data");
+    //   }
+
+    //   values.push([order_id, item.product_id, qty]);
+    // }
+
+    // /* 🚀 INSERT ORDER PRODUCTS */
+    // await conn.query(
+    //   `INSERT INTO customerOrderProducts (order_id, product_id, quantity)
+    //    VALUES ?`,
+    //   [values],
+    // );
+
     for (const item of products) {
       const qty = Number(item.quantity);
+      const total = Number(item.total_amount);
 
-      if (!item.product_id || isNaN(qty) || qty <= 0) {
+      if (
+        !item.product_id ||
+        isNaN(qty) ||
+        qty <= 0 ||
+        isNaN(total) ||
+        total <= 0
+      ) {
         throw new Error("Invalid product data");
       }
 
-      values.push([order_id, item.product_id, qty]);
+      values.push([order_id, item.product_id, qty, total]);
     }
 
     /* 🚀 INSERT ORDER PRODUCTS */
     await conn.query(
-      `INSERT INTO customerOrderProducts (order_id, product_id, quantity)
-       VALUES ?`,
-      [values]
+      `INSERT INTO customerOrderProducts 
+   (order_id, product_id, quantity, total_amount)
+   VALUES ?`,
+      [values],
     );
 
     /* ✅ COMMIT */
@@ -398,7 +424,6 @@ export const createOrder = async (req, res) => {
         order_number,
       },
     });
-
   } catch (err) {
     console.error("Create order error:", err.message);
 
@@ -408,7 +433,6 @@ export const createOrder = async (req, res) => {
       success: false,
       message: err.message,
     });
-
   } finally {
     conn.release();
   }
@@ -417,7 +441,7 @@ export const createOrder = async (req, res) => {
 // export const getOrders = async (req, res) => {
 //   try {
 //     const [rows] = await db.query(`
-//       SELECT 
+//       SELECT
 //         o.*,
 //         e.employee_name
 //       FROM customerOrders o
@@ -471,7 +495,6 @@ export const getOrders = async (req, res) => {
       count: rows.length,
       data: rows,
     });
-
   } catch (err) {
     console.error("Get orders error:", err.message);
     res.status(500).json({ message: err.message });
@@ -707,7 +730,7 @@ export const getOrders = async (req, res) => {
 //     // ✅ 2. PRODUCTS
 //     const [productsRaw] = await db.query(
 //       `
-//       SELECT 
+//       SELECT
 //         op.id AS order_product_id,
 //         op.product_id,
 //         op.quantity,
@@ -842,7 +865,7 @@ export const getOrderById = async (req, res) => {
 
       WHERE o.id = ?
       `,
-      [id]
+      [id],
     );
 
     /* ❌ NOT FOUND */
@@ -863,19 +886,25 @@ export const getOrderById = async (req, res) => {
         p.category,
         p.price AS rate,
 
-        (op.quantity * p.price) AS total
+        (op.quantity * p.price) AS total,
+        op.total_amount AS final_total
 
       FROM customerOrderProducts op
       JOIN products p ON op.product_id = p.id
       WHERE op.order_id = ?
       `,
-      [id]
+      [id],
     );
 
     /* ✅ 3. SUMMARY */
-    const grand_total = productsRaw.reduce(
+    const product_grand_total = productsRaw.reduce(
       (sum, item) => sum + Number(item.total),
-      0
+      0,
+    );
+
+    const product_final_total = productsRaw.reduce(
+      (sum, item) => sum + Number(item.final_total),
+      0,
     );
 
     const total_items = productsRaw.length;
@@ -913,7 +942,8 @@ export const getOrderById = async (req, res) => {
 
         summary: {
           total_items,
-          grand_total,
+          product_grand_total,
+          product_final_total,
         },
 
         products: productsRaw,
@@ -922,7 +952,6 @@ export const getOrderById = async (req, res) => {
 
     /* ✅ RESPONSE */
     res.json(response);
-
   } catch (err) {
     console.error("Get order error:", err);
     res.status(500).json({ message: err.message });
@@ -1120,7 +1149,7 @@ export const getOrderById = async (req, res) => {
 //     // 📝 UPDATE ORDER (only changed fields)
 //     await conn.query(
 //       `
-//       UPDATE customerOrders 
+//       UPDATE customerOrders
 //       SET
 //         customer_id = COALESCE(?, customer_id),
 //         employee_id = COALESCE(?, employee_id),
@@ -1163,13 +1192,8 @@ export const updateOrder = async (req, res) => {
     await conn.beginTransaction();
 
     const { id } = req.params;
-    const {
-      customer_id,
-      expected_delivery_date,
-      products,
-      status,
-      remarks,
-    } = req.body;
+    const { customer_id, expected_delivery_date, products, status, remarks } =
+      req.body;
 
     const userId = req.user?.id;
     if (!userId) throw new Error("Unauthorized");
@@ -1199,7 +1223,6 @@ export const updateOrder = async (req, res) => {
       if (!customer) throw new Error("Customer not found");
     }
 
-
     // 📦 HANDLE PRODUCTS (optional update)
     if (products) {
       if (!Array.isArray(products) || products.length === 0) {
@@ -1210,8 +1233,9 @@ export const updateOrder = async (req, res) => {
 
       for (const item of products) {
         const qty = Number(item.quantity);
+        const total = Number(item.total_amount);
 
-        if (!item.product_id || isNaN(qty) || qty <= 0) {
+        if (!item.product_id || isNaN(qty) || qty <= 0 || isNaN(total) || total <= 0) {
           throw new Error("Invalid product data");
         }
 
@@ -1225,7 +1249,7 @@ export const updateOrder = async (req, res) => {
           throw new Error(`Product not found: ${item.product_id}`);
         }
 
-        values.push([id, item.product_id, qty]);
+        values.push([id, item.product_id, qty , total]);
       }
 
       // 🗑 DELETE OLD PRODUCTS
@@ -1235,7 +1259,7 @@ export const updateOrder = async (req, res) => {
 
       // 🚀 BULK INSERT NEW PRODUCTS
       await conn.query(
-        `INSERT INTO customerOrderProducts (order_id, product_id, quantity)
+        `INSERT INTO customerOrderProducts (order_id, product_id, quantity, total_amount)
          VALUES ?`,
         [values],
       );

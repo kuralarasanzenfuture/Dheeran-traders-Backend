@@ -886,8 +886,12 @@ export const getOrderById = async (req, res) => {
         p.category,
         p.price AS rate,
 
+        /* 💰 CALCULATED TOTAL */
         (op.quantity * p.price) AS total,
-        op.total_amount AS final_total
+        op.total_amount AS final_total,
+        
+        (op.total_amount / op.quantity) AS final_unit_price,
+        p.price - (op.total_amount / op.quantity) AS discount
 
       FROM customerOrderProducts op
       JOIN products p ON op.product_id = p.id

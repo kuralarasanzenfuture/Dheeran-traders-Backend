@@ -36,14 +36,15 @@ import { seed } from "../seed/seedindex.js";
 import { createOrderTables } from "./database/billing/order.tables.js";
 import { createUserBillAssignTable } from "./database/billing/userAssign.tables.js";
 import { createBillingAreasTable } from "./database/billing/areas.tables.js";
+import { createTermsAndConditionsTable } from "./database/termsandconditions/termsAndConditions.tables.js";
 
 export const initDatabase = async () => {
   try {
     // 1️⃣ Create Database
-    await db.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME}\``);
+    // await db.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME}\``);
 
     // 2️⃣ Use Database
-    await db.query(`USE \`${process.env.DB_NAME}\``);
+    // await db.query(`USE \`${process.env.DB_NAME}\``);
 
     //     SET GLOBAL time_zone = '+05:30';
     // SET time_zone = '+05:30';
@@ -58,7 +59,7 @@ export const initDatabase = async () => {
     await createPermissionsTable(db);
 
     // 🔥 MUST be after tables
-    await createAdminTriggers(db);
+    // await createAdminTriggers(db);
 
     await createLoginHistoryTables(db);
 
@@ -123,6 +124,8 @@ export const initDatabase = async () => {
     await createUserAssignedCustomerTable(db);
 
     await createAuditsTable(db);
+
+    await createTermsAndConditionsTable(db);
 
     await seed(db);
 

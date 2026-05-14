@@ -23,7 +23,7 @@ import { deleteCustomerBilling } from "../../controllers/billing/billing/deleteB
 
 const router = express.Router();
 
-router.use(verifyToken);
+// router.use(verifyToken);
 
 /* CREATE INVOICE */
 router.post("/", createCustomerBilling);

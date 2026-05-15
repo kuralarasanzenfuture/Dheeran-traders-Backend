@@ -1,0 +1,548 @@
+import db from "../../../config/db.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { v4 as uuidv4 } from "uuid";
+
+const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
+const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+
+const getClientIp = (req) => {
+  return (
+    req.headers["x-forwarded-for"]?.split(",")[0] ||
+    req.socket?.remoteAddress ||
+    req.ip
+  );
+};
+
+export const loginUser = async (req, res) => {
+  const connection = await db.getConnection();
+
+  try {
+    let { login_id, password } = req.body;
+
+    if (!login_id || !password) {
+      return res.status(400).json({ message: "Required fields missing" });
+    }
+
+    login_id = login_id.trim().toLowerCase();
+
+    const ip = getClientIp(req);
+    const userAgent = req.headers["user-agent"] || "unknown";
+
+    /* =========================
+       1️⃣ GET USER + ROLE
+    ========================= */
+    const [users] = await connection.query(
+      `
+      SELECT 
+        u.id,
+        u.username,
+        u.email,
+        u.phone,
+        u.password,
+        u.role_id,
+        u.status,
+        u.token_version,
+        u.last_login_at,
+
+        r.role_name,
+        r.status AS role_status
+
+      FROM users_roles u
+      JOIN role_based r ON u.role_id = r.id
+
+      WHERE LOWER(u.username)=? 
+         OR LOWER(u.email)=? 
+         OR u.phone=?
+      `,
+      [login_id, login_id, login_id],
+    );
+
+    if (!users.length) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const user = users[0];
+
+    /* =========================
+       2️⃣ STATUS CHECKS
+    ========================= */
+    if (user.status !== "active") {
+      return res.status(403).json({ message: "User is inactive" });
+    }
+
+    if (user.role_status !== "active") {
+      return res.status(403).json({
+        message: "Your role is inactive. Contact admin.",
+      });
+    }
+
+    /* =========================
+       3️⃣ PASSWORD CHECK
+    ========================= */
+    const valid = await bcrypt.compare(password, user.password);
+
+    if (!valid) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    /* =========================
+       4️⃣ SUSPICIOUS LOGIN CHECK
+    ========================= */
+    const [lastLogins] = await connection.query(
+      `
+      SELECT ip_address, user_agent 
+      FROM login_history 
+      WHERE user_id=? 
+      ORDER BY login_time DESC 
+      LIMIT 5
+      `,
+      [user.id],
+    );
+
+    const isKnownDevice = lastLogins.some(
+      (l) => l.ip_address === ip && l.user_agent === userAgent,
+    );
+
+    const isSuspicious = !isKnownDevice && lastLogins.length >= 3;
+
+    /* =========================
+       5️⃣ LOAD PERMISSIONS
+    ========================= */
+    const [permRows] = await connection.query(
+      `
+      SELECT 
+        m.code AS module_code,
+        ma.action_code,
+        COALESCE(up.is_allowed, rp.is_allowed, FALSE) AS is_allowed
+      FROM modules m
+      JOIN module_actions ma ON ma.module_id = m.id
+
+      LEFT JOIN role_permissions rp 
+        ON rp.module_id = m.id 
+        AND rp.action_id = ma.id 
+        AND rp.role_id = ?
+
+      LEFT JOIN user_permissions up
+        ON up.module_id = m.id 
+        AND up.action_id = ma.id 
+        AND up.user_id = ?
+      `,
+      [user.role_id, user.id],
+    );
+
+    const permissions = {};
+    permRows.forEach((p) => {
+      permissions[`${p.module_code}_${p.action_code}`] = p.is_allowed === 1;
+    });
+
+    /* =========================
+       6️⃣ LIMIT ACTIVE SESSIONS (MAX 5)
+    ========================= */
+    const [activeSessions] = await connection.query(
+      `
+      SELECT id FROM user_refresh_tokens
+      WHERE user_id=? AND is_active=1
+      ORDER BY created_at ASC
+      `,
+      [user.id],
+    );
+
+    if (activeSessions.length >= 5) {
+      const oldest = activeSessions[0];
+
+      await connection.query(
+        `UPDATE user_refresh_tokens SET is_active=0 WHERE id=?`,
+        [oldest.id],
+      );
+    }
+
+    /* =========================
+       7️⃣ GENERATE TOKENS
+    ========================= */
+    const sessionId = uuidv4();
+
+    const accessToken = jwt.sign(
+      {
+        id: user.id,
+        role_id: user.role_id,
+        role: user.role_name,
+        session_id: sessionId,
+        token_version: user.token_version,
+        permissions,
+      },
+      ACCESS_SECRET,
+      { expiresIn: process.env.ACCESS_TOKEN_EXPIRES },
+    );
+
+    const refreshToken = jwt.sign(
+      {
+        id: user.id,
+        session_id: sessionId,
+      },
+      REFRESH_SECRET,
+      { expiresIn: process.env.REFRESH_TOKEN_EXPIRES },
+    );
+
+    await connection.beginTransaction();
+
+    /* =========================
+       8️⃣ STORE REFRESH TOKEN
+    ========================= */
+    await connection.query(
+      `
+      INSERT INTO user_refresh_tokens
+      (user_id, session_id, refresh_token, ip_address, user_agent, expires_at)
+      VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))
+      `,
+      [user.id, sessionId, refreshToken, ip, userAgent],
+    );
+
+    /* =========================
+       9️⃣ LOGIN HISTORY
+    ========================= */
+    await connection.query(
+      `
+      INSERT INTO login_history
+      (user_id, session_id, ip_address, user_agent)
+      VALUES (?, ?, ?, ?)
+      `,
+      [user.id, sessionId, ip, userAgent],
+    );
+
+    /* =========================
+       🔟 UPDATE LAST LOGIN
+    ========================= */
+    await connection.query(
+      `UPDATE users_roles SET last_login_at=NOW() WHERE id=?`,
+      [user.id],
+    );
+
+    await connection.commit();
+
+    /* =========================
+       🍪 SET COOKIE (IMPORTANT)
+    ========================= */
+    const isProduction = process.env.NODE_ENV === "production";
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "None" : "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.cookie("sessionId", sessionId, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "None" : "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    /* =========================
+       ✅ RESPONSE
+    ========================= */
+    return res.json({
+      message: "Login success",
+      accessToken,
+
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        role_id: user.role_id,
+        role_name: user.role_name,
+      },
+
+      permissions,
+      last_login_at: new Date(),
+      is_suspicious: isSuspicious,
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error("Login error:", error);
+
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
+  } finally {
+    connection.release();
+  }
+};
+
+export const refreshToken = async (req, res) => {
+  try {
+    // ✅ get from cookies (NOT body)
+    const refreshToken = req.cookies?.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Refresh token missing" });
+    }
+
+    // ✅ verify JWT
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+
+    // ✅ check DB
+    const [rows] = await db.query(
+      `SELECT * FROM user_refresh_tokens 
+       WHERE refresh_token=? AND is_active=1`,
+      [refreshToken],
+    );
+
+    if (!rows.length) {
+      return res.status(403).json({ message: "Invalid token" });
+    }
+
+    const tokenData = rows[0];
+
+    // ✅ session validation
+    if (tokenData.session_id !== decoded.session_id) {
+      return res.status(403).json({ message: "Session mismatch" });
+    }
+
+    // =========================
+    // 🔥 LOAD USER
+    // =========================
+    const [[user]] = await db.query(
+      `SELECT id, role_id, status, token_version 
+       FROM users_roles WHERE id=?`,
+      [decoded.id],
+    );
+
+    if (!user || user.status !== "active") {
+      return res.status(403).json({ message: "User inactive" });
+    }
+
+    // =========================
+    // 🔥 LOAD PERMISSIONS
+    // =========================
+    const [permRows] = await db.query(
+      `
+      SELECT 
+        m.code AS module_code,
+        ma.action_code,
+        COALESCE(up.is_allowed, rp.is_allowed, FALSE) AS is_allowed
+      FROM modules m
+      JOIN module_actions ma ON ma.module_id = m.id
+
+      LEFT JOIN role_permissions rp 
+        ON rp.module_id = m.id 
+        AND rp.action_id = ma.id 
+        AND rp.role_id = ?
+
+      LEFT JOIN user_permissions up
+        ON up.module_id = m.id 
+        AND up.action_id = ma.id 
+        AND up.user_id = ?
+      `,
+      [user.role_id, user.id],
+    );
+
+    const permissions = {};
+    permRows.forEach((p) => {
+      permissions[`${p.module_code}_${p.action_code}`] = p.is_allowed === 1;
+    });
+
+    // =========================
+    // 🔄 TOKEN ROTATION
+    // =========================
+    const newRefreshToken = jwt.sign(
+      { id: user.id, session_id: decoded.session_id },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: process.env.REFRESH_TOKEN_EXPIRES },
+    );
+
+    const newAccessToken = jwt.sign(
+      {
+        id: user.id,
+        role_id: user.role_id,
+        session_id: decoded.session_id,
+        token_version: user.token_version,
+        permissions,
+      },
+      process.env.JWT_ACCESS_SECRET,
+      { expiresIn: process.env.ACCESS_TOKEN_EXPIRES },
+    );
+
+    // =========================
+    // 🔄 DB ROTATION
+    // =========================
+    await db.query(
+      `UPDATE user_refresh_tokens 
+       SET is_active=0 
+       WHERE refresh_token=?`,
+      [refreshToken],
+    );
+
+    await db.query(
+      `INSERT INTO user_refresh_tokens
+       (user_id, session_id, refresh_token, ip_address, user_agent, expires_at)
+       VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
+      [
+        user.id,
+        decoded.session_id,
+        newRefreshToken,
+        req.ip,
+        req.headers["user-agent"] || "unknown",
+      ],
+    );
+
+    // =========================
+    // 🍪 SET COOKIE
+    // =========================
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true, // 🔥 prevents JS access
+      secure: false, // true in production (HTTPS)
+      sameSite: "Strict", // CSRF protection
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    // =========================
+    // ✅ RESPONSE
+    // =========================
+    res.json({
+      message: "Token refreshed",
+      accessToken: newAccessToken,
+      permissions,
+    });
+  } catch (err) {
+    console.error(err);
+
+    return res.status(403).json({
+      message: "Invalid or expired token",
+      error: err.message,
+    });
+  }
+};
+
+export const logoutUser = async (req, res) => {
+  const conn = await db.getConnection();
+
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+    const userId = req.user?.id;
+
+    if (!refreshToken) {
+      return res.status(400).json({ message: "No active session" });
+    }
+
+    const [rows] = await conn.query(
+      `SELECT * FROM user_refresh_tokens 
+       WHERE refresh_token=? AND is_active=1`,
+      [refreshToken],
+    );
+
+    if (!rows.length) {
+      return res.status(400).json({ message: "Invalid session" });
+    }
+
+    const tokenData = rows[0];
+
+    if (tokenData.user_id !== userId) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    await conn.beginTransaction();
+
+    // 🔥 deactivate session
+    await conn.query(
+      `UPDATE user_refresh_tokens 
+       SET is_active=0 
+       WHERE session_id=?`,
+      [tokenData.session_id],
+    );
+
+    // 🔥 mark logout
+    await conn.query(
+      `UPDATE login_history
+       SET logout_time=NOW()
+       WHERE session_id=? AND logout_time IS NULL`,
+      [tokenData.session_id],
+    );
+
+    await conn.commit();
+
+    // 🔥 CLEAR COOKIES (IMPORTANT)
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+
+    return res.json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (err) {
+    await conn.rollback();
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  } finally {
+    conn.release();
+  }
+};
+
+export const logoutAllDevices = async (req, res) => {
+  const conn = await db.getConnection();
+
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    await conn.beginTransaction();
+
+    // 🔥 1. Kill all refresh tokens
+    await conn.query(
+      `UPDATE user_refresh_tokens 
+       SET is_active=0 
+       WHERE user_id=?`,
+      [userId]
+    );
+
+    // 🔥 2. Invalidate all access tokens
+    await conn.query(
+      `UPDATE users_roles 
+       SET token_version = token_version + 1 
+       WHERE id=?`,
+      [userId]
+    );
+
+    // 📜 3. Update login history
+    await conn.query(
+      `UPDATE login_history
+       SET logout_time=NOW()
+       WHERE user_id=? AND logout_time IS NULL`,
+      [userId]
+    );
+
+    await conn.commit();
+
+    // 🔥 4. CLEAR COOKIES (VERY IMPORTANT)
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+
+    return res.json({
+      success: true,
+      message: "Logged out from all devices",
+    });
+
+  } catch (error) {
+    await conn.rollback();
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+
+  } finally {
+    conn.release();
+  }
+};

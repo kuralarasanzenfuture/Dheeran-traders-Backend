@@ -3,7 +3,7 @@ import express from "express";
 import { verifyToken } from "../../middlewares/auth.middleware.js";
 
 import { createUser } from "../../controllers/users/register.controller.js";
-import { loginUser } from "../../controllers/users/login.controller.js";
+// import { loginUser } from "../../controllers/users/login.controller.js";
 import {
   updateUser,
   updateUserStatus,
@@ -19,15 +19,27 @@ import {
   getUserById,
 } from "../../controllers/users/getusers.controller.js";
 
+// import {
+//   logoutAllDevices,
+//   logoutUser,
+// } from "../../controllers/users/logout.controller.js";
+// import {
+//   loginUser,
+//   logoutAllDevices,
+//   logoutUser,
+//   refreshToken,
+// } from "../../controllers/users/token/cookies.controller.js";
+
+// import { refreshToken } from "../../controllers/users/refreshToken.controller.js";
+
 import {
+  loginUser,
   logoutAllDevices,
   logoutUser,
-} from "../../controllers/users/logout.controller.js";
-
-import { refreshToken } from "../../controllers/users/refreshToken.controller.js";
+  refreshToken,
+} from "../../controllers/users/token/headerAndCookies.js";
 
 const router = express.Router();
-
 
 /* =========================
    AUTH

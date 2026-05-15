@@ -8,7 +8,9 @@ export const createTermsAndConditionsTable = async (db) => {
 
   is_active BOOLEAN DEFAULT TRUE,
 
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  UNIQUE KEY uq_terms_version (version)
 );
     `);
 
@@ -27,7 +29,9 @@ export const createTermsAndConditionsTable = async (db) => {
 
   FOREIGN KEY (terms_id) REFERENCES terms(id) ON DELETE CASCADE,
 
-  INDEX idx_terms (terms_id)
+  INDEX idx_terms (terms_id),
+
+  UNIQUE KEY uq_terms_point_order (terms_id, point_order)
 );
     `);
 
@@ -49,6 +53,4 @@ export const createTermsAndConditionsTable = async (db) => {
   FOREIGN KEY (terms_id) REFERENCES terms(id) ON DELETE CASCADE
 );
     `);
-
-
 };

@@ -1,0 +1,1755 @@
+{
+  "info": {
+    "_postman_id": "7017f95d-dc42-42cc-9292-5a61d859a014",
+    "name": "dheerantraders-roles",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "51069067",
+    "_collection_link": "https://go.postman.co/collection/51069067-7017f95d-dc42-42cc-9292-5a61d859a014?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "employee-details",
+      "item": [
+        {
+          "name": "createEmployee",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "",
+                "value": "",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "user_id",
+                  "value": "2",
+                  "type": "text",
+                  "uuid": "5e920a2e-4f16-4fb8-b4f1-84f2e42ad4c0"
+                },
+                {
+                  "key": "employee_name",
+                  "value": "Ravi Kumar",
+                  "type": "text",
+                  "uuid": "b9084aa9-db34-4987-82a1-07cca2e05d74"
+                },
+                {
+                  "key": "phone",
+                  "value": "9876543238",
+                  "type": "text",
+                  "uuid": "62275cb0-f12d-4d6b-9cd1-652332f77252"
+                },
+                {
+                  "key": "email",
+                  "value": "ravi@gmail.com",
+                  "type": "text",
+                  "uuid": "ada5fb66-21eb-45e8-b015-a7706e04c74b"
+                },
+                {
+                  "key": "date_of_birth",
+                  "value": "1998-05-10",
+                  "type": "text",
+                  "uuid": "7d816b51-6d2a-4e37-914f-a7afebf8bfc7"
+                },
+                {
+                  "key": "gender",
+                  "value": "male",
+                  "type": "text",
+                  "uuid": "a3280ce8-f4d8-418d-825e-43246ff2db42"
+                },
+                {
+                  "key": "address",
+                  "value": "Chennai",
+                  "type": "text",
+                  "uuid": "2308c53d-d268-432c-b625-d78b727ccbae"
+                },
+                {
+                  "key": "aadhar_number",
+                  "value": "223256889012",
+                  "type": "text",
+                  "uuid": "52e996c1-4382-46f7-9923-d409b282a5ae"
+                },
+                {
+                  "key": "pan_number",
+                  "value": "ABCGO1234F",
+                  "type": "text",
+                  "uuid": "1f620ebe-1e77-4b12-8c20-a1923ab99cde"
+                },
+                {
+                  "key": "bank_name",
+                  "value": "SBI",
+                  "type": "text",
+                  "uuid": "7e2ec11f-9156-42ad-a5d8-aa69ce7fe5c8"
+                },
+                {
+                  "key": "bank_account_number",
+                  "value": "12345678901",
+                  "type": "text",
+                  "uuid": "e11fbe89-bfb2-44fd-b9fa-b6517da30a25"
+                },
+                {
+                  "key": "ifsc_code",
+                  "value": "SBIN0000123",
+                  "type": "text",
+                  "uuid": "02b4abe5-ffc8-4666-964b-064ec34e8c1e"
+                },
+                {
+                  "key": "emergency_contact_name",
+                  "value": "Kumar",
+                  "type": "text",
+                  "uuid": "9c954966-242e-4895-9f9c-8a314547ea4c"
+                },
+                {
+                  "key": "emergency_contact_phone",
+                  "value": "9876540000",
+                  "type": "text",
+                  "uuid": "7b1c2680-b217-4a1d-bed9-6303af7d8733"
+                },
+                {
+                  "key": "emergency_contact_relation",
+                  "value": "Father",
+                  "type": "text",
+                  "uuid": "e0a49df6-02e9-4082-a02d-0e0e0643d44b"
+                },
+                {
+                  "key": "aadhar_front_image",
+                  "type": "file",
+                  "uuid": "9a2e6477-1542-4f39-a246-5382bf7f2fd6",
+                  "src": "postman-cloud:///1f129229-9cca-4ab0-aeeb-ed25de3a9a5f"
+                },
+                {
+                  "key": "bank_passbook_image",
+                  "type": "file",
+                  "uuid": "6acdd796-04f0-4fb9-a962-43591c82ad52",
+                  "src": "postman-cloud:///1f11e02f-a2e9-4240-bc8b-d879ee0e6381"
+                },
+                {
+                  "key": "marksheet_10_image",
+                  "type": "file",
+                  "uuid": "21c485fc-f867-4dc5-a091-2b9e87b54ce8",
+                  "src": "/C:/Users/zenfu/Downloads/screencapture-hpanel-hostinger-domain-dheerantraders2023-in-dns-2026-02-10-14_26_38.png"
+                },
+                {
+                  "key": "marksheet_12_image",
+                  "type": "file",
+                  "uuid": "25599cc2-1b61-43b4-a218-491cce4abff2",
+                  "src": "/C:/Users/zenfu/Downloads/WhatsApp Image 2026-03-04 at 10.01.41 AM.jpeg"
+                },
+                {
+                  "key": "college_marksheet_image",
+                  "type": "file",
+                  "uuid": "3d2113bc-d2d1-4324-aa12-aa3cf8aabaa1",
+                  "src": "/C:/Users/zenfu/Downloads/screencapture-localhost-5173-chit-customers-2026-03-04-11_04_56.png"
+                },
+                {
+                  "key": "pan_card_image",
+                  "type": "file",
+                  "uuid": "bd909c10-db4c-431a-9d11-8427c4c865ba",
+                  "src": "postman-cloud:///1f11e02f-a2e9-4240-bc8b-d879ee0e6381"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/employees-details",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "employees-details"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateEmployee",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "",
+                "value": "",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "user_id",
+                  "value": "2",
+                  "type": "text",
+                  "uuid": "5e920a2e-4f16-4fb8-b4f1-84f2e42ad4c0"
+                },
+                {
+                  "key": "employee_name",
+                  "value": "Ravi Kumar1",
+                  "type": "text",
+                  "uuid": "b9084aa9-db34-4987-82a1-07cca2e05d74"
+                },
+                {
+                  "key": "phone",
+                  "value": "9876543238",
+                  "type": "text",
+                  "uuid": "62275cb0-f12d-4d6b-9cd1-652332f77252"
+                },
+                {
+                  "key": "email",
+                  "value": "ravi@gmail.com",
+                  "type": "text",
+                  "uuid": "ada5fb66-21eb-45e8-b015-a7706e04c74b"
+                },
+                {
+                  "key": "date_of_birth",
+                  "value": "1998-05-10",
+                  "type": "text",
+                  "uuid": "7d816b51-6d2a-4e37-914f-a7afebf8bfc7"
+                },
+                {
+                  "key": "gender",
+                  "value": "male",
+                  "type": "text",
+                  "uuid": "a3280ce8-f4d8-418d-825e-43246ff2db42"
+                },
+                {
+                  "key": "address",
+                  "value": "Chennai",
+                  "type": "text",
+                  "uuid": "2308c53d-d268-432c-b625-d78b727ccbae"
+                },
+                {
+                  "key": "aadhar_number",
+                  "value": "223456789012",
+                  "type": "text",
+                  "uuid": "52e996c1-4382-46f7-9923-d409b282a5ae"
+                },
+                {
+                  "key": "pan_number",
+                  "value": "ABCDM1234J",
+                  "type": "text",
+                  "uuid": "1f620ebe-1e77-4b12-8c20-a1923ab99cde"
+                },
+                {
+                  "key": "bank_name",
+                  "value": "SBI",
+                  "type": "text",
+                  "uuid": "7e2ec11f-9156-42ad-a5d8-aa69ce7fe5c8"
+                },
+                {
+                  "key": "bank_account_number",
+                  "value": "12345678901",
+                  "type": "text",
+                  "uuid": "e11fbe89-bfb2-44fd-b9fa-b6517da30a25"
+                },
+                {
+                  "key": "ifsc_code",
+                  "value": "SBIN0000123",
+                  "type": "text",
+                  "uuid": "02b4abe5-ffc8-4666-964b-064ec34e8c1e"
+                },
+                {
+                  "key": "emergency_contact_name",
+                  "value": "Kumar",
+                  "type": "text",
+                  "uuid": "9c954966-242e-4895-9f9c-8a314547ea4c"
+                },
+                {
+                  "key": "emergency_contact_phone",
+                  "value": "9876540000",
+                  "type": "text",
+                  "uuid": "7b1c2680-b217-4a1d-bed9-6303af7d8733"
+                },
+                {
+                  "key": "emergency_contact_relation",
+                  "value": "Father",
+                  "type": "text",
+                  "uuid": "e0a49df6-02e9-4082-a02d-0e0e0643d44b"
+                },
+                {
+                  "key": "aadhar_front_image",
+                  "type": "file",
+                  "uuid": "9a2e6477-1542-4f39-a246-5382bf7f2fd6",
+                  "src": "postman-cloud:///1f129229-9cca-4ab0-aeeb-ed25de3a9a5f",
+                  "disabled": true
+                },
+                {
+                  "key": "bank_passbook_image",
+                  "type": "file",
+                  "uuid": "6acdd796-04f0-4fb9-a962-43591c82ad52",
+                  "src": "postman-cloud:///1f11e02f-a2e9-4240-bc8b-d879ee0e6381",
+                  "disabled": true
+                },
+                {
+                  "key": "marksheet_10_image",
+                  "type": "file",
+                  "uuid": "21c485fc-f867-4dc5-a091-2b9e87b54ce8",
+                  "src": "/C:/Users/zenfu/Downloads/screencapture-hpanel-hostinger-domain-dheerantraders2023-in-dns-2026-02-10-14_26_38.png",
+                  "disabled": true
+                },
+                {
+                  "key": "marksheet_12_image",
+                  "type": "file",
+                  "uuid": "25599cc2-1b61-43b4-a218-491cce4abff2",
+                  "src": "/C:/Users/zenfu/Downloads/WhatsApp Image 2026-03-04 at 10.01.41 AM.jpeg",
+                  "disabled": true
+                },
+                {
+                  "key": "college_marksheet_image",
+                  "type": "file",
+                  "uuid": "3d2113bc-d2d1-4324-aa12-aa3cf8aabaa1",
+                  "src": "/C:/Users/zenfu/Downloads/screencapture-localhost-5173-chit-customers-2026-03-04-11_04_56.png",
+                  "disabled": true
+                },
+                {
+                  "key": "pan_card_image",
+                  "type": "file",
+                  "uuid": "bd909c10-db4c-431a-9d11-8427c4c865ba",
+                  "src": "postman-cloud:///1f11e02f-a2e9-4240-bc8b-d879ee0e6381",
+                  "disabled": true
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/employees-details/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "employees-details",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getEmployees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/employees-details",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "employees-details"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteEmployee",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/employees-details/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "employees-details",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getEmployeeById",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/employees-details/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "employees-details",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getEmployeeByUserId",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "",
+                "value": "",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "user_id",
+                  "value": "1",
+                  "type": "text",
+                  "uuid": "5e920a2e-4f16-4fb8-b4f1-84f2e42ad4c0"
+                },
+                {
+                  "key": "employee_name",
+                  "value": "Ravi Kumar",
+                  "type": "text",
+                  "uuid": "b9084aa9-db34-4987-82a1-07cca2e05d74"
+                },
+                {
+                  "key": "phone",
+                  "value": "9876543238",
+                  "type": "text",
+                  "uuid": "62275cb0-f12d-4d6b-9cd1-652332f77252"
+                },
+                {
+                  "key": "email",
+                  "value": "ravi@gmail.com",
+                  "type": "text",
+                  "uuid": "ada5fb66-21eb-45e8-b015-a7706e04c74b"
+                },
+                {
+                  "key": "date_of_birth",
+                  "value": "1998-05-10",
+                  "type": "text",
+                  "uuid": "7d816b51-6d2a-4e37-914f-a7afebf8bfc7"
+                },
+                {
+                  "key": "gender",
+                  "value": "male",
+                  "type": "text",
+                  "uuid": "a3280ce8-f4d8-418d-825e-43246ff2db42"
+                },
+                {
+                  "key": "address",
+                  "value": "Chennai",
+                  "type": "text",
+                  "uuid": "2308c53d-d268-432c-b625-d78b727ccbae"
+                },
+                {
+                  "key": "aadhar_number",
+                  "value": "223256889012",
+                  "type": "text",
+                  "uuid": "52e996c1-4382-46f7-9923-d409b282a5ae"
+                },
+                {
+                  "key": "pan_number",
+                  "value": "ABCGO1234F",
+                  "type": "text",
+                  "uuid": "1f620ebe-1e77-4b12-8c20-a1923ab99cde"
+                },
+                {
+                  "key": "bank_name",
+                  "value": "SBI",
+                  "type": "text",
+                  "uuid": "7e2ec11f-9156-42ad-a5d8-aa69ce7fe5c8"
+                },
+                {
+                  "key": "bank_account_number",
+                  "value": "12345678901",
+                  "type": "text",
+                  "uuid": "e11fbe89-bfb2-44fd-b9fa-b6517da30a25"
+                },
+                {
+                  "key": "ifsc_code",
+                  "value": "SBIN0000123",
+                  "type": "text",
+                  "uuid": "02b4abe5-ffc8-4666-964b-064ec34e8c1e"
+                },
+                {
+                  "key": "emergency_contact_name",
+                  "value": "Kumar",
+                  "type": "text",
+                  "uuid": "9c954966-242e-4895-9f9c-8a314547ea4c"
+                },
+                {
+                  "key": "emergency_contact_phone",
+                  "value": "9876540000",
+                  "type": "text",
+                  "uuid": "7b1c2680-b217-4a1d-bed9-6303af7d8733"
+                },
+                {
+                  "key": "emergency_contact_relation",
+                  "value": "Father",
+                  "type": "text",
+                  "uuid": "e0a49df6-02e9-4082-a02d-0e0e0643d44b"
+                },
+                {
+                  "key": "aadhar_front_image",
+                  "type": "file",
+                  "uuid": "9a2e6477-1542-4f39-a246-5382bf7f2fd6",
+                  "src": "postman-cloud:///1f129229-9cca-4ab0-aeeb-ed25de3a9a5f"
+                },
+                {
+                  "key": "bank_passbook_image",
+                  "type": "file",
+                  "uuid": "6acdd796-04f0-4fb9-a962-43591c82ad52",
+                  "src": "postman-cloud:///1f11e02f-a2e9-4240-bc8b-d879ee0e6381"
+                },
+                {
+                  "key": "marksheet_10_image",
+                  "type": "file",
+                  "uuid": "21c485fc-f867-4dc5-a091-2b9e87b54ce8",
+                  "src": "/C:/Users/zenfu/Downloads/screencapture-hpanel-hostinger-domain-dheerantraders2023-in-dns-2026-02-10-14_26_38.png"
+                },
+                {
+                  "key": "marksheet_12_image",
+                  "type": "file",
+                  "uuid": "25599cc2-1b61-43b4-a218-491cce4abff2",
+                  "src": "/C:/Users/zenfu/Downloads/WhatsApp Image 2026-03-04 at 10.01.41 AM.jpeg"
+                },
+                {
+                  "key": "college_marksheet_image",
+                  "type": "file",
+                  "uuid": "3d2113bc-d2d1-4324-aa12-aa3cf8aabaa1",
+                  "src": "/C:/Users/zenfu/Downloads/screencapture-localhost-5173-chit-customers-2026-03-04-11_04_56.png"
+                },
+                {
+                  "key": "pan_card_image",
+                  "type": "file",
+                  "uuid": "bd909c10-db4c-431a-9d11-8427c4c865ba",
+                  "src": "postman-cloud:///1f11e02f-a2e9-4240-bc8b-d879ee0e6381"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/employees-details/user/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "employees-details",
+                "user",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "user_roles",
+      "item": [
+        {
+          "name": "createUser",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"username\": \"testuser\",\r\n//   \"email\": \"test@gmail.com\",\r\n//   \"phone\": \"9876545720\",\r\n//   \"password\": \"123456\",\r\n//   \"role_id\": 2\r\n// }\r\n\r\n{\r\n  \"username\": \"kural\",\r\n//   \"email\": \"test@gmail.com\",\r\n  \"phone\": \"6380564945\",\r\n  \"password\": \"123456\",\r\n  \"role_id\": 2\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users-roles/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users-roles",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "loginUser",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-client-type",
+                "value": "mobile",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"username\": \"TESTUSER\",\r\n//   \"password\": \"123456\"\r\n// }\r\n\r\n// {\r\n//   \"username\": \"admin\",\r\n//   \"password\": \"admin\"\r\n// }\r\n\r\n// {\r\n//  \"login_id\": \"ADMIN@gmail.com\",\r\n//  \"password\": \"admin\"\r\n// }\r\n\r\n{\r\n \"login_id\": \"ADMIN\",\r\n \"password\": \"admin\"\r\n}\r\n\r\n// {\r\n//  \"login_id\": \"6380564945\",\r\n//  \"password\": \"123456\"\r\n// }\r\n\r\n// {\r\n//  \"login_id\": \"kuralarasan\",\r\n//  \"password\": \"123456\"\r\n// }\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users-roles/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users-roles",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "logoutUser",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzczMTI3MDEyLCJleHAiOjE3NzM3MzE4MTJ9.nQZwxYAzmdAmBC3b3UsiiqRNYY2uPZh0kcFN0GIqAU4",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"user_id\": 2\r\n// }\r\n\r\n{\r\n \"refreshToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Miwic2Vzc2lvbl9pZCI6ImIxYTkwMDE0LTBlNzgtNDg0Ny1iMmEyLTFkNDIwZDMzYjZkNyIsImlhdCI6MTc3NDQzODM5MSwiZXhwIjoxNzc1MDQzMTkxfQ.RVA4HyjT75qvvGkeIWH9iyjAI3TeyanqV6bWNKhG2Ws\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users-roles/logout",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users-roles",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteUser",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/users-roles/delete/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users-roles",
+                "delete",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "refreshToken",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"refreshToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Miwic2Vzc2lvbl9pZCI6IjEzZTdhNGNhLWNlNzYtNDg2Yi1hY2QzLTYxNzlkNTQ3ZTRjMiIsImlhdCI6MTc3NTUzNDYzOSwiZXhwIjoxNzc2MTM5NDM5fQ.gygDhKfc3ippbC0WfZoewYCVmWoCFp7d1H9pN8lMNvk\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users-roles/refresh-token",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users-roles",
+                "refresh-token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "logoutAllDevices",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZV9pZCI6MSwiaWF0IjoxNzczMTI2ODA1LCJleHAiOjE3NzMxMjc3MDV9.jZdCHGl_n3dqsmwAjYzF98EIdndS_RH0tgXSFXaVbeU",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"user_id\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users-roles/logout-all",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users-roles",
+                "logout-all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "check-email",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users-roles/check-email/admin@gmail.com",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users-roles",
+                "check-email",
+                "admin@gmail.com"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "check-username",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/users-roles/check-username/admin",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users-roles",
+                "check-username",
+                "admin"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "check-phone",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/users-roles/check-phone/9876543210",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users-roles",
+                "check-phone",
+                "9876543210"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateUser",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"username\": \"john_updated\",\r\n//   \"email\": \"john_updated@gmail.com\",\r\n//   \"phone\": \"9876543210\",\r\n//   \"password\": \"newpassword123\",\r\n//   \"role_id\": 1,\r\n// //   \"status\": \"inactive\"\r\n//   \"status\": \"active\"\r\n// }\r\n\r\n{\r\n  \"username\": \"admin\",\r\n  \"email\": \"admin@gmail.com\",\r\n  \"phone\": null,\r\n  \"password\":\"admin\",\r\n  \"role_id\": 1,\r\n  \"status\": \"active\"\r\n}\r\n\r\n// {\r\n//   \"username\": \"admin_updated\",\r\n//   \"email\": \"admin@gmail.com\",\r\n//   \"phone\": \"9999999999\",\r\n//   \"password\": \"admin123\"\r\n// }\r\n\r\n// {\r\n//   \"role_id\": 2,\r\n//   \"status\": \"inactive\"\r\n// }\r\n\r\n// {\r\n//   \"username\": \"existing_user\",\r\n//   \"role_id\": 2\r\n// }\r\n\r\n// {\r\n//   \"username\": \"test\",\r\n//   \"email\": \"existing@gmail.com\",\r\n//   \"role_id\": 2\r\n// }\r\n\r\n// {\r\n//   \"username\": \"test\",\r\n//   \"phone\": \"abc123\",\r\n//   \"role_id\": 2\r\n// }\r\n\r\n// {\r\n//   \"username\": \"test\",\r\n//   \"role_id\": 999\r\n// }\r\n\r\n// {\r\n//   \"username\": \"newadmin\",\r\n//   \"role_id\": 1\r\n// }\r\n\r\n// {\r\n//   \"username\": \"admin\",\r\n//   \"status\": \"inactive\"\r\n// }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users-roles/update/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users-roles",
+                "update",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllUsers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/users-roles",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users-roles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getUserById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/users-roles/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users-roles",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateUserStatus",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "\r\n{\r\n    \"status\":\"inactive\"\r\n}\r\n\r\n// {\r\n//     \"status\":\"active\"\r\n// }\r\n"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users-roles/status/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users-roles",
+                "status",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getMyProfile",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/users-roles/me",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users-roles",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "role-based",
+      "item": [
+        {
+          "name": "createRole",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"role_name\": \"ADMIN\"\r\n// }\r\n\r\n// ADMIN\r\n// STAFF\r\n// ACCOUNTANT\r\n// SUPER_ADMIN\r\n\r\n// admin ❌\r\n// Admin ❌\r\n// admin123 ❌\r\n// Admin@ ❌\r\n\r\n{\r\n  \"role_name\": \"STAFf\",\r\n  \"role_description\":\"staff\"\r\n}\r\n\r\n// {\r\n//   \"role_name\": \"STAFf_neww\",\r\n//   \"role_description\":\"staff\"\r\n// }\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/roles",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "roles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllRoles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/roles",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "roles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateRole",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"role_name\": \"SUPER_ADMIN\"\r\n// }\r\n\r\n\r\n{\r\n  \"role_name\": \"STAFf_new\",\r\n  \"role_description\":\"staff\",\r\n//   \"status\":\"inactive\"\r\n  \"status\":\"active\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/roles/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "roles",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteRole",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/roles/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "roles",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateRoleStatus",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//     \"status\":\"inactive\"\r\n// }\r\n\r\n{\r\n    \"status\":\"active\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/roles/status/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "roles",
+                "status",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "role-permission",
+      "item": [
+        {
+          "name": "getRolePermissionsById",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/role-permissions/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "role-permissions",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "saveRolePermissions",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"role_id\": 2,\r\n//   \"permissions\": [\r\n//     { \"module_id\": 1, \"action_id\": 1, \"is_allowed\": true }\r\n//     // { \"module_id\": 10, \"action_id\": 23, \"is_allowed\": true },\r\n//     // { \"module_id\": 9, \"action_id\": 22, \"is_allowed\": true }\r\n    \r\n//   ]\r\n// }\r\n\r\n{\r\n    \"role_id\": 2,\r\n    \"permissions\": [\r\n        {\r\n            \"module_id\": 1,\r\n            \"action_id\": 1,\r\n            \"is_allowed\": false\r\n        }\r\n    ]\r\n}\r\n\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/role-permissions/save",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "role-permissions",
+                "save"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updatetogglePermission",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"role_id\": 2,\r\n  \"module_id\": 10,\r\n  \"action_id\": 24,\r\n  \"is_allowed\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/role-permissions/toggle",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "role-permissions",
+                "toggle"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "user-permission",
+      "item": [
+        {
+          "name": "saveUserPermissions",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"user_id\": 2,\r\n  \"permissions\": [\r\n    { \"module_id\": 1, \"action_id\": 1, \"is_allowed\": true }\r\n    // { \"module_id\": 10, \"action_id\": 2, \"is_allowed\": false }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/user-permissions/save",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "user-permissions",
+                "save"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getUserPermissionsById",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/user-permissions/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "user-permissions",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updatetoggleUserPermission",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"user_id\": 2,\r\n  \"module_id\": 10,\r\n  \"action_id\": 1,\r\n  \"is_allowed\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/user-permissions/toggle",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "user-permissions",
+                "toggle"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getUserOverridePermissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/user-permissions/2/overrides",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "user-permissions",
+                "2",
+                "overrides"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "modules",
+      "item": [
+        {
+          "name": "getAllModulesTree",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Miwicm9sZV9pZCI6Miwic2Vzc2lvbl9pZCI6Ijc3NThmM2ZmLTJhMzYtNDhlZC04ZDBlLTU4OWJiMGE4NTE0YyIsInRva2VuX3ZlcnNpb24iOjAsInBlcm1pc3Npb25zIjp7IkJJTExJTkdfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX0VESVQiOmZhbHNlLCJCSUxMSU5HX1ZJRVciOmZhbHNlLCJCSUxMSU5HX0FDQ09VTlRTX0NSRUFURSI6ZmFsc2UsIkJJTExJTkdfQUNDT1VOVFNfREVMRVRFIjpmYWxzZSwiQklMTElOR19BQ0NPVU5UU19FRElUIjpmYWxzZSwiQklMTElOR19BQ0NPVU5UU19WSUVXIjpmYWxzZSwiQklMTElOR19BRERfUFJPRFVDVF9DUkVBVEUiOmZhbHNlLCJCSUxMSU5HX0FERF9QUk9EVUNUX0RFTEVURSI6ZmFsc2UsIkJJTExJTkdfQUREX1BST0RVQ1RfRURJVCI6ZmFsc2UsIkJJTExJTkdfQUREX1BST0RVQ1RfVklFVyI6ZmFsc2UsIkJJTExJTkdfQlJBTkRfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19CUkFORF9ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX0JSQU5EX0VESVQiOmZhbHNlLCJCSUxMSU5HX0JSQU5EX1ZJRVciOmZhbHNlLCJCSUxMSU5HX0NBVEVHT1JJRVNfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19DQVRFR09SSUVTX0RFTEVURSI6ZmFsc2UsIkJJTExJTkdfQ0FURUdPUklFU19FRElUIjpmYWxzZSwiQklMTElOR19DQVRFR09SSUVTX1ZJRVciOmZhbHNlLCJCSUxMSU5HX0NVUlJFTlRfU1RPQ0tfVklFVyI6ZmFsc2UsIkJJTExJTkdfQ1VTVE9NRVJTX0NSRUFURSI6ZmFsc2UsIkJJTExJTkdfQ1VTVE9NRVJTX0RFTEVURSI6ZmFsc2UsIkJJTExJTkdfQ1VTVE9NRVJTX0VESVQiOmZhbHNlLCJCSUxMSU5HX0NVU1RPTUVSU19WSUVXIjpmYWxzZSwiQklMTElOR19EQVNIQk9BUkRfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19EQVNIQk9BUkRfREVMRVRFIjpmYWxzZSwiQklMTElOR19EQVNIQk9BUkRfRURJVCI6ZmFsc2UsIkJJTExJTkdfREFTSEJPQVJEX1ZJRVciOmZhbHNlLCJCSUxMSU5HX0VNUExPWUVFU19DUkVBVEUiOmZhbHNlLCJCSUxMSU5HX0VNUExPWUVFU19ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX0VNUExPWUVFU19FRElUIjpmYWxzZSwiQklMTElOR19FTVBMT1lFRVNfVklFVyI6ZmFsc2UsIkJJTExJTkdfUEVORElOR19DUkVBVEUiOmZhbHNlLCJCSUxMSU5HX1BFTkRJTkdfREVMRVRFIjpmYWxzZSwiQklMTElOR19QRU5ESU5HX0VESVQiOmZhbHNlLCJCSUxMSU5HX1BFTkRJTkdfVklFVyI6ZmFsc2UsIkJJTExJTkdfUFJPRFVDVFNfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19QUk9EVUNUU19ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX1BST0RVQ1RTX0VESVQiOmZhbHNlLCJCSUxMSU5HX1BST0RVQ1RTX1ZJRVciOmZhbHNlLCJCSUxMSU5HX1FVQU5USVRZX0VESVQiOmZhbHNlLCJCSUxMSU5HX1FVQU5USVRZX1ZJRVciOmZhbHNlLCJCSUxMSU5HX1JFUE9SVF9FWFBPUlQiOmZhbHNlLCJCSUxMSU5HX1JFUE9SVF9WSUVXIjpmYWxzZSwiQklMTElOR19SRVBPUlRfQ1VTVE9NRVJfRVhQT1JUIjpmYWxzZSwiQklMTElOR19SRVBPUlRfQ1VTVE9NRVJfVklFVyI6ZmFsc2UsIkJJTExJTkdfUkVQT1JUX0RBSUxZX0VYUE9SVCI6ZmFsc2UsIkJJTExJTkdfUkVQT1JUX0RBSUxZX1ZJRVciOmZhbHNlLCJCSUxMSU5HX1JFUE9SVF9QUk9EVUNUX0VYUE9SVCI6ZmFsc2UsIkJJTExJTkdfUkVQT1JUX1BST0RVQ1RfVklFVyI6ZmFsc2UsIkJJTExJTkdfU1RPQ0tfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19TVE9DS19ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX1NUT0NLX0VESVQiOmZhbHNlLCJCSUxMSU5HX1NUT0NLX1ZJRVciOmZhbHNlLCJCSUxMSU5HX1ZFTkRPUlNfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19WRU5ET1JTX0RFTEVURSI6ZmFsc2UsIkJJTExJTkdfVkVORE9SU19FRElUIjpmYWxzZSwiQklMTElOR19WRU5ET1JTX1ZJRVciOmZhbHNlLCJDSElUX0NSRUFURSI6ZmFsc2UsIkNISVRfREVMRVRFIjpmYWxzZSwiQ0hJVF9FRElUIjpmYWxzZSwiQ0hJVF9WSUVXIjpmYWxzZSwiQ0hJVF9BR0VOVF9DUkVBVEUiOmZhbHNlLCJDSElUX0FHRU5UX0RFTEVURSI6ZmFsc2UsIkNISVRfQUdFTlRfRURJVCI6ZmFsc2UsIkNISVRfQUdFTlRfVklFVyI6ZmFsc2UsIkNISVRfQkFUQ0hFU19DUkVBVEUiOmZhbHNlLCJDSElUX0JBVENIRVNfREVMRVRFIjpmYWxzZSwiQ0hJVF9CQVRDSEVTX0VESVQiOmZhbHNlLCJDSElUX0JBVENIRVNfVklFVyI6ZmFsc2UsIkNISVRfQ09MTEVDVElPTlNfQ1JFQVRFIjpmYWxzZSwiQ0hJVF9DT0xMRUNUSU9OU19WSUVXIjpmYWxzZSwiQ0hJVF9DVVNUT01FUlNfQ1JFQVRFIjpmYWxzZSwiQ0hJVF9DVVNUT01FUlNfREVMRVRFIjpmYWxzZSwiQ0hJVF9DVVNUT01FUlNfRURJVCI6ZmFsc2UsIkNISVRfQ1VTVE9NRVJTX1ZJRVciOmZhbHNlLCJDSElUX0RBU0hCT0FSRF9DUkVBVEUiOmZhbHNlLCJDSElUX0RBU0hCT0FSRF9ERUxFVEUiOmZhbHNlLCJDSElUX0RBU0hCT0FSRF9FRElUIjpmYWxzZSwiQ0hJVF9EQVNIQk9BUkRfVklFVyI6ZmFsc2UsIkNISVRfUExBTlNfQ1JFQVRFIjpmYWxzZSwiQ0hJVF9QTEFOU19ERUxFVEUiOmZhbHNlLCJDSElUX1BMQU5TX0VESVQiOmZhbHNlLCJDSElUX1BMQU5TX1ZJRVciOmZhbHNlfSwiaWF0IjoxNzc0ODQzODc4LCJleHAiOjE3NzQ4NDQ3Nzh9.Lqu9E5PHDpn4PC1ikquK2BFxfkfu1iBHew-Kh1g3nF8",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/modules/tree",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "modules",
+                "tree"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllModulesFlat",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Miwicm9sZV9pZCI6Miwic2Vzc2lvbl9pZCI6Ijc3NThmM2ZmLTJhMzYtNDhlZC04ZDBlLTU4OWJiMGE4NTE0YyIsInRva2VuX3ZlcnNpb24iOjAsInBlcm1pc3Npb25zIjp7IkJJTExJTkdfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX0VESVQiOmZhbHNlLCJCSUxMSU5HX1ZJRVciOmZhbHNlLCJCSUxMSU5HX0FDQ09VTlRTX0NSRUFURSI6ZmFsc2UsIkJJTExJTkdfQUNDT1VOVFNfREVMRVRFIjpmYWxzZSwiQklMTElOR19BQ0NPVU5UU19FRElUIjpmYWxzZSwiQklMTElOR19BQ0NPVU5UU19WSUVXIjpmYWxzZSwiQklMTElOR19BRERfUFJPRFVDVF9DUkVBVEUiOmZhbHNlLCJCSUxMSU5HX0FERF9QUk9EVUNUX0RFTEVURSI6ZmFsc2UsIkJJTExJTkdfQUREX1BST0RVQ1RfRURJVCI6ZmFsc2UsIkJJTExJTkdfQUREX1BST0RVQ1RfVklFVyI6ZmFsc2UsIkJJTExJTkdfQlJBTkRfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19CUkFORF9ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX0JSQU5EX0VESVQiOmZhbHNlLCJCSUxMSU5HX0JSQU5EX1ZJRVciOmZhbHNlLCJCSUxMSU5HX0NBVEVHT1JJRVNfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19DQVRFR09SSUVTX0RFTEVURSI6ZmFsc2UsIkJJTExJTkdfQ0FURUdPUklFU19FRElUIjpmYWxzZSwiQklMTElOR19DQVRFR09SSUVTX1ZJRVciOmZhbHNlLCJCSUxMSU5HX0NVUlJFTlRfU1RPQ0tfVklFVyI6ZmFsc2UsIkJJTExJTkdfQ1VTVE9NRVJTX0NSRUFURSI6ZmFsc2UsIkJJTExJTkdfQ1VTVE9NRVJTX0RFTEVURSI6ZmFsc2UsIkJJTExJTkdfQ1VTVE9NRVJTX0VESVQiOmZhbHNlLCJCSUxMSU5HX0NVU1RPTUVSU19WSUVXIjpmYWxzZSwiQklMTElOR19EQVNIQk9BUkRfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19EQVNIQk9BUkRfREVMRVRFIjpmYWxzZSwiQklMTElOR19EQVNIQk9BUkRfRURJVCI6ZmFsc2UsIkJJTExJTkdfREFTSEJPQVJEX1ZJRVciOmZhbHNlLCJCSUxMSU5HX0VNUExPWUVFU19DUkVBVEUiOmZhbHNlLCJCSUxMSU5HX0VNUExPWUVFU19ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX0VNUExPWUVFU19FRElUIjpmYWxzZSwiQklMTElOR19FTVBMT1lFRVNfVklFVyI6ZmFsc2UsIkJJTExJTkdfUEVORElOR19DUkVBVEUiOmZhbHNlLCJCSUxMSU5HX1BFTkRJTkdfREVMRVRFIjpmYWxzZSwiQklMTElOR19QRU5ESU5HX0VESVQiOmZhbHNlLCJCSUxMSU5HX1BFTkRJTkdfVklFVyI6ZmFsc2UsIkJJTExJTkdfUFJPRFVDVFNfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19QUk9EVUNUU19ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX1BST0RVQ1RTX0VESVQiOmZhbHNlLCJCSUxMSU5HX1BST0RVQ1RTX1ZJRVciOmZhbHNlLCJCSUxMSU5HX1FVQU5USVRZX0VESVQiOmZhbHNlLCJCSUxMSU5HX1FVQU5USVRZX1ZJRVciOmZhbHNlLCJCSUxMSU5HX1JFUE9SVF9FWFBPUlQiOmZhbHNlLCJCSUxMSU5HX1JFUE9SVF9WSUVXIjpmYWxzZSwiQklMTElOR19SRVBPUlRfQ1VTVE9NRVJfRVhQT1JUIjpmYWxzZSwiQklMTElOR19SRVBPUlRfQ1VTVE9NRVJfVklFVyI6ZmFsc2UsIkJJTExJTkdfUkVQT1JUX0RBSUxZX0VYUE9SVCI6ZmFsc2UsIkJJTExJTkdfUkVQT1JUX0RBSUxZX1ZJRVciOmZhbHNlLCJCSUxMSU5HX1JFUE9SVF9QUk9EVUNUX0VYUE9SVCI6ZmFsc2UsIkJJTExJTkdfUkVQT1JUX1BST0RVQ1RfVklFVyI6ZmFsc2UsIkJJTExJTkdfU1RPQ0tfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19TVE9DS19ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX1NUT0NLX0VESVQiOmZhbHNlLCJCSUxMSU5HX1NUT0NLX1ZJRVciOmZhbHNlLCJCSUxMSU5HX1ZFTkRPUlNfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19WRU5ET1JTX0RFTEVURSI6ZmFsc2UsIkJJTExJTkdfVkVORE9SU19FRElUIjpmYWxzZSwiQklMTElOR19WRU5ET1JTX1ZJRVciOmZhbHNlLCJDSElUX0NSRUFURSI6ZmFsc2UsIkNISVRfREVMRVRFIjpmYWxzZSwiQ0hJVF9FRElUIjpmYWxzZSwiQ0hJVF9WSUVXIjpmYWxzZSwiQ0hJVF9BR0VOVF9DUkVBVEUiOmZhbHNlLCJDSElUX0FHRU5UX0RFTEVURSI6ZmFsc2UsIkNISVRfQUdFTlRfRURJVCI6ZmFsc2UsIkNISVRfQUdFTlRfVklFVyI6ZmFsc2UsIkNISVRfQkFUQ0hFU19DUkVBVEUiOmZhbHNlLCJDSElUX0JBVENIRVNfREVMRVRFIjpmYWxzZSwiQ0hJVF9CQVRDSEVTX0VESVQiOmZhbHNlLCJDSElUX0JBVENIRVNfVklFVyI6ZmFsc2UsIkNISVRfQ09MTEVDVElPTlNfQ1JFQVRFIjpmYWxzZSwiQ0hJVF9DT0xMRUNUSU9OU19WSUVXIjpmYWxzZSwiQ0hJVF9DVVNUT01FUlNfQ1JFQVRFIjpmYWxzZSwiQ0hJVF9DVVNUT01FUlNfREVMRVRFIjpmYWxzZSwiQ0hJVF9DVVNUT01FUlNfRURJVCI6ZmFsc2UsIkNISVRfQ1VTVE9NRVJTX1ZJRVciOmZhbHNlLCJDSElUX0RBU0hCT0FSRF9DUkVBVEUiOmZhbHNlLCJDSElUX0RBU0hCT0FSRF9ERUxFVEUiOmZhbHNlLCJDSElUX0RBU0hCT0FSRF9FRElUIjpmYWxzZSwiQ0hJVF9EQVNIQk9BUkRfVklFVyI6ZmFsc2UsIkNISVRfUExBTlNfQ1JFQVRFIjpmYWxzZSwiQ0hJVF9QTEFOU19ERUxFVEUiOmZhbHNlLCJDSElUX1BMQU5TX0VESVQiOmZhbHNlLCJDSElUX1BMQU5TX1ZJRVciOmZhbHNlfSwiaWF0IjoxNzc0ODQzODc4LCJleHAiOjE3NzQ4NDQ3Nzh9.Lqu9E5PHDpn4PC1ikquK2BFxfkfu1iBHew-Kh1g3nF8",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/modules/flat",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "modules",
+                "flat"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getModulesByParent",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/modules/parent/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "modules",
+                "parent",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getUserModules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accesToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/modules/user",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "modules",
+                "user"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "modules_actions",
+      "item": [
+        {
+          "name": "getAllModuleActionsTree",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Miwicm9sZV9pZCI6Miwic2Vzc2lvbl9pZCI6Ijc3NThmM2ZmLTJhMzYtNDhlZC04ZDBlLTU4OWJiMGE4NTE0YyIsInRva2VuX3ZlcnNpb24iOjAsInBlcm1pc3Npb25zIjp7IkJJTExJTkdfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX0VESVQiOmZhbHNlLCJCSUxMSU5HX1ZJRVciOmZhbHNlLCJCSUxMSU5HX0FDQ09VTlRTX0NSRUFURSI6ZmFsc2UsIkJJTExJTkdfQUNDT1VOVFNfREVMRVRFIjpmYWxzZSwiQklMTElOR19BQ0NPVU5UU19FRElUIjpmYWxzZSwiQklMTElOR19BQ0NPVU5UU19WSUVXIjpmYWxzZSwiQklMTElOR19BRERfUFJPRFVDVF9DUkVBVEUiOmZhbHNlLCJCSUxMSU5HX0FERF9QUk9EVUNUX0RFTEVURSI6ZmFsc2UsIkJJTExJTkdfQUREX1BST0RVQ1RfRURJVCI6ZmFsc2UsIkJJTExJTkdfQUREX1BST0RVQ1RfVklFVyI6ZmFsc2UsIkJJTExJTkdfQlJBTkRfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19CUkFORF9ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX0JSQU5EX0VESVQiOmZhbHNlLCJCSUxMSU5HX0JSQU5EX1ZJRVciOmZhbHNlLCJCSUxMSU5HX0NBVEVHT1JJRVNfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19DQVRFR09SSUVTX0RFTEVURSI6ZmFsc2UsIkJJTExJTkdfQ0FURUdPUklFU19FRElUIjpmYWxzZSwiQklMTElOR19DQVRFR09SSUVTX1ZJRVciOmZhbHNlLCJCSUxMSU5HX0NVUlJFTlRfU1RPQ0tfVklFVyI6ZmFsc2UsIkJJTExJTkdfQ1VTVE9NRVJTX0NSRUFURSI6ZmFsc2UsIkJJTExJTkdfQ1VTVE9NRVJTX0RFTEVURSI6ZmFsc2UsIkJJTExJTkdfQ1VTVE9NRVJTX0VESVQiOmZhbHNlLCJCSUxMSU5HX0NVU1RPTUVSU19WSUVXIjpmYWxzZSwiQklMTElOR19EQVNIQk9BUkRfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19EQVNIQk9BUkRfREVMRVRFIjpmYWxzZSwiQklMTElOR19EQVNIQk9BUkRfRURJVCI6ZmFsc2UsIkJJTExJTkdfREFTSEJPQVJEX1ZJRVciOmZhbHNlLCJCSUxMSU5HX0VNUExPWUVFU19DUkVBVEUiOmZhbHNlLCJCSUxMSU5HX0VNUExPWUVFU19ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX0VNUExPWUVFU19FRElUIjpmYWxzZSwiQklMTElOR19FTVBMT1lFRVNfVklFVyI6ZmFsc2UsIkJJTExJTkdfUEVORElOR19DUkVBVEUiOmZhbHNlLCJCSUxMSU5HX1BFTkRJTkdfREVMRVRFIjpmYWxzZSwiQklMTElOR19QRU5ESU5HX0VESVQiOmZhbHNlLCJCSUxMSU5HX1BFTkRJTkdfVklFVyI6ZmFsc2UsIkJJTExJTkdfUFJPRFVDVFNfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19QUk9EVUNUU19ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX1BST0RVQ1RTX0VESVQiOmZhbHNlLCJCSUxMSU5HX1BST0RVQ1RTX1ZJRVciOmZhbHNlLCJCSUxMSU5HX1FVQU5USVRZX0VESVQiOmZhbHNlLCJCSUxMSU5HX1FVQU5USVRZX1ZJRVciOmZhbHNlLCJCSUxMSU5HX1JFUE9SVF9FWFBPUlQiOmZhbHNlLCJCSUxMSU5HX1JFUE9SVF9WSUVXIjpmYWxzZSwiQklMTElOR19SRVBPUlRfQ1VTVE9NRVJfRVhQT1JUIjpmYWxzZSwiQklMTElOR19SRVBPUlRfQ1VTVE9NRVJfVklFVyI6ZmFsc2UsIkJJTExJTkdfUkVQT1JUX0RBSUxZX0VYUE9SVCI6ZmFsc2UsIkJJTExJTkdfUkVQT1JUX0RBSUxZX1ZJRVciOmZhbHNlLCJCSUxMSU5HX1JFUE9SVF9QUk9EVUNUX0VYUE9SVCI6ZmFsc2UsIkJJTExJTkdfUkVQT1JUX1BST0RVQ1RfVklFVyI6ZmFsc2UsIkJJTExJTkdfU1RPQ0tfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19TVE9DS19ERUxFVEUiOmZhbHNlLCJCSUxMSU5HX1NUT0NLX0VESVQiOmZhbHNlLCJCSUxMSU5HX1NUT0NLX1ZJRVciOmZhbHNlLCJCSUxMSU5HX1ZFTkRPUlNfQ1JFQVRFIjpmYWxzZSwiQklMTElOR19WRU5ET1JTX0RFTEVURSI6ZmFsc2UsIkJJTExJTkdfVkVORE9SU19FRElUIjpmYWxzZSwiQklMTElOR19WRU5ET1JTX1ZJRVciOmZhbHNlLCJDSElUX0NSRUFURSI6ZmFsc2UsIkNISVRfREVMRVRFIjpmYWxzZSwiQ0hJVF9FRElUIjpmYWxzZSwiQ0hJVF9WSUVXIjpmYWxzZSwiQ0hJVF9BR0VOVF9DUkVBVEUiOmZhbHNlLCJDSElUX0FHRU5UX0RFTEVURSI6ZmFsc2UsIkNISVRfQUdFTlRfRURJVCI6ZmFsc2UsIkNISVRfQUdFTlRfVklFVyI6ZmFsc2UsIkNISVRfQkFUQ0hFU19DUkVBVEUiOmZhbHNlLCJDSElUX0JBVENIRVNfREVMRVRFIjpmYWxzZSwiQ0hJVF9CQVRDSEVTX0VESVQiOmZhbHNlLCJDSElUX0JBVENIRVNfVklFVyI6ZmFsc2UsIkNISVRfQ09MTEVDVElPTlNfQ1JFQVRFIjpmYWxzZSwiQ0hJVF9DT0xMRUNUSU9OU19WSUVXIjpmYWxzZSwiQ0hJVF9DVVNUT01FUlNfQ1JFQVRFIjpmYWxzZSwiQ0hJVF9DVVNUT01FUlNfREVMRVRFIjpmYWxzZSwiQ0hJVF9DVVNUT01FUlNfRURJVCI6ZmFsc2UsIkNISVRfQ1VTVE9NRVJTX1ZJRVciOmZhbHNlLCJDSElUX0RBU0hCT0FSRF9DUkVBVEUiOmZhbHNlLCJDSElUX0RBU0hCT0FSRF9ERUxFVEUiOmZhbHNlLCJDSElUX0RBU0hCT0FSRF9FRElUIjpmYWxzZSwiQ0hJVF9EQVNIQk9BUkRfVklFVyI6ZmFsc2UsIkNISVRfUExBTlNfQ1JFQVRFIjpmYWxzZSwiQ0hJVF9QTEFOU19ERUxFVEUiOmZhbHNlLCJDSElUX1BMQU5TX0VESVQiOmZhbHNlLCJDSElUX1BMQU5TX1ZJRVciOmZhbHNlfSwiaWF0IjoxNzc0ODQzODc4LCJleHAiOjE3NzQ4NDQ3Nzh9.Lqu9E5PHDpn4PC1ikquK2BFxfkfu1iBHew-Kh1g3nF8",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/modules-actions/tree",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "modules-actions",
+                "tree"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllModuleActionsFlat",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/modules-actions/flat",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "modules-actions",
+                "flat"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getActionsByModule",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/modules-actions/module/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "modules-actions",
+                "module",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getUserModuleActions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/modules-actions/module/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "modules-actions",
+                "module",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "auditsLog",
+      "item": [
+        {
+          "name": "getAuditByRecord",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/audits-logs/record/chit_customer_subscriptions/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "audits-logs",
+                "record",
+                "chit_customer_subscriptions",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAuditByTable",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/audits-logs/table/chit_customer_subscriptions",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "audits-logs",
+                "table",
+                "chit_customer_subscriptions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAuditByUser",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/audits-logs/user/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "audits-logs",
+                "user",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "replayAudit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/audits-logs/replay/chit_customer_subscriptions/1?mode=before_delete",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "audits-logs",
+                "replay",
+                "chit_customer_subscriptions",
+                "1"
+              ],
+              "query": [
+                {
+                  "key": "mode",
+                  "value": "snapshot",
+                  "disabled": true
+                },
+                {
+                  "key": "mode",
+                  "value": "before_delete"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllAudits",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/audits-logs",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "audits-logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "100",
+                  "disabled": true
+                },
+                {
+                  "key": "table",
+                  "value": "company_bank_details",
+                  "disabled": true
+                },
+                {
+                  "key": "action",
+                  "value": "UPDATE",
+                  "disabled": true
+                },
+                {
+                  "key": "action",
+                  "value": "INSERT",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "action",
+                  "value": "DELETE",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "user",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "from_date",
+                  "value": "2026-04-01",
+                  "disabled": true
+                },
+                {
+                  "key": "to_date",
+                  "value": "2026-04-30",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}

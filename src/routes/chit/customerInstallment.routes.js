@@ -22,7 +22,7 @@ import {
 
 const router = express.Router();
 
-// router.use(verifyToken);
+router.use(verifyToken);
 
 // CREATE
 router.post("/create", createInstallments);

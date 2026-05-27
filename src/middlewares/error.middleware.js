@@ -1,6 +1,23 @@
+// export const errorHandler = (err, req, res, next) => {
+//   console.error(err);
+//   res.status(500).json({ message: "Server error" });
+// };
+
 export const errorHandler = (err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ message: "Server error" });
+  console.error("❌ ERROR:", {
+    requestId: req.requestId,
+    method: req.method,
+    url: req.originalUrl,
+    userId: req.user?.id || null,
+    ip: req.clientIp,
+    message: err.message,
+  });
+
+  res.status(500).json({
+    success: false,
+    message: err.message,
+    requestId: req.requestId, // 🔥 return to client
+  });
 };
 
 

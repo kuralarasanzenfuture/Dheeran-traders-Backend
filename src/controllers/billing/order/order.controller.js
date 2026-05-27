@@ -911,6 +911,11 @@ export const getOrderById = async (req, res) => {
       0,
     );
 
+    const total_discount = productsRaw.reduce(
+      (sum, item) => sum + Number(item.discount),
+      0,
+    );
+
     const total_items = productsRaw.length;
 
     /* ✅ 4. FINAL STRUCTURE */
@@ -948,6 +953,7 @@ export const getOrderById = async (req, res) => {
           total_items,
           product_grand_total,
           product_final_total,
+          total_discount,
         },
 
         products: productsRaw,

@@ -12,8 +12,11 @@ import { employeeDocsUpload } from "../../middlewares/uploadEmployeeDocs.js";
 import { validateEmployee } from "../../middlewares/employeeValidation.middleware.js";
 import { createEmployeeSchema, updateEmployeeSchema } from "../../validations/employee.validation.js";
 import { validate } from "../../middlewares/validate.middleware.js";
+import { verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
+
+router.use(verifyToken);
 
 // router.post("/", employeeDocsUpload, validate(createEmployeeSchema),  createEmployee);
 router.post("/", employeeDocsUpload,  createEmployee);

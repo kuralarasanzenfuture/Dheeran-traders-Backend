@@ -46,7 +46,7 @@ export const initDatabase = async () => {
     // 2️⃣ Use Database
     // await db.query(`USE \`${process.env.DB_NAME}\``);
 
-    //     SET GLOBAL time_zone = '+05:30';
+    //     SET GLOBAL time_zone =+05:30';
     // SET time_zone = '+05:30';
 
     // ✅ Set session timezone (safe)

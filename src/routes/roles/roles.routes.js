@@ -6,8 +6,11 @@ import {
   deleteRole,
   updateRoleStatus
 } from "../../controllers/roles/roles.controller.js";
+import { verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
+
+router.use(verifyToken);
 
 router.post("/", createRole);
 router.get("/", getAllRoles);

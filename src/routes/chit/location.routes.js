@@ -5,8 +5,11 @@ import {
   getLocationHistory,
   getAllUsersCurrentLocation
 } from "../../controllers/chit/location.controller.js";
+import { verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
+
+router.use(verifyToken);
 
 router.post("/update-location", updateLocation);
 

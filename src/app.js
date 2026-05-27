@@ -10,12 +10,17 @@ import { errorHandler, globalErrorHandler } from "./middlewares/error.middleware
 
 import cookieParser from "cookie-parser";
 import { startCleanupJob } from "./jobs/cleanupTokens.job.js";
+import { requestLogger } from "./middlewares/logger.js";
+import { requestContext } from "./utils/requestContext.js";
+import { verifyToken } from "./middlewares/auth.middleware.js";
 
 
 // ------------------------------------------------------------------
 // App & dirname setup (IMPORTANT for ES Modules)
 // ------------------------------------------------------------------
 const app = express();
+
+app.set("trust proxy", true);
 
 app.use(cookieParser());
 
@@ -59,6 +64,10 @@ app.use(attachDb);
 // ------------------------------------------------------------------
 // API Routes
 // ------------------------------------------------------------------
+
+// 🔥 attach logger BEFORE routes
+app.use(requestContext);   // 🔥 FIRST
+app.use(requestLogger);    // 🔥 SECOND
 
 app.use("/api", routes);
 

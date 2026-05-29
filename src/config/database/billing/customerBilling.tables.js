@@ -95,10 +95,12 @@ export const createCustomerBillingTables = async (db) => {
 
   cgst_rate DECIMAL(5,2),
   sgst_rate DECIMAL(5,2),
+  igst_rate DECIMAL(5,2),
   gst_total_rate DECIMAL(5,2),
 
   cgst_amount DECIMAL(12,2) DEFAULT 0,
   sgst_amount DECIMAL(12,2) DEFAULT 0,
+  igst_amount DECIMAL(12,2) DEFAULT 0,
   gst_total_amount DECIMAL(12,2) DEFAULT 0,
 
   discount_percent DECIMAL(5,2) DEFAULT 0,

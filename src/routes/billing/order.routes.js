@@ -8,6 +8,7 @@ import {
   confirmOrder,
   updateOrderStatus,
   getProductsWithAvailableStock,
+  getMyOrders,
 } from "../../controllers/billing/order/order.controller.js";
 
 import { verifyToken } from "../../middlewares/auth.middleware.js";
@@ -26,6 +27,7 @@ router.use(verifyToken);
 
 router.post("/", createOrder);
 router.get("/", getOrders);
+router.get("/my-orders", verifyToken, getMyOrders);
 router.get("/available-stock", getProductsWithAvailableStock);
 router.get("/report-orderSummary", getOrderSummary);
 router.get("/report-orders-by-date-range", getOrdersByDateRange);

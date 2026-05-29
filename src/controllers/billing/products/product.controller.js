@@ -447,6 +447,131 @@ export const getProductById = async (req, res, next) => {
 // };
 // ---------------------------------------- hard delete -------------------------------------------------------------------------------
 
+// export const createProduct = async (req, res, next) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     let {
+//       product_name,
+//       brand,
+//       category,
+//       quantity,
+//       price,
+//       hsn_code = null,
+//       cgst_rate = null,
+//       sgst_rate = null,
+//       remarks,
+//     } = req.body;
+
+//     const userId = req.user?.id;
+
+//     // ✅ VALIDATION
+//     if (!product_name || !brand || !category || !quantity || price === undefined) {
+//       throw new Error("Missing required fields");
+//     }
+
+//     // normalize (VERY IMPORTANT)
+//     product_name = product_name.trim();
+//     brand = brand.trim().toLowerCase();
+//     category = category.trim().toLowerCase();
+//     quantity = quantity.trim().toLowerCase();
+
+//     if (!product_name || !brand || !category || !quantity) {
+//       throw new Error("Fields cannot be empty");
+//     }
+
+//     if (isNaN(price) || Number(price) <= 0) {
+//       throw new Error("Invalid price");
+//     }
+
+//     const gst_total_rate =
+//       cgst_rate && sgst_rate
+//         ? Number(cgst_rate) + Number(sgst_rate)
+//         : null;
+
+//     // ✅ DUPLICATE CHECK (matches UNIQUE index)
+//     const [exists] = await connection.query(
+//       `SELECT id FROM products 
+//        WHERE product_name = ? AND brand = ? AND category = ? AND quantity = ?`,
+//       [product_name, brand, category, quantity]
+//     );
+
+//     if (exists.length) {
+//       throw new Error("Product already exists");
+//     }
+
+//     // ✅ CODE GENERATION
+//     const [[last]] = await connection.query(
+//       "SELECT product_code FROM products ORDER BY id DESC LIMIT 1"
+//     );
+
+//     let nextNum = 1;
+//     if (last?.product_code) {
+//       nextNum = parseInt(last.product_code.split("-").pop()) + 1;
+//     }
+
+//     const product_code = `DTT-PDT-${String(nextNum).padStart(4, "0")}`;
+
+//     // ✅ INSERT
+//     const [result] = await connection.query(
+//       `INSERT INTO products
+//       (product_code, product_name, brand, category, quantity,
+//        hsn_code, cgst_rate, sgst_rate, gst_total_rate, price, created_by)
+//       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//       [
+//         product_code,
+//         product_name,
+//         brand,
+//         category,
+//         quantity,
+//         hsn_code,
+//         cgst_rate,
+//         sgst_rate,
+//         gst_total_rate,
+//         price,
+//         userId,
+//       ]
+//     );
+
+//     const id = result.insertId;
+
+//     // ✅ AUDIT (clean, minimal)
+//     await connection.query(
+//       `INSERT INTO audit_logs
+//        (table_name, record_id, action, new_data, changed_by, remarks)
+//        VALUES (?, ?, 'INSERT', ?, ?, ?)`,
+//       [
+//         "products",
+//         id,
+//         JSON.stringify({
+//           product_name,
+//           brand,
+//           category,
+//           quantity,
+//           price,
+//         }),
+//         userId,
+//         remarks || "Product created",
+//       ]
+//     );
+
+//     await connection.commit();
+
+//     res.status(201).json({ message: "Product created", id });
+
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error(`Error creating product: ${err}`);
+//     next(err);
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+/* igst_rate is added */
+
 export const createProduct = async (req, res, next) => {
   const connection = await db.getConnection();
 
@@ -459,77 +584,169 @@ export const createProduct = async (req, res, next) => {
       category,
       quantity,
       price,
+
       hsn_code = null,
-      cgst_rate = null,
-      sgst_rate = null,
+
+      cgst_rate = 0,
+      sgst_rate = 0,
+      igst_rate = 0,
+
       remarks,
     } = req.body;
 
     const userId = req.user?.id;
 
+    // ======================================================
     // ✅ VALIDATION
-    if (!product_name || !brand || !category || !quantity || price === undefined) {
+    // ======================================================
+
+    if (
+      !product_name ||
+      !brand ||
+      !category ||
+      !quantity ||
+      price === undefined
+    ) {
       throw new Error("Missing required fields");
     }
 
-    // normalize (VERY IMPORTANT)
+    // ✅ Normalize
     product_name = product_name.trim();
+
     brand = brand.trim().toLowerCase();
+
     category = category.trim().toLowerCase();
+
     quantity = quantity.trim().toLowerCase();
 
-    if (!product_name || !brand || !category || !quantity) {
+    if (
+      !product_name ||
+      !brand ||
+      !category ||
+      !quantity
+    ) {
       throw new Error("Fields cannot be empty");
     }
 
+    // ✅ Price validation
     if (isNaN(price) || Number(price) <= 0) {
       throw new Error("Invalid price");
     }
 
-    const gst_total_rate =
-      cgst_rate && sgst_rate
-        ? Number(cgst_rate) + Number(sgst_rate)
-        : null;
+    // ======================================================
+    // ✅ GST VALIDATION
+    // ======================================================
 
-    // ✅ DUPLICATE CHECK (matches UNIQUE index)
+    cgst_rate = Number(cgst_rate || 0);
+
+    sgst_rate = Number(sgst_rate || 0);
+
+    igst_rate = Number(igst_rate || 0);
+
+    if (
+      cgst_rate < 0 ||
+      sgst_rate < 0 ||
+      igst_rate < 0
+    ) {
+      throw new Error("GST rates cannot be negative");
+    }
+
+    // ✅ Total GST
+    const gst_total_rate =
+      cgst_rate + sgst_rate + igst_rate;
+
+    // ======================================================
+    // ✅ DUPLICATE CHECK
+    // ======================================================
+
     const [exists] = await connection.query(
-      `SELECT id FROM products 
-       WHERE product_name = ? AND brand = ? AND category = ? AND quantity = ?`,
-      [product_name, brand, category, quantity]
+      `
+      SELECT id
+      FROM products
+      WHERE
+        product_name = ?
+        AND brand = ?
+        AND category = ?
+        AND quantity = ?
+      `,
+      [
+        product_name,
+        brand,
+        category,
+        quantity,
+      ]
     );
 
     if (exists.length) {
       throw new Error("Product already exists");
     }
 
-    // ✅ CODE GENERATION
+    // ======================================================
+    // ✅ PRODUCT CODE GENERATION
+    // ======================================================
+
     const [[last]] = await connection.query(
-      "SELECT product_code FROM products ORDER BY id DESC LIMIT 1"
+      `
+      SELECT product_code
+      FROM products
+      ORDER BY id DESC
+      LIMIT 1
+      `
     );
 
     let nextNum = 1;
+
     if (last?.product_code) {
-      nextNum = parseInt(last.product_code.split("-").pop()) + 1;
+      nextNum =
+        parseInt(
+          last.product_code.split("-").pop()
+        ) + 1;
     }
 
-    const product_code = `DTT-PDT-${String(nextNum).padStart(4, "0")}`;
+    const product_code =
+      `DTT-PDT-${String(nextNum).padStart(4, "0")}`;
 
-    // ✅ INSERT
+    // ======================================================
+    // ✅ INSERT PRODUCT
+    // ======================================================
+
     const [result] = await connection.query(
-      `INSERT INTO products
-      (product_code, product_name, brand, category, quantity,
-       hsn_code, cgst_rate, sgst_rate, gst_total_rate, price, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
+      `
+      INSERT INTO products (
         product_code,
+
         product_name,
         brand,
         category,
         quantity,
+
         hsn_code,
+
         cgst_rate,
         sgst_rate,
+        igst_rate,
         gst_total_rate,
+
+        price,
+        created_by
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        product_code,
+
+        product_name,
+        brand,
+        category,
+        quantity,
+
+        hsn_code,
+
+        cgst_rate,
+        sgst_rate,
+        igst_rate,
+        gst_total_rate,
+
         price,
         userId,
       ]
@@ -537,39 +754,162 @@ export const createProduct = async (req, res, next) => {
 
     const id = result.insertId;
 
-    // ✅ AUDIT (clean, minimal)
+    // ======================================================
+    // ✅ AUDIT LOG
+    // ======================================================
+
     await connection.query(
-      `INSERT INTO audit_logs
-       (table_name, record_id, action, new_data, changed_by, remarks)
-       VALUES (?, ?, 'INSERT', ?, ?, ?)`,
+      `
+      INSERT INTO audit_logs (
+        table_name,
+        record_id,
+        action,
+        new_data,
+        changed_by,
+        remarks
+      )
+      VALUES (?, ?, 'INSERT', ?, ?, ?)
+      `,
       [
         "products",
         id,
+
         JSON.stringify({
+          product_code,
           product_name,
           brand,
           category,
           quantity,
+
+          hsn_code,
+
+          cgst_rate,
+          sgst_rate,
+          igst_rate,
+          gst_total_rate,
+
           price,
         }),
+
         userId,
+
         remarks || "Product created",
       ]
     );
 
     await connection.commit();
 
-    res.status(201).json({ message: "Product created", id });
+    res.status(201).json({
+      message: "Product created successfully",
+
+      product: {
+        id,
+        product_code,
+
+        product_name,
+        brand,
+        category,
+        quantity,
+
+        hsn_code,
+
+        cgst_rate,
+        sgst_rate,
+        igst_rate,
+        gst_total_rate,
+
+        price,
+      },
+    });
 
   } catch (err) {
     await connection.rollback();
-    console.error(`Error creating product: ${err}`);
+
+    console.error(
+      `Error creating product: ${err.message}`
+    );
+
     next(err);
+
   } finally {
     connection.release();
   }
 };
 
+// export const updateProduct = async (req, res, next) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const { id } = req.params;
+//     const userId = req.user?.id;
+//     const { remarks } = req.body;
+
+//     const [[oldData]] = await connection.query(
+//       "SELECT * FROM products WHERE id = ?",
+//       [id]
+//     );
+
+//     if (!oldData) throw new Error("Product not found");
+
+//     let data = { ...req.body };
+
+//     // normalize if present
+//     if (data.brand) data.brand = data.brand.trim().toLowerCase();
+//     if (data.category) data.category = data.category.trim().toLowerCase();
+//     if (data.quantity) data.quantity = data.quantity.trim().toLowerCase();
+//     if (data.product_name) data.product_name = data.product_name.trim();
+
+//     if (data.price && (isNaN(data.price) || Number(data.price) <= 0)) {
+//       throw new Error("Invalid price");
+//     }
+
+//     if (data.cgst_rate !== undefined && data.sgst_rate !== undefined) {
+//       data.gst_total_rate =
+//         Number(data.cgst_rate) + Number(data.sgst_rate);
+//     }
+
+//     data.updated_by = userId;
+
+//     await connection.query(
+//       "UPDATE products SET ? WHERE id = ?",
+//       [data, id]
+//     );
+
+//     const [[newData]] = await connection.query(
+//       "SELECT * FROM products WHERE id = ?",
+//       [id]
+//     );
+
+//     await connection.query(
+//       `INSERT INTO audit_logs
+//        (table_name, record_id, action, old_data, new_data, changed_by, remarks)
+//        VALUES (?, ?, 'UPDATE', ?, ?, ?, ?)`,
+//       [
+//         "products",
+//         id,
+//         JSON.stringify(oldData),
+//         JSON.stringify(newData),
+//         userId,
+//         remarks || "Product updated",
+//       ]
+//     );
+
+//     await connection.commit();
+
+//     res.json({ message: "Updated", data: newData });
+
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error(`❌ UPDATE PRODUCT ERROR: ${err.message}`);
+//     next(err);
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+/* igst rate is added */
 export const updateProduct = async (req, res, next) => {
   const connection = await db.getConnection();
 
@@ -577,67 +917,232 @@ export const updateProduct = async (req, res, next) => {
     await connection.beginTransaction();
 
     const { id } = req.params;
+
     const userId = req.user?.id;
+
     const { remarks } = req.body;
 
+    // ======================================================
+    // ✅ GET OLD PRODUCT
+    // ======================================================
+
     const [[oldData]] = await connection.query(
-      "SELECT * FROM products WHERE id = ?",
+      `
+      SELECT *
+      FROM products
+      WHERE id = ?
+      `,
       [id]
     );
 
-    if (!oldData) throw new Error("Product not found");
+    if (!oldData) {
+      throw new Error("Product not found");
+    }
+
+    // ======================================================
+    // ✅ COPY REQUEST DATA
+    // ======================================================
 
     let data = { ...req.body };
 
-    // normalize if present
-    if (data.brand) data.brand = data.brand.trim().toLowerCase();
-    if (data.category) data.category = data.category.trim().toLowerCase();
-    if (data.quantity) data.quantity = data.quantity.trim().toLowerCase();
-    if (data.product_name) data.product_name = data.product_name.trim();
+    // ======================================================
+    // ✅ NORMALIZE STRINGS
+    // ======================================================
 
-    if (data.price && (isNaN(data.price) || Number(data.price) <= 0)) {
+    if (data.product_name) {
+      data.product_name =
+        data.product_name.trim();
+    }
+
+    if (data.brand) {
+      data.brand =
+        data.brand.trim().toLowerCase();
+    }
+
+    if (data.category) {
+      data.category =
+        data.category.trim().toLowerCase();
+    }
+
+    if (data.quantity) {
+      data.quantity =
+        data.quantity.trim().toLowerCase();
+    }
+
+    // ======================================================
+    // ✅ VALIDATION
+    // ======================================================
+
+    if (
+      data.price !== undefined &&
+      (
+        isNaN(data.price) ||
+        Number(data.price) <= 0
+      )
+    ) {
       throw new Error("Invalid price");
     }
 
-    if (data.cgst_rate !== undefined && data.sgst_rate !== undefined) {
-      data.gst_total_rate =
-        Number(data.cgst_rate) + Number(data.sgst_rate);
+    // ======================================================
+    // ✅ GST VALUES
+    // ======================================================
+
+    const cgst_rate =
+      data.cgst_rate !== undefined
+        ? Number(data.cgst_rate || 0)
+        : Number(oldData.cgst_rate || 0);
+
+    const sgst_rate =
+      data.sgst_rate !== undefined
+        ? Number(data.sgst_rate || 0)
+        : Number(oldData.sgst_rate || 0);
+
+    const igst_rate =
+      data.igst_rate !== undefined
+        ? Number(data.igst_rate || 0)
+        : Number(oldData.igst_rate || 0);
+
+    // ✅ GST Validation
+    if (
+      cgst_rate < 0 ||
+      sgst_rate < 0 ||
+      igst_rate < 0
+    ) {
+      throw new Error(
+        "GST rates cannot be negative"
+      );
     }
+
+    // ✅ Auto Calculate GST Total
+    data.gst_total_rate =
+      cgst_rate +
+      sgst_rate +
+      igst_rate;
+
+    // ======================================================
+    // ✅ DUPLICATE CHECK
+    // ======================================================
+
+    const product_name =
+      data.product_name || oldData.product_name;
+
+    const brand =
+      data.brand || oldData.brand;
+
+    const category =
+      data.category || oldData.category;
+
+    const quantity =
+      data.quantity || oldData.quantity;
+
+    const [exists] = await connection.query(
+      `
+      SELECT id
+      FROM products
+      WHERE
+        product_name = ?
+        AND brand = ?
+        AND category = ?
+        AND quantity = ?
+        AND id != ?
+      `,
+      [
+        product_name,
+        brand,
+        category,
+        quantity,
+        id,
+      ]
+    );
+
+    if (exists.length) {
+      throw new Error(
+        "Another product already exists with same details"
+      );
+    }
+
+    // ======================================================
+    // ✅ UPDATED BY
+    // ======================================================
 
     data.updated_by = userId;
 
+    // ======================================================
+    // ✅ UPDATE PRODUCT
+    // ======================================================
+
     await connection.query(
-      "UPDATE products SET ? WHERE id = ?",
+      `
+      UPDATE products
+      SET ?
+      WHERE id = ?
+      `,
       [data, id]
     );
 
+    // ======================================================
+    // ✅ GET NEW DATA
+    // ======================================================
+
     const [[newData]] = await connection.query(
-      "SELECT * FROM products WHERE id = ?",
+      `
+      SELECT *
+      FROM products
+      WHERE id = ?
+      `,
       [id]
     );
 
+    // ======================================================
+    // ✅ AUDIT LOG
+    // ======================================================
+
     await connection.query(
-      `INSERT INTO audit_logs
-       (table_name, record_id, action, old_data, new_data, changed_by, remarks)
-       VALUES (?, ?, 'UPDATE', ?, ?, ?, ?)`,
+      `
+      INSERT INTO audit_logs (
+        table_name,
+        record_id,
+        action,
+        old_data,
+        new_data,
+        changed_by,
+        remarks
+      )
+      VALUES (
+        ?, ?, 'UPDATE', ?, ?, ?, ?
+      )
+      `,
       [
         "products",
+
         id,
+
         JSON.stringify(oldData),
+
         JSON.stringify(newData),
+
         userId,
+
         remarks || "Product updated",
       ]
     );
 
     await connection.commit();
 
-    res.json({ message: "Updated", data: newData });
+    res.json({
+      message: "Product updated successfully",
+      product: newData,
+    });
 
   } catch (err) {
     await connection.rollback();
-    console.error(`❌ UPDATE PRODUCT ERROR: ${err.message}`);
+
+    console.error(
+      `❌ UPDATE PRODUCT ERROR: ${err.message}`
+    );
+
     next(err);
+
   } finally {
     connection.release();
   }

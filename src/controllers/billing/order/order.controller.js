@@ -501,6 +501,55 @@ export const getOrders = async (req, res) => {
   }
 };
 
+export const getMyOrders = async (req, res) => {
+  try {
+    const userId = req.user.id; // logged-in user id
+
+    const [rows] = await db.query(`
+      SELECT 
+        o.id,
+        o.order_number,
+        o.customer_id,
+        o.customer_name,
+        o.order_date,
+        o.expected_delivery_date,
+        o.delivery_date,
+        o.status,
+        o.remarks,
+
+        o.created_by,
+        uc.username AS created_by_name,
+
+        o.updated_by,
+        uu.username AS updated_by_name,
+
+        o.created_at,
+        o.updated_at
+
+      FROM customerOrders o
+
+      LEFT JOIN users_roles uc 
+        ON o.created_by = uc.id
+
+      LEFT JOIN users_roles uu 
+        ON o.updated_by = uu.id
+
+      WHERE o.created_by = ?
+
+      ORDER BY o.id DESC
+    `, [userId]);
+
+    res.json({
+      count: rows.length,
+      data: rows,
+    });
+
+  } catch (err) {
+    console.error("Get my orders error:", err.message);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // export const getOrderById = async (req, res) => {
 //   try {
 //     const { id } = req.params;

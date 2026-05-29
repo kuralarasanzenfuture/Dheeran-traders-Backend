@@ -93,6 +93,7 @@ await db.query(`
   hsn_code VARCHAR(20),
   cgst_rate DECIMAL(5,2) DEFAULT NULL,
   sgst_rate DECIMAL(5,2) DEFAULT NULL,
+  igst_rate DECIMAL(5,2) DEFAULT NULL,
   gst_total_rate DECIMAL(5,2) DEFAULT NULL,
 
   price DECIMAL(10,2) NOT NULL CHECK (price > 0),

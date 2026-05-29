@@ -628,6 +628,313 @@ const buildInvoiceFlatDiff = (oldBill, newBill) => {
   return row;
 };
 
+// export const updateCustomerBilling = async (req, res) => {
+//   const connection = await db.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     const { id } = req.params;
+//     const userId = req.user?.id;
+
+//     if (!userId) throw new Error("Unauthorized");
+
+//     const {
+//       customer_id,
+//       customer_name,
+//       phone_number,
+//       customer_gst_number,
+//       company_gst_number,
+//       vehicle_number,
+//       eway_bill_number,
+//       staff_name,
+//       staff_phone,
+//       bank_id,
+//       cash_amount = 0,
+//       upi_amount = 0,
+//       cheque_amount = 0,
+//       upi_reference,
+//       products,
+//       remarks,
+//     } = req.body;
+
+//     if (!id || !Array.isArray(products) || products.length === 0) {
+//       throw new Error("Invalid update data");
+//     }
+
+//     /* =========================
+//        1️⃣ OLD DATA
+//     ========================= */
+//     const [[oldBill]] = await connection.query(
+//       `SELECT * FROM customerBilling WHERE id=? FOR UPDATE`,
+//       [id],
+//     );
+
+//     if (!oldBill) throw new Error("Invoice not found");
+
+//     const [oldProducts] = await connection.query(
+//       `SELECT * FROM customerBillingProducts WHERE billing_id=?`,
+//       [id],
+//     );
+
+//     /* =========================
+//        2️⃣ RESTORE STOCK
+//     ========================= */
+//     for (const item of oldProducts) {
+//       await applyStockChange({
+//         conn: connection,
+//         product_id: item.product_id,
+//         qty_change: item.quantity,
+//         reference_type: "UPDATE_REVERT",
+//         reference_id: id,
+//         remarks: "Revert old billing",
+//         userId,
+//       });
+//     }
+
+//     /* =========================
+//        3️⃣ DELETE OLD PRODUCTS
+//     ========================= */
+//     await connection.query(
+//       `DELETE FROM customerBillingProducts WHERE billing_id=?`,
+//       [id],
+//     );
+
+//     let subtotal = 0;
+//     let grand_total = 0;
+
+//     /* =========================
+//        4️⃣ INSERT NEW PRODUCTS
+//     ========================= */
+//     for (const item of products) {
+//       const {
+//         product_id,
+//         quantity,
+//         final_rate,
+//         hsn_code = null,
+//         cgst_rate = 0,
+//         sgst_rate = 0,
+//       } = item;
+
+//       const qty = Number(quantity);
+
+//       if (qty <= 0) throw new Error("Invalid quantity");
+
+//       const [[product]] = await connection.query(
+//         `SELECT * FROM products WHERE id=? FOR UPDATE`,
+//         [product_id],
+//       );
+
+//       if (!product) throw new Error("Product not found");
+
+//       if (product.stock < qty) {
+//         throw new Error(`Stock low: ${product.product_name}`);
+//       }
+
+//       const rate = Number(product.price);
+//       const applied_rate = Number(final_rate ?? rate);
+
+//       if (applied_rate > rate) {
+//         throw new Error("Final rate cannot exceed price");
+//       }
+
+//       const total = Number((qty * applied_rate).toFixed(2));
+
+//       subtotal += total;
+//       grand_total += total;
+
+//       await connection.query(
+//         `INSERT INTO customerBillingProducts (
+//           billing_id, product_id, product_name, product_brand, product_category, product_quantity,
+//           hsn_code, cgst_rate, sgst_rate, gst_total_rate,
+//           cgst_amount, sgst_amount, gst_total_amount,
+//           discount_percent, discount_amount,
+//           quantity, rate, final_rate, total
+//         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//         [
+//           id,
+//           product_id,
+//           product.product_name,
+//           product.brand,
+//           product.category,
+//           product.quantity,
+//           hsn_code,
+//           cgst_rate,
+//           sgst_rate,
+//           cgst_rate + sgst_rate,
+//           0,
+//           0,
+//           0,
+//           0,
+//           0,
+//           qty,
+//           rate,
+//           applied_rate,
+//           total,
+//         ],
+//       );
+
+//       /* STOCK DEDUCT (IMPORTANT: await) */
+//       await applyStockChange({
+//         conn: connection,
+//         product_id,
+//         qty_change: -qty,
+//         reference_type: "UPDATE_SALE",
+//         reference_id: id,
+//         remarks: "Update billing sale",
+//         userId,
+//       });
+//     }
+
+//     /* =========================
+//        5️⃣ PAYMENT
+//     ========================= */
+//     const advance_paid =
+//       Number(cash_amount) + Number(upi_amount) + Number(cheque_amount);
+
+//     if (advance_paid < 0) throw new Error("Invalid payment");
+
+//     const balance_due = Number((grand_total - advance_paid).toFixed(2));
+
+//     if (balance_due < 0) {
+//       throw new Error("Payment exceeds bill");
+//     }
+
+//     /* =========================
+//        6️⃣ UPDATE BILL
+//     ========================= */
+//     await connection.query(
+//       `UPDATE customerBilling SET
+//         customer_id=?, customer_name=?, phone_number=?, customer_gst_number=?,
+//         company_gst_number=?, vehicle_number=?, eway_bill_number=?,
+//         staff_name=?, staff_phone=?, bank_id=?,
+//         subtotal=?, grand_total=?, advance_paid=?, balance_due=?,
+//         cash_amount=?, upi_amount=?, cheque_amount=?, upi_reference=?, remarks=?
+//       WHERE id=?`,
+//       [
+//         customer_id,
+//         customer_name,
+//         phone_number,
+//         customer_gst_number,
+//         company_gst_number,
+//         vehicle_number,
+//         eway_bill_number,
+//         staff_name,
+//         staff_phone,
+//         bank_id,
+//         subtotal,
+//         grand_total,
+//         advance_paid,
+//         balance_due,
+//         cash_amount,
+//         upi_amount,
+//         cheque_amount,
+//         upi_reference,
+//         remarks || "Billing updated",
+//         id,
+//       ],
+//     );
+
+//     /* =========================
+//        7️⃣ FETCH NEW DATA (INSIDE TX)
+//     ========================= */
+//     const [[newBill]] = await connection.query(
+//       `SELECT * FROM customerBilling WHERE id=?`,
+//       [id],
+//     );
+
+//     const [newProducts] = await connection.query(
+//       `SELECT * FROM customerBillingProducts WHERE billing_id=?`,
+//       [id],
+//     );
+
+//     /* =========================
+//        8️⃣ DIFF
+//     ========================= */
+//     // const changes = diff(oldProducts, newProducts);
+
+//     const changes = buildSideBySideDiff(oldProducts, newProducts);
+
+//     const productChanges = buildFullFlatDiff(oldProducts, newProducts);
+//     const invoiceChanges = buildInvoiceFlatDiff(oldBill, newBill);
+
+//     /* =========================
+//        9️⃣ AUDIT (REAL DATA)
+//     ========================= */
+//     await connection.query(
+//       `INSERT INTO audit_logs
+//       (table_name, record_id, action, old_data, new_data, changed_by, remarks)
+//       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+//       [
+//         "customerBilling",
+//         id,
+//         "UPDATE",
+//         JSON.stringify({ invoice: oldBill, products: oldProducts }),
+//         JSON.stringify({
+//           invoice: newBill,
+//           products: newProducts,
+//           changes,
+//         }),
+//         userId,
+//         remarks || "Billing updated",
+//       ],
+//     );
+
+//     await connection.commit();
+
+//     /* =========================
+//        🔟 RESPONSE
+//     ========================= */
+//     // res.json({
+//     //   message: "Invoice updated successfully",
+//     //   data: {
+//     //     before: {
+//     //       invoice: oldBill,
+//     //       products: oldProducts,
+//     //     },
+//     //     after: {
+//     //       invoice: newBill,
+//     //       products: newProducts,
+//     //     },
+//     //     changes,
+//     //     summary: {
+//     //       total_items_before: oldProducts.length,
+//     //       total_items_after: newProducts.length,
+//     //       total_changes: changes.length,
+//     //       grand_total_before: oldBill.grand_total,
+//     //       grand_total_after: newBill.grand_total,
+//     //     },
+//     //   },
+//     // });
+
+//     res.json({
+//       message: "Invoice updated successfully",
+//       data: {
+//         invoice: invoiceChanges, // 🔥 full column diff
+//         products: productChanges, // 🔥 full column diff
+
+//         summary: {
+//           total_products: productChanges.length,
+//           modified_products: productChanges.filter((p) => p.type === "UPDATED")
+//             .length,
+//           added_products: productChanges.filter((p) => p.type === "ADDED")
+//             .length,
+//           removed_products: productChanges.filter((p) => p.type === "REMOVED")
+//             .length,
+//         },
+//       },
+//     });
+//   } catch (err) {
+//     await connection.rollback();
+//     console.error("Update Billing Error:", err);
+//     res.status(400).json({ message: err.message });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+/* igst addition + audit log + stock change service refactor */
+
 export const updateCustomerBilling = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -635,9 +942,12 @@ export const updateCustomerBilling = async (req, res) => {
     await connection.beginTransaction();
 
     const { id } = req.params;
+
     const userId = req.user?.id;
 
-    if (!userId) throw new Error("Unauthorized");
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
 
     const {
       customer_id,
@@ -645,290 +955,637 @@ export const updateCustomerBilling = async (req, res) => {
       phone_number,
       customer_gst_number,
       company_gst_number,
+
       vehicle_number,
       eway_bill_number,
+
       staff_name,
       staff_phone,
+
       bank_id,
+
       cash_amount = 0,
       upi_amount = 0,
       cheque_amount = 0,
       upi_reference,
+
       products,
       remarks,
     } = req.body;
 
-    if (!id || !Array.isArray(products) || products.length === 0) {
+    // ======================================================
+    // ✅ VALIDATION
+    // ======================================================
+
+    if (
+      !id ||
+      !Array.isArray(products) ||
+      products.length === 0
+    ) {
       throw new Error("Invalid update data");
     }
 
-    /* =========================
-       1️⃣ OLD DATA
-    ========================= */
+    // ======================================================
+    // ✅ CHECK BILL EXISTS
+    // ======================================================
+
     const [[oldBill]] = await connection.query(
-      `SELECT * FROM customerBilling WHERE id=? FOR UPDATE`,
-      [id],
+      `
+      SELECT *
+      FROM customerBilling
+      WHERE id = ?
+      FOR UPDATE
+      `,
+      [id]
     );
 
-    if (!oldBill) throw new Error("Invoice not found");
+    if (!oldBill) {
+      throw new Error("Invoice not found");
+    }
+
+    // ======================================================
+    // ✅ VALIDATE BANK
+    // ======================================================
+
+    const [[bank]] = await connection.query(
+      `
+      SELECT id
+      FROM company_bank_details
+      WHERE id = ?
+      AND status = 'active'
+      `,
+      [bank_id]
+    );
+
+    if (!bank) {
+      throw new Error("Invalid bank");
+    }
+
+    // ======================================================
+    // ✅ OLD PRODUCTS
+    // ======================================================
 
     const [oldProducts] = await connection.query(
-      `SELECT * FROM customerBillingProducts WHERE billing_id=?`,
-      [id],
+      `
+      SELECT *
+      FROM customerBillingProducts
+      WHERE billing_id = ?
+      `,
+      [id]
     );
 
-    /* =========================
-       2️⃣ RESTORE STOCK
-    ========================= */
+    // ======================================================
+    // ✅ RESTORE OLD STOCK
+    // ======================================================
+
     for (const item of oldProducts) {
       await applyStockChange({
         conn: connection,
+
         product_id: item.product_id,
+
         qty_change: item.quantity,
+
         reference_type: "UPDATE_REVERT",
+
         reference_id: id,
+
         remarks: "Revert old billing",
+
         userId,
       });
     }
 
-    /* =========================
-       3️⃣ DELETE OLD PRODUCTS
-    ========================= */
+    // ======================================================
+    // ✅ DELETE OLD PRODUCTS
+    // ======================================================
+
     await connection.query(
-      `DELETE FROM customerBillingProducts WHERE billing_id=?`,
-      [id],
+      `
+      DELETE FROM customerBillingProducts
+      WHERE billing_id = ?
+      `,
+      [id]
     );
 
+    // ======================================================
+    // ✅ NEW CALCULATIONS
+    // ======================================================
+
     let subtotal = 0;
+
+    let total_gst_amount = 0;
+
     let grand_total = 0;
 
-    /* =========================
-       4️⃣ INSERT NEW PRODUCTS
-    ========================= */
+    const processedProducts = [];
+
+    // ======================================================
+    // ✅ PROCESS PRODUCTS
+    // ======================================================
+
     for (const item of products) {
       const {
         product_id,
         quantity,
         final_rate,
-        hsn_code = null,
-        cgst_rate = 0,
-        sgst_rate = 0,
       } = item;
 
       const qty = Number(quantity);
 
-      if (qty <= 0) throw new Error("Invalid quantity");
+      if (!product_id || qty <= 0) {
+        throw new Error("Invalid quantity");
+      }
+
+      // ======================================================
+      // ✅ LOCK PRODUCT
+      // ======================================================
 
       const [[product]] = await connection.query(
-        `SELECT * FROM products WHERE id=? FOR UPDATE`,
-        [product_id],
+        `
+        SELECT *
+        FROM products
+        WHERE id = ?
+        FOR UPDATE
+        `,
+        [product_id]
       );
 
-      if (!product) throw new Error("Product not found");
+      if (!product) {
+        throw new Error("Product not found");
+      }
 
-      if (product.stock < qty) {
-        throw new Error(`Stock low: ${product.product_name}`);
+      // ======================================================
+      // ✅ STOCK CHECK
+      // ======================================================
+
+      if (Number(product.stock) < qty) {
+        throw new Error(
+          `Stock low: ${product.product_name}`
+        );
       }
 
       const rate = Number(product.price);
-      const applied_rate = Number(final_rate ?? rate);
+
+      const applied_rate = Number(
+        final_rate ?? rate
+      );
+
+      // ======================================================
+      // ✅ RATE VALIDATION
+      // ======================================================
 
       if (applied_rate > rate) {
-        throw new Error("Final rate cannot exceed price");
+        throw new Error(
+          `Final rate cannot exceed price for ${product.product_name}`
+        );
       }
 
-      const total = Number((qty * applied_rate).toFixed(2));
+      // ======================================================
+      // ✅ BASE TOTAL
+      // ======================================================
 
-      subtotal += total;
+      const baseTotal =
+        qty * applied_rate;
+
+      // ======================================================
+      // ✅ DISCOUNT
+      // ======================================================
+
+      const originalTotal =
+        qty * rate;
+
+      const discount_amount =
+        originalTotal - baseTotal;
+
+      const discount_percent =
+        originalTotal > 0
+          ? (
+              (discount_amount /
+                originalTotal) *
+              100
+            ).toFixed(2)
+          : 0;
+
+      // ======================================================
+      // ✅ GST FROM PRODUCT TABLE
+      // ======================================================
+
+      const hsn_code =
+        product.hsn_code;
+
+      const cgst_rate = Number(
+        product.cgst_rate || 0
+      );
+
+      const sgst_rate = Number(
+        product.sgst_rate || 0
+      );
+
+      const igst_rate = Number(
+        product.igst_rate || 0
+      );
+
+      // ======================================================
+      // ✅ GST CALCULATION
+      // ======================================================
+
+      const cgst_amount =
+        (baseTotal * cgst_rate) / 100;
+
+      const sgst_amount =
+        (baseTotal * sgst_rate) / 100;
+
+      const igst_amount =
+        (baseTotal * igst_rate) / 100;
+
+      const gst_total_rate =
+        cgst_rate +
+        sgst_rate +
+        igst_rate;
+
+      const gst_total_amount =
+        cgst_amount +
+        sgst_amount +
+        igst_amount;
+
+      // ======================================================
+      // ✅ FINAL TOTAL
+      // ======================================================
+
+      const total =
+        baseTotal +
+        gst_total_amount;
+
+      subtotal += baseTotal;
+
+      total_gst_amount +=
+        gst_total_amount;
+
       grand_total += total;
 
+      // ======================================================
+      // ✅ INSERT PRODUCT
+      // ======================================================
+
       await connection.query(
-        `INSERT INTO customerBillingProducts (
-          billing_id, product_id, product_name, product_brand, product_category, product_quantity,
-          hsn_code, cgst_rate, sgst_rate, gst_total_rate,
-          cgst_amount, sgst_amount, gst_total_amount,
-          discount_percent, discount_amount,
-          quantity, rate, final_rate, total
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `
+        INSERT INTO customerBillingProducts (
+          billing_id,
+
+          product_id,
+
+          product_name,
+          product_brand,
+          product_category,
+          product_quantity,
+
+          hsn_code,
+
+          cgst_rate,
+          sgst_rate,
+          igst_rate,
+          gst_total_rate,
+
+          cgst_amount,
+          sgst_amount,
+          igst_amount,
+          gst_total_amount,
+
+          discount_percent,
+          discount_amount,
+
+          quantity,
+          rate,
+          final_rate,
+          total
+        )
+        VALUES (
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        )
+        `,
         [
           id,
+
           product_id,
+
           product.product_name,
           product.brand,
           product.category,
           product.quantity,
+
           hsn_code,
+
           cgst_rate,
           sgst_rate,
-          cgst_rate + sgst_rate,
-          0,
-          0,
-          0,
-          0,
-          0,
+          igst_rate,
+          gst_total_rate,
+
+          cgst_amount,
+          sgst_amount,
+          igst_amount,
+          gst_total_amount,
+
+          discount_percent,
+          discount_amount,
+
           qty,
           rate,
           applied_rate,
           total,
-        ],
+        ]
       );
 
-      /* STOCK DEDUCT (IMPORTANT: await) */
+      // ======================================================
+      // ✅ STOCK DEDUCT
+      // ======================================================
+
       await applyStockChange({
         conn: connection,
+
         product_id,
+
         qty_change: -qty,
+
         reference_type: "UPDATE_SALE",
+
         reference_id: id,
+
         remarks: "Update billing sale",
+
         userId,
+      });
+
+      processedProducts.push({
+        product_id,
+
+        product_name:
+          product.product_name,
+
+        quantity: qty,
+
+        rate,
+
+        final_rate: applied_rate,
+
+        gst_total_rate,
+
+        gst_total_amount,
+
+        total,
       });
     }
 
-    /* =========================
-       5️⃣ PAYMENT
-    ========================= */
+    // ======================================================
+    // ✅ PAYMENT
+    // ======================================================
+
     const advance_paid =
-      Number(cash_amount) + Number(upi_amount) + Number(cheque_amount);
+      Number(cash_amount) +
+      Number(upi_amount) +
+      Number(cheque_amount);
 
-    if (advance_paid < 0) throw new Error("Invalid payment");
-
-    const balance_due = Number((grand_total - advance_paid).toFixed(2));
-
-    if (balance_due < 0) {
-      throw new Error("Payment exceeds bill");
+    if (advance_paid < 0) {
+      throw new Error("Invalid payment");
     }
 
-    /* =========================
-       6️⃣ UPDATE BILL
-    ========================= */
+    const balance_due =
+      grand_total - advance_paid;
+
+    if (balance_due < 0) {
+      throw new Error(
+        "Payment exceeds bill"
+      );
+    }
+
+    // ======================================================
+    // ✅ UPDATE BILL
+    // ======================================================
+
     await connection.query(
-      `UPDATE customerBilling SET
-        customer_id=?, customer_name=?, phone_number=?, customer_gst_number=?,
-        company_gst_number=?, vehicle_number=?, eway_bill_number=?,
-        staff_name=?, staff_phone=?, bank_id=?,
-        subtotal=?, grand_total=?, advance_paid=?, balance_due=?,
-        cash_amount=?, upi_amount=?, cheque_amount=?, upi_reference=?, remarks=?
-      WHERE id=?`,
+      `
+      UPDATE customerBilling SET
+
+        customer_id = ?,
+        customer_name = ?,
+        phone_number = ?,
+        customer_gst_number = ?,
+
+        company_gst_number = ?,
+
+        vehicle_number = ?,
+        eway_bill_number = ?,
+
+        staff_name = ?,
+        staff_phone = ?,
+
+        bank_id = ?,
+
+        subtotal = ?,
+        grand_total = ?,
+
+        advance_paid = ?,
+        balance_due = ?,
+
+        cash_amount = ?,
+        upi_amount = ?,
+        cheque_amount = ?,
+        upi_reference = ?,
+
+        remarks = ?,
+        updated_by = ?
+
+      WHERE id = ?
+      `,
       [
         customer_id,
         customer_name,
         phone_number,
         customer_gst_number,
+
         company_gst_number,
+
         vehicle_number,
         eway_bill_number,
+
         staff_name,
         staff_phone,
+
         bank_id,
+
         subtotal,
         grand_total,
+
         advance_paid,
         balance_due,
+
         cash_amount,
         upi_amount,
         cheque_amount,
         upi_reference,
+
         remarks || "Billing updated",
+
+        userId,
+
         id,
-      ],
+      ]
     );
 
-    /* =========================
-       7️⃣ FETCH NEW DATA (INSIDE TX)
-    ========================= */
+    // ======================================================
+    // ✅ FETCH UPDATED DATA
+    // ======================================================
+
     const [[newBill]] = await connection.query(
-      `SELECT * FROM customerBilling WHERE id=?`,
-      [id],
+      `
+      SELECT *
+      FROM customerBilling
+      WHERE id = ?
+      `,
+      [id]
     );
 
     const [newProducts] = await connection.query(
-      `SELECT * FROM customerBillingProducts WHERE billing_id=?`,
-      [id],
+      `
+      SELECT *
+      FROM customerBillingProducts
+      WHERE billing_id = ?
+      `,
+      [id]
     );
 
-    /* =========================
-       8️⃣ DIFF
-    ========================= */
-    // const changes = diff(oldProducts, newProducts);
+    // ======================================================
+    // ✅ DIFF
+    // ======================================================
 
-    const changes = buildSideBySideDiff(oldProducts, newProducts);
+    const changes =
+      buildSideBySideDiff(
+        oldProducts,
+        newProducts
+      );
 
-    const productChanges = buildFullFlatDiff(oldProducts, newProducts);
-    const invoiceChanges = buildInvoiceFlatDiff(oldBill, newBill);
+    const productChanges =
+      buildFullFlatDiff(
+        oldProducts,
+        newProducts
+      );
 
-    /* =========================
-       9️⃣ AUDIT (REAL DATA)
-    ========================= */
+    const invoiceChanges =
+      buildInvoiceFlatDiff(
+        oldBill,
+        newBill
+      );
+
+    // ======================================================
+    // ✅ AUDIT
+    // ======================================================
+
     await connection.query(
-      `INSERT INTO audit_logs
-      (table_name, record_id, action, old_data, new_data, changed_by, remarks)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `
+      INSERT INTO audit_logs (
+        table_name,
+        record_id,
+        action,
+        old_data,
+        new_data,
+        changed_by,
+        remarks
+      )
+      VALUES (
+        ?, ?, ?, ?, ?, ?, ?
+      )
+      `,
       [
         "customerBilling",
+
         id,
+
         "UPDATE",
-        JSON.stringify({ invoice: oldBill, products: oldProducts }),
+
+        JSON.stringify({
+          invoice: oldBill,
+          products: oldProducts,
+        }),
+
         JSON.stringify({
           invoice: newBill,
           products: newProducts,
           changes,
         }),
+
         userId,
+
         remarks || "Billing updated",
-      ],
+      ]
     );
 
     await connection.commit();
 
-    /* =========================
-       🔟 RESPONSE
-    ========================= */
-    // res.json({
-    //   message: "Invoice updated successfully",
-    //   data: {
-    //     before: {
-    //       invoice: oldBill,
-    //       products: oldProducts,
-    //     },
-    //     after: {
-    //       invoice: newBill,
-    //       products: newProducts,
-    //     },
-    //     changes,
-    //     summary: {
-    //       total_items_before: oldProducts.length,
-    //       total_items_after: newProducts.length,
-    //       total_changes: changes.length,
-    //       grand_total_before: oldBill.grand_total,
-    //       grand_total_after: newBill.grand_total,
-    //     },
-    //   },
-    // });
+    // ======================================================
+    // ✅ RESPONSE
+    // ======================================================
 
     res.json({
-      message: "Invoice updated successfully",
+      message:
+        "Invoice updated successfully",
+
       data: {
-        invoice: invoiceChanges, // 🔥 full column diff
-        products: productChanges, // 🔥 full column diff
+        invoice: invoiceChanges,
+
+        products: productChanges,
 
         summary: {
-          total_products: productChanges.length,
-          modified_products: productChanges.filter((p) => p.type === "UPDATED")
-            .length,
-          added_products: productChanges.filter((p) => p.type === "ADDED")
-            .length,
-          removed_products: productChanges.filter((p) => p.type === "REMOVED")
-            .length,
+          subtotal,
+
+          total_gst_amount,
+
+          grand_total,
+
+          advance_paid,
+
+          balance_due,
+
+          total_products:
+            productChanges.length,
+
+          modified_products:
+            productChanges.filter(
+              (p) =>
+                p.type === "UPDATED"
+            ).length,
+
+          added_products:
+            productChanges.filter(
+              (p) =>
+                p.type === "ADDED"
+            ).length,
+
+          removed_products:
+            productChanges.filter(
+              (p) =>
+                p.type === "REMOVED"
+            ).length,
         },
       },
     });
+
   } catch (err) {
+
     await connection.rollback();
-    console.error("Update Billing Error:", err);
-    res.status(400).json({ message: err.message });
+
+    console.error(
+      "Update Billing Error:",
+      err
+    );
+
+    res.status(400).json({
+      message: err.message,
+    });
+
   } finally {
+
     connection.release();
   }
 };
+

@@ -150,6 +150,72 @@ export const getAllPayments = async (req, res) => {
   }
 };
 
+export const getMyPayments = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "Unauthorized",
+      });
+    }
+
+    // const [rows] = await db.query(
+    //   `
+    //   SELECT
+    //     cbp.*,
+
+    //     cb.invoice_number,
+
+    //     cb.customer_name,
+    //     cb.phone_number,
+
+    //     cb.grand_total,
+    //     cb.balance_due
+
+    //   FROM customerBillingPayment cbp
+
+    //   LEFT JOIN customerBilling cb
+    //     ON cb.id = cbp.billing_id
+
+    //   WHERE cbp.created_by = ?
+
+    //   ORDER BY cbp.payment_date DESC,
+    //            cbp.id DESC
+    //   `,
+    //   [userId]
+    // );
+
+    const [rows] = await db.query(
+      `
+  SELECT
+    cbp.*,
+
+    u.username   
+
+  FROM customerBillingPayment cbp
+
+  LEFT JOIN users_roles u
+    ON u.id = cbp.created_by
+
+  WHERE cbp.created_by = ?
+
+  ORDER BY cbp.payment_date DESC,
+           cbp.id DESC
+  `,
+      [userId],
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      message: "Server error",
+    });
+  }
+};
+
 /* ----------------------hard delete-------------------------------------- */
 
 export const addCustomerPayment = async (req, res) => {
@@ -192,7 +258,7 @@ export const addCustomerPayment = async (req, res) => {
       `SELECT id, balance_due, payment_status 
        FROM customerBilling 
        WHERE id=? FOR UPDATE`,
-      [billing_id]
+      [billing_id],
     );
 
     if (!bill) throw new Error("Invoice not found");
@@ -219,7 +285,7 @@ export const addCustomerPayment = async (req, res) => {
         reference_no,
         remarks,
         userId,
-      ]
+      ],
     );
 
     const payment_id = paymentResult.insertId;
@@ -238,7 +304,7 @@ export const addCustomerPayment = async (req, res) => {
       `UPDATE customerBilling
        SET balance_due=?, payment_status=?, updated_by=?
        WHERE id=?`,
-      [newBalance, paymentStatus, userId, billing_id]
+      [newBalance, paymentStatus, userId, billing_id],
     );
 
     /* =========================
@@ -296,7 +362,6 @@ export const addCustomerPayment = async (req, res) => {
         payment_status: paymentStatus,
       },
     });
-
   } catch (err) {
     await conn.rollback();
     console.error("Payment error:", err);
@@ -331,7 +396,7 @@ export const updateCustomerPayment = async (req, res) => {
     ========================= */
     const [[oldPayment]] = await conn.query(
       `SELECT * FROM customerBillingPayment WHERE id=? FOR UPDATE`,
-      [id]
+      [id],
     );
 
     if (!oldPayment) throw new Error("Payment not found");
@@ -348,7 +413,7 @@ export const updateCustomerPayment = async (req, res) => {
     ========================= */
     const [[bill]] = await conn.query(
       `SELECT * FROM customerBilling WHERE id=? FOR UPDATE`,
-      [billing_id]
+      [billing_id],
     );
 
     if (!bill) throw new Error("Invoice not found");
@@ -390,16 +455,7 @@ export const updateCustomerPayment = async (req, res) => {
         remarks=?,
         updated_by=?
       WHERE id=?`,
-      [
-        payment_date,
-        cash,
-        upi,
-        cheque,
-        reference_no,
-        remarks,
-        userId,
-        id,
-      ]
+      [payment_date, cash, upi, cheque, reference_no, remarks, userId, id],
     );
 
     /* =========================
@@ -413,7 +469,7 @@ export const updateCustomerPayment = async (req, res) => {
       `UPDATE customerBilling
        SET balance_due=?, payment_status=?, updated_by=?
        WHERE id=?`,
-      [newBalance, status, userId, billing_id]
+      [newBalance, status, userId, billing_id],
     );
 
     /* =========================
@@ -446,7 +502,6 @@ export const updateCustomerPayment = async (req, res) => {
         balance_after: newBalance,
       },
     });
-
   } catch (err) {
     await conn.rollback();
     console.error("Update Payment Error:", err);
@@ -472,7 +527,7 @@ export const deleteCustomerPayment = async (req, res) => {
     ========================= */
     const [[payment]] = await conn.query(
       `SELECT * FROM customerBillingPayment WHERE id=? FOR UPDATE`,
-      [id]
+      [id],
     );
 
     if (!payment) throw new Error("Payment not found");
@@ -489,7 +544,7 @@ export const deleteCustomerPayment = async (req, res) => {
     ========================= */
     const [[bill]] = await conn.query(
       `SELECT * FROM customerBilling WHERE id=? FOR UPDATE`,
-      [billing_id]
+      [billing_id],
     );
 
     if (!bill) throw new Error("Invoice not found");
@@ -506,7 +561,7 @@ export const deleteCustomerPayment = async (req, res) => {
       `UPDATE customerBilling
        SET balance_due=?, payment_status=?, updated_by=?
        WHERE id=?`,
-      [newBalance, status, userId, billing_id]
+      [newBalance, status, userId, billing_id],
     );
 
     /* =========================
@@ -525,10 +580,7 @@ export const deleteCustomerPayment = async (req, res) => {
     /* =========================
        5️⃣ DELETE PAYMENT
     ========================= */
-    await conn.query(
-      `DELETE FROM customerBillingPayment WHERE id=?`,
-      [id]
-    );
+    await conn.query(`DELETE FROM customerBillingPayment WHERE id=?`, [id]);
 
     await conn.commit();
 
@@ -540,7 +592,6 @@ export const deleteCustomerPayment = async (req, res) => {
         balance_after: newBalance,
       },
     });
-
   } catch (err) {
     await conn.rollback();
     console.error("Delete Payment Error:", err);

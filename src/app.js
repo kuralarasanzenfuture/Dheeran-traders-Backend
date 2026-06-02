@@ -66,8 +66,8 @@ app.use(attachDb);
 // ------------------------------------------------------------------
 
 // 🔥 attach logger BEFORE routes
-app.use(requestContext);   // 🔥 FIRST
-app.use(requestLogger);    // 🔥 SECOND
+// app.use(requestContext);   // 🔥 FIRST
+// app.use(requestLogger);    // 🔥 SECOND
 
 app.use("/api", routes);
 

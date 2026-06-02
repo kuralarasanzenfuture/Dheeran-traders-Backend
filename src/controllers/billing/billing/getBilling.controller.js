@@ -705,3 +705,279 @@ export const getAssignedPendingBills = async (req, res) => {
     });
   }
 };
+
+export const getUserPaymentCollectionReport = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+
+    let dateFilter = "";
+    let params = [];
+
+    if (from && to) {
+      dateFilter = "AND b.invoice_date BETWEEN ? AND ?";
+      params.push(from, to);
+    }
+
+    /* ================= USER SUMMARY ================= */
+    const [users] = await db.query(`
+      SELECT 
+        b.created_by AS user_id,
+        u.username,
+        u.phone,
+
+        COUNT(DISTINCT b.id) AS total_invoices,
+        COALESCE(SUM(b.grand_total), 0) AS total_billed,
+
+        COALESCE(SUM(p.total_amount), 0) AS total_collected,
+
+        COALESCE(SUM(p.cash_amount), 0) AS cash_collected,
+        COALESCE(SUM(p.upi_amount), 0) AS upi_collected,
+        COALESCE(SUM(p.cheque_amount), 0) AS cheque_collected
+
+      FROM customerBilling b
+
+      LEFT JOIN customerBillingPayment p 
+        ON b.id = p.billing_id
+
+      LEFT JOIN users_roles u 
+        ON b.created_by = u.id
+
+      WHERE b.created_by IS NOT NULL
+      ${dateFilter}
+
+      GROUP BY b.created_by, u.username, u.phone
+      ORDER BY total_collected DESC
+    `, params);
+
+    /* ================= PRODUCT BREAKDOWN ================= */
+    const [products] = await db.query(`
+      SELECT 
+        b.created_by AS user_id,
+        bp.product_id,
+        bp.product_name,
+
+        SUM(bp.quantity) AS total_quantity,
+        SUM(bp.total) AS total_sales
+
+      FROM customerBilling b
+
+      JOIN customerBillingProducts bp 
+        ON b.id = bp.billing_id
+
+      WHERE b.created_by IS NOT NULL
+      ${dateFilter}
+
+      GROUP BY 
+        b.created_by, 
+        bp.product_id, 
+        bp.product_name
+    `, params);
+
+    /* ================= MERGE ================= */
+
+    const productMap = {};
+
+    for (const p of products) {
+      if (!productMap[p.user_id]) {
+        productMap[p.user_id] = [];
+      }
+
+      productMap[p.user_id].push({
+        product_id: p.product_id,
+        product_name: p.product_name,
+        total_quantity: Number(p.total_quantity),
+        total_sales: Number(p.total_sales),
+      });
+    }
+
+    const result = users.map((user) => ({
+      user_id: user.user_id,
+      username: user.username || "Unknown",
+      phone: user.phone || "-",
+
+      total_invoices: Number(user.total_invoices),
+      total_billed: Number(user.total_billed),
+
+      total_collected: Number(user.total_collected),
+
+      cash_collected: Number(user.cash_collected),
+      upi_collected: Number(user.upi_collected),
+      cheque_collected: Number(user.cheque_collected),
+
+      products: productMap[user.user_id] || [],
+    }));
+
+    res.json({
+      success: true,
+      data: result,
+    });
+
+  } catch (err) {
+    console.error("User Payment Collection Report Error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+// export const getUserDateWiseCollection = async (req, res) => {
+//   try {
+//     const { from, to } = req.query;
+
+//     let dateFilter = "";
+//     let params = [];
+
+//     if (from && to) {
+//       dateFilter = "AND p.payment_date BETWEEN ? AND ?";
+//       params.push(from, to);
+//     }
+
+//     const [rows] = await db.query(`
+//       SELECT 
+//         b.created_by AS user_id,
+//         u.username,
+//         u.phone,
+
+//         p.payment_date,
+
+//         SUM(p.total_amount) AS total_collected,
+//         SUM(p.cash_amount) AS cash_collected,
+//         SUM(p.upi_amount) AS upi_collected,
+//         SUM(p.cheque_amount) AS cheque_collected
+
+//       FROM customerBillingPayment p
+
+//       JOIN customerBilling b 
+//         ON p.billing_id = b.id
+
+//       LEFT JOIN users_roles u 
+//         ON b.created_by = u.id
+
+//       WHERE b.created_by IS NOT NULL
+//       ${dateFilter}
+
+//       GROUP BY 
+//         b.created_by,
+//         u.username,
+//         u.phone,
+//         p.payment_date
+
+//       ORDER BY 
+//         p.payment_date DESC,
+//         total_collected DESC
+//     `, params);
+
+//     res.json({
+//       success: true,
+//       data: rows.map(r => ({
+//         user_id: r.user_id,
+//         username: r.username || "Unknown",
+//         phone: r.phone || "-",
+
+//         payment_date: r.payment_date,
+
+//         total_collected: Number(r.total_collected),
+//         cash_collected: Number(r.cash_collected),
+//         upi_collected: Number(r.upi_collected),
+//         cheque_collected: Number(r.cheque_collected),
+//       }))
+//     });
+
+//   } catch (err) {
+//     console.error("Date-wise Collection Error:", err);
+
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// };
+
+/** USER DATE-WISE COLLECTION REPORT - GROUPED */
+
+export const getUserDateWiseCollection = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+
+    let dateFilter = "";
+    let params = [];
+
+    if (from && to) {
+      dateFilter = "AND p.payment_date BETWEEN ? AND ?";
+      params.push(from, to);
+    }
+
+    const [rows] = await db.query(`
+      SELECT 
+        b.created_by AS user_id,
+        u.username,
+        u.phone,
+
+        p.payment_date,
+
+        SUM(p.total_amount) AS total_collected,
+        SUM(p.cash_amount) AS cash_collected,
+        SUM(p.upi_amount) AS upi_collected,
+        SUM(p.cheque_amount) AS cheque_collected
+
+      FROM customerBillingPayment p
+      JOIN customerBilling b ON p.billing_id = b.id
+      LEFT JOIN users_roles u ON b.created_by = u.id
+
+      WHERE b.created_by IS NOT NULL
+      ${dateFilter}
+
+      GROUP BY 
+        b.created_by,
+        u.username,
+        u.phone,
+        p.payment_date
+
+      ORDER BY p.payment_date DESC
+    `, params);
+
+    /* 🔥 GROUPING LOGIC */
+
+    const userMap = {};
+
+    for (const row of rows) {
+      if (!userMap[row.user_id]) {
+        userMap[row.user_id] = {
+          user_id: row.user_id,
+          username: row.username || "Unknown",
+          phone: row.phone || "-",
+          total_collected: Number(row.total_collected),
+          cash_collected: Number(row.cash_collected),
+          upi_collected: Number(row.upi_collected),
+          cheque_collected: Number(row.cheque_collected),
+          collections: []
+        };
+      }
+
+      userMap[row.user_id].collections.push({
+        payment_date: row.payment_date,
+        total_collected: Number(row.total_collected),
+        cash_collected: Number(row.cash_collected),
+        upi_collected: Number(row.upi_collected),
+        cheque_collected: Number(row.cheque_collected),
+      });
+    }
+
+    const result = Object.values(userMap);
+
+    res.json({
+      success: true,
+      data: result
+    });
+
+  } catch (err) {
+    console.error("Grouped Collection Error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};

@@ -123,3 +123,194 @@ export const getCancelledOrders = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// export const getUserOrderReport = async (req, res) => {
+//   try {
+//     const { from, to } = req.query;
+
+//     let dateFilter = "";
+//     let params = [];
+
+//     if (from && to) {
+//       dateFilter = "AND o.order_date BETWEEN ? AND ?";
+//       params.push(from, to);
+//     }
+
+//     /* ================= USER SUMMARY ================= */
+//     const [users] = await db.query(`
+//       SELECT 
+//         o.created_by AS user_id,
+//         COUNT(DISTINCT o.id) AS total_orders,
+//         COALESCE(SUM(op.total_amount), 0) AS total_revenue
+//       FROM customerOrders o
+//       LEFT JOIN customerOrderProducts op 
+//         ON o.id = op.order_id
+//       WHERE o.created_by IS NOT NULL
+//       ${dateFilter}
+//       GROUP BY o.created_by
+//       ORDER BY total_revenue DESC
+//     `, params);
+
+//     /* ================= PRODUCT DETAILS ================= */
+//     const [products] = await db.query(`
+//       SELECT 
+//         o.created_by AS user_id,
+//         op.product_id,
+//         p.product_name,
+//         SUM(op.quantity) AS total_quantity,
+//         SUM(op.total_amount) AS total_revenue
+//       FROM customerOrders o
+//       JOIN customerOrderProducts op 
+//         ON o.id = op.order_id
+//       JOIN products p 
+//         ON op.product_id = p.id
+//       WHERE o.created_by IS NOT NULL
+//       ${dateFilter}
+//       GROUP BY 
+//         o.created_by, 
+//         op.product_id, 
+//         p.product_name
+//     `, params);
+
+//     /* ================= MERGE (OPTIMIZED) ================= */
+
+//     const productMap = {};
+
+//     for (const p of products) {
+//       if (!productMap[p.user_id]) {
+//         productMap[p.user_id] = [];
+//       }
+
+//       productMap[p.user_id].push({
+//         product_id: p.product_id,
+//         product_name: p.product_name,
+//         total_quantity: Number(p.total_quantity),
+//         total_revenue: Number(p.total_revenue),
+//       });
+//     }
+
+//     const result = users.map((user) => ({
+//       user_id: user.user_id,
+//       total_orders: Number(user.total_orders),
+//       total_revenue: Number(user.total_revenue),
+//       products: productMap[user.user_id] || [],
+//     }));
+
+//     /* ================= RESPONSE ================= */
+
+//     res.json({
+//       success: true,
+//       data: result,
+//     });
+
+//   } catch (err) {
+//     console.error("User Order Report Error:", err);
+
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// };
+
+export const getUserOrderReport = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+
+    let dateFilter = "";
+    let params = [];
+
+    if (from && to) {
+      dateFilter = "AND o.order_date BETWEEN ? AND ?";
+      params.push(from, to);
+    }
+
+    /* ================= USER SUMMARY ================= */
+    const [users] = await db.query(`
+      SELECT 
+        o.created_by AS user_id,
+        u.username,
+        u.phone,
+        COUNT(DISTINCT o.id) AS total_orders,
+        COALESCE(SUM(op.total_amount), 0) AS total_revenue
+      FROM customerOrders o
+      LEFT JOIN customerOrderProducts op 
+        ON o.id = op.order_id
+      LEFT JOIN users_roles u 
+        ON o.created_by = u.id   -- 🔥 JOIN USER TABLE
+      WHERE o.created_by IS NOT NULL
+      ${dateFilter}
+      GROUP BY o.created_by, u.username, u.phone
+      ORDER BY total_revenue DESC
+    `, params);
+
+    /* ================= PRODUCT DETAILS ================= */
+    const [products] = await db.query(`
+      SELECT 
+        o.created_by AS user_id,
+        op.product_id,
+        p.product_name,
+        p.brand,
+        p.category,
+        p.category,
+        p.quantity,
+        p.price,
+        SUM(op.quantity) AS total_quantity,
+        SUM(op.total_amount) AS total_revenue
+      FROM customerOrders o
+      JOIN customerOrderProducts op 
+        ON o.id = op.order_id
+      JOIN products p 
+        ON op.product_id = p.id
+      WHERE o.created_by IS NOT NULL
+      ${dateFilter}
+      GROUP BY 
+        o.created_by, 
+        op.product_id, 
+        p.product_name
+    `, params);
+
+    /* ================= MERGE ================= */
+
+    const productMap = {};
+
+    for (const p of products) {
+      if (!productMap[p.user_id]) {
+        productMap[p.user_id] = [];
+      }
+
+      productMap[p.user_id].push({
+        product_id: p.product_id,
+        product_name: p.product_name,
+        brand: p.brand,
+        category: p.category,
+        quantity: p.quantity,
+        price: p.price,
+        total_quantity: Number(p.total_quantity),
+        total_revenue: Number(p.total_revenue),
+      });
+    }
+
+    const result = users.map((user) => ({
+      user_id: user.user_id,
+      username: user.username,
+      phone: user.phone,
+      total_orders: Number(user.total_orders),
+      total_revenue: Number(user.total_revenue),
+      products: productMap[user.user_id] || [],
+    }));
+
+    res.json({
+      success: true,
+      data: result,
+    });
+
+  } catch (err) {
+    console.error("User Order Report Error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};

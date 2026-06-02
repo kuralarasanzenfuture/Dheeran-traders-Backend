@@ -9,6 +9,7 @@ export const requestLogger = (req, res, next) => {
     url: req.originalUrl,
     fullUrl: fullUrl,
     body: req.body,
+    user: req.user?.id || null,
     query: req.query,
   });
 

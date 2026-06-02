@@ -63,6 +63,7 @@ export const getCustomers = async (req, res) => {
         c.first_name,
         c.last_name,
         c.email,
+        c.place,
         c.phone,
         c.address,
 

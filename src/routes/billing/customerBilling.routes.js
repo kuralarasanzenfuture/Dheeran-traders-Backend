@@ -10,9 +10,10 @@ import {
   getLastInvoiceNumber,
   getNextInvoiceNumber,
   getPendingBills,
+  getUserDateWiseCollection,
+  getUserPaymentCollectionReport,
   productWiseReport,
   productWiseReportByDate,
-  
 } from "../../controllers/billing/billing/getBilling.controller.js";
 import { verifyAdminPassword } from "../../middlewares/verifyAdminPassword.js";
 import { protect, verifyToken } from "../../middlewares/auth.middleware.js";
@@ -41,6 +42,8 @@ router.get("/brands", brandWiseReport);
 router.get("/customers", customerWiseReport);
 router.get("/pending", getPendingBills);
 router.get("/assigned-pending-bills", getAssignedPendingBills);
+router.get("/reports/user-payment-collection", getUserPaymentCollectionReport);
+router.get("/reports/user-date-wise-collection", getUserDateWiseCollection);
 
 router.get("/last-invoice-number", getLastInvoiceNumber);
 router.get("/next-invoice-number", getNextInvoiceNumber);

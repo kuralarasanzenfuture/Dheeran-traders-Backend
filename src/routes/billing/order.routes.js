@@ -19,6 +19,7 @@ import {
   getProductSalesReport,
   getDeliveryReport,
   getCancelledOrders,
+  getUserOrderReport,
 } from "../../controllers/billing/order/orderReports.controller.js";
 
 const router = express.Router();
@@ -35,6 +36,7 @@ router.get("/reports/customer-report", getCustomerReport);
 router.get("/reports/product-sales-report", getProductSalesReport);
 router.get("/reports/delivery-performance", getDeliveryReport);
 router.get("/reports/cancelled-orders", getCancelledOrders);
+router.get("/reports/user-order-report", getUserOrderReport);
 router.get("/:id", getOrderById);
 router.put("/:id", updateOrder);
 router.put("/:id/confirm", confirmOrder);

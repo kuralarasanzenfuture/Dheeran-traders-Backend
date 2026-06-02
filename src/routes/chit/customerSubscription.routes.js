@@ -7,7 +7,12 @@ import {
   getBatchSummary,
   getPlanSummary,
   getBatchDetails,
-  getBatchSummaryById
+  getBatchSummaryById,
+  getActiveCustomers,
+  getThisMonthCollection,
+  getTotalCollection,
+  getPendingCollection,
+  getDashboardStats
 } from "../../controllers/chit/subscriptions/getSubscription.controller.js";
 import { verifyToken } from "../../middlewares/auth.middleware.js";
 import { createCustomerSubscription } from "../../controllers/chit/subscriptions/createSubscription.controller.js";
@@ -28,6 +33,11 @@ router.get("/", getCustomerSubscriptions);
 router.get("/batch-summary", getBatchSummary);
 router.get("/batch-summary/:batch_id", getBatchSummaryById);
 router.get("/plan-summary", getPlanSummary);
+router.get("/active-customers", getActiveCustomers);
+router.get("/this-month-collection", getThisMonthCollection);
+router.get("/total-collection", getTotalCollection);
+router.get("/pending-collection", getPendingCollection);
+router.get("/dashboard-stats", getDashboardStats);
 
 // 📊 SPECIFIC BATCH DETAILS
 router.get("/batch-details/:batch_id", getBatchDetails);

@@ -22,7 +22,7 @@ export const seed = async () => {
   await seedCustomers(db);
   await seedVendors(db);
   await seedCompanyDetails(db);
-  await seedCompanyBank(db);
+  // await seedCompanyBank(db);
 
   await seedChitAgentStaff(db);
   await seedChitCustomers(db);

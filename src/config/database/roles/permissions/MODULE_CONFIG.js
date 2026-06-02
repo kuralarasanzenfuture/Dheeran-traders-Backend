@@ -217,7 +217,27 @@ export const MODULE_CONFIG = [
             code: "BILLING_REPORT_DAILY",
             actions: ["VIEW", "EXPORT"],
           },
+          {
+            name: "orders report user wise",
+            code: "BILLING_REPORT_ORDERS_USER_WISE",
+            actions: ["VIEW", "EXPORT"],
+          },
+          {
+            name: "payment collection report user wise",
+            code: "BILLING_REPORT_PAYMENT_COLLECTION_USER_WISE",
+            actions: ["VIEW", "EXPORT"],
+          },
         ],
+      },
+      {
+        name: "orders",
+        code: "BILLING_ORDERS",
+        actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
+      },
+      {
+        name: "assigned-user-to-customer",
+        code: "BILLING_ASSIGN_USER",
+        actions: ["VIEW"],
       },
       {
         name: "bank details",

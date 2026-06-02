@@ -66,11 +66,13 @@ app.use(attachDb);
 // ------------------------------------------------------------------
 
 // 🔥 attach logger BEFORE routes
-// app.use(requestContext);   // 🔥 FIRST
-// app.use(requestLogger);    // 🔥 SECOND
+/* 🔥 CONTEXT FIRST */
+// app.use(requestContext);
+
+/* 🔥 LOG RAW REQUEST */
+// app.use(requestLogger);
 
 app.use("/api", routes);
-
 
 // ------------------------------------------------------------------
 // Health Check (optional but recommended)

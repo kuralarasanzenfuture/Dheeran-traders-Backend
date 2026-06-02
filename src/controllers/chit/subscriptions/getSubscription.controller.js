@@ -518,3 +518,104 @@ export const getBatchDetails = async (req, res) => {
   }
 };
 
+export const getActiveCustomers = async (req, res) => {
+  try {
+    const [[row]] = await db.query(`
+      SELECT COUNT(DISTINCT customer_id) AS active_customers
+      FROM chit_customer_subscriptions
+      WHERE CURDATE() BETWEEN start_date AND end_date
+    `);
+
+    res.json({ success: true, data: row });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getThisMonthCollection = async (req, res) => {
+  try {
+    const [[row]] = await db.query(`
+      SELECT 
+        IFNULL(SUM(total_amount),0) AS this_month_collection
+      FROM chit_collections_payments
+      WHERE MONTH(payment_datetime) = MONTH(CURDATE())
+      AND YEAR(payment_datetime) = YEAR(CURDATE())
+    `);
+
+    res.json({ success: true, data: row });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+export const getTotalCollection = async (req, res) => {
+  try {
+    const [[row]] = await db.query(`
+      SELECT 
+        IFNULL(SUM(total_amount),0) AS total_collection
+      FROM chit_collections_payments
+    `);
+
+    res.json({ success: true, data: row });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getPendingCollection = async (req, res) => {
+  try {
+    const [[row]] = await db.query(`
+      SELECT 
+        IFNULL(SUM(i.installment_amount),0) 
+        - IFNULL(SUM(pa.allocated_amount),0) 
+        AS pending_collection
+      FROM chit_customer_installments i
+      LEFT JOIN chit_payment_allocations pa 
+        ON i.id = pa.installment_id
+    `);
+
+    res.json({ success: true, data: row });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export const getDashboardStats = async (req, res) => {
+  try {
+    const [[data]] = await db.query(`
+      SELECT
+        /* Active Customers */
+        (SELECT COUNT(DISTINCT customer_id)
+         FROM chit_customer_subscriptions
+         WHERE CURDATE() BETWEEN start_date AND end_date
+        ) AS active_customers,
+
+        /* This Month Collection */
+        (SELECT IFNULL(SUM(total_amount),0)
+         FROM chit_collections_payments
+         WHERE MONTH(payment_datetime)=MONTH(CURDATE())
+         AND YEAR(payment_datetime)=YEAR(CURDATE())
+        ) AS this_month_collection,
+
+        /* Total Collection */
+        (SELECT IFNULL(SUM(total_amount),0)
+         FROM chit_collections_payments
+        ) AS total_collection,
+
+        /* Pending Collection */
+        (SELECT 
+          IFNULL(SUM(i.installment_amount),0) 
+          - IFNULL(SUM(pa.allocated_amount),0)
+         FROM chit_customer_installments i
+         LEFT JOIN chit_payment_allocations pa 
+           ON i.id = pa.installment_id
+        ) AS pending_collection
+    `);
+
+    res.json({ success: true, data });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

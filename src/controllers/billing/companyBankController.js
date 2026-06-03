@@ -639,6 +639,7 @@ export const createCompanyBank = async (req, res) => {
       account_number,
       ifsc_code,
       branch,
+      upi_id,
       status = "active",
       remarks,
       is_primary = false,
@@ -649,6 +650,9 @@ export const createCompanyBank = async (req, res) => {
     account_name = account_name?.trim();
     account_number = account_number?.trim();
     ifsc_code = ifsc_code?.toUpperCase().trim();
+    branch = branch?.trim();
+    upi_id = upi_id?.trim();
+    status = status?.trim();
 
     const toBoolean = (val) => {
       if ([true, "true", 1, "1"].includes(val)) return true;
@@ -689,7 +693,7 @@ export const createCompanyBank = async (req, res) => {
     const [exists] = await connection.query(
       `SELECT id FROM company_bank_details 
        WHERE account_number=? AND ifsc_code=? LIMIT 1`,
-      [account_number, ifsc_code]
+      [account_number, ifsc_code],
     );
 
     if (exists.length) {
@@ -702,7 +706,7 @@ export const createCompanyBank = async (req, res) => {
 
     // 🔒 Lock primary rows
     const [primaryRows] = await connection.query(
-      `SELECT id FROM company_bank_details WHERE is_primary = 1 FOR UPDATE`
+      `SELECT id FROM company_bank_details WHERE is_primary = 1 FOR UPDATE`,
     );
 
     let finalIsPrimary = false;
@@ -714,7 +718,7 @@ export const createCompanyBank = async (req, res) => {
       await connection.query(
         `UPDATE company_bank_details 
          SET is_primary = 0 
-         WHERE is_primary = 1`
+         WHERE is_primary = 1`,
       );
     } else if (primaryRows.length === 0) {
       // first bank
@@ -725,19 +729,20 @@ export const createCompanyBank = async (req, res) => {
 
     const [result] = await connection.query(
       `INSERT INTO company_bank_details
-       (bank_name, account_name, account_number, ifsc_code, branch, qr_code_image, status, is_primary, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (bank_name, account_name, account_number, ifsc_code, branch,upi_id, qr_code_image, status, is_primary, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         bank_name,
         account_name,
         account_number,
         ifsc_code,
         branch || null,
+        upi_id || null,
         qr_code_image,
         status,
         finalIsPrimary ? 1 : 0,
         userId,
-      ]
+      ],
     );
 
     const recordId = result.insertId;
@@ -756,6 +761,7 @@ export const createCompanyBank = async (req, res) => {
         account_number,
         ifsc_code,
         branch,
+        upi_id,
         status,
         is_primary: finalIsPrimary,
         qr_code_image,
@@ -774,7 +780,6 @@ export const createCompanyBank = async (req, res) => {
         is_primary: finalIsPrimary,
       },
     });
-
   } catch (err) {
     await connection.rollback();
 
@@ -791,7 +796,6 @@ export const createCompanyBank = async (req, res) => {
       success: false,
       message: err.message,
     });
-
   } finally {
     connection.release();
   }
@@ -954,7 +958,7 @@ export const updateCompanyBank = async (req, res) => {
 
     const [[oldData]] = await connection.query(
       `SELECT * FROM company_bank_details WHERE id=? FOR UPDATE`,
-      [id]
+      [id],
     );
 
     if (!oldData) throw new Error("Bank not found");
@@ -967,6 +971,7 @@ export const updateCompanyBank = async (req, res) => {
       account_number,
       ifsc_code,
       branch,
+      upi_id,
       status,
       is_primary,
     } = req.body;
@@ -994,6 +999,7 @@ export const updateCompanyBank = async (req, res) => {
       account_number: account_number ?? oldData.account_number,
       ifsc_code: ifsc_code ?? oldData.ifsc_code,
       branch: branch ?? oldData.branch,
+      upi_id: upi_id ?? oldData.upi_id,
       status: status ?? oldData.status,
       is_primary:
         is_primary !== undefined ? (is_primary ? 1 : 0) : oldData.is_primary,
@@ -1028,7 +1034,7 @@ export const updateCompanyBank = async (req, res) => {
     const [exists] = await connection.query(
       `SELECT id FROM company_bank_details 
        WHERE account_number=? AND ifsc_code=? AND id!=?`,
-      [finalData.account_number, finalData.ifsc_code, id]
+      [finalData.account_number, finalData.ifsc_code, id],
     );
 
     if (exists.length > 0) {
@@ -1039,7 +1045,7 @@ export const updateCompanyBank = async (req, res) => {
 
     // 🔒 lock ALL primary rows to prevent race condition
     const [primaryRows] = await connection.query(
-      `SELECT id FROM company_bank_details WHERE is_primary = 1 FOR UPDATE`
+      `SELECT id FROM company_bank_details WHERE is_primary = 1 FOR UPDATE`,
     );
 
     const primaryCount = primaryRows.length;
@@ -1050,7 +1056,7 @@ export const updateCompanyBank = async (req, res) => {
         `UPDATE company_bank_details 
          SET is_primary = 0 
          WHERE is_primary = 1 AND id != ?`,
-        [id]
+        [id],
       );
     }
 
@@ -1077,10 +1083,10 @@ export const updateCompanyBank = async (req, res) => {
 
     /* ================= UPDATE ================= */
 
-    await connection.query(
-      `UPDATE company_bank_details SET ? WHERE id=?`,
-      [finalData, id]
-    );
+    await connection.query(`UPDATE company_bank_details SET ? WHERE id=?`, [
+      finalData,
+      id,
+    ]);
 
     /* ================= AUDIT ================= */
 
@@ -1101,7 +1107,6 @@ export const updateCompanyBank = async (req, res) => {
       success: true,
       message: "Bank updated successfully",
     });
-
   } catch (err) {
     await connection.rollback();
 
@@ -1118,7 +1123,6 @@ export const updateCompanyBank = async (req, res) => {
       success: false,
       message: err.message,
     });
-
   } finally {
     connection.release();
   }

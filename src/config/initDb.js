@@ -85,6 +85,8 @@ export const initDatabase = async () => {
 
     await createVendorStocksTables(db);
 
+    await createOrderTables(db);
+
     await createCustomerBillingTables(db);
 
     await createReturnBillingTables(db);

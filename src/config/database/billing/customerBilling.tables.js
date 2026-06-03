@@ -1,4 +1,82 @@
 export const createCustomerBillingTables = async (db) => {
+  //   await db.query(`
+  //   CREATE TABLE IF NOT EXISTS customerBilling (
+  //   id INT AUTO_INCREMENT PRIMARY KEY,
+
+  //   /* 📄 INVOICE */
+  //   invoice_number VARCHAR(30) NOT NULL,
+  //   invoice_date DATE NOT NULL,
+  //   company_gst_number VARCHAR(30),
+
+  //   /* 👤 CUSTOMER */
+  //   customer_id INT NOT NULL,
+  //   customer_name VARCHAR(150) NOT NULL,
+  //   phone_number VARCHAR(20),
+  //   customer_gst_number VARCHAR(30),
+
+  //   /* 🚚 TRANSPORT */
+  //   vehicle_number VARCHAR(20),
+  //   eway_bill_number VARCHAR(50),
+
+  //   /* 👤 STAFF */
+  //   staff_name VARCHAR(150) NOT NULL,
+  //   staff_phone VARCHAR(20),
+
+  //   /* 🏦 BANK */
+  //   bank_id INT NOT NULL,
+
+  //   /* 💰 BILL AMOUNTS */
+  //   subtotal DECIMAL(12,2) NOT NULL,
+  //   grand_total DECIMAL(12,2) NOT NULL,
+  //   advance_paid DECIMAL(12,2) DEFAULT 0,
+  //   balance_due DECIMAL(12,2) NOT NULL,
+
+  //   /* 💳 PAYMENT SPLIT */
+  //   cash_amount DECIMAL(12,2) DEFAULT 0,
+  //   upi_amount DECIMAL(12,2) DEFAULT 0,
+  //   cheque_amount DECIMAL(12,2) DEFAULT 0,
+  //   upi_reference VARCHAR(100),
+
+  //   /* 🔁 RETURNS */
+  //   return_status ENUM('NONE', 'PARTIAL', 'FULL') DEFAULT 'NONE',
+
+  //   /* 💵 PAYMENT STATUS */
+  //   payment_status ENUM('UNPAID','PARTIAL','PAID') DEFAULT 'UNPAID',
+
+  //   /* 🔄 BILL STATUS */
+  //   status ENUM('ACTIVE','CANCELLED') DEFAULT 'ACTIVE',
+
+  //   /* 👤 AUDIT */
+  //   created_by INT NULL,
+  //   updated_by INT NULL,
+
+  //   /* 📝 REMARKS */
+  //   remarks TEXT,
+
+  //   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  //   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  //   /* 🔐 CONSTRAINTS */
+  //   UNIQUE KEY uq_invoice_number (invoice_number),
+
+  //   /* ⚡ INDEXES (CRITICAL) */
+  //   INDEX idx_customer (customer_id),
+  //   INDEX idx_invoice_date (invoice_date),
+  //   INDEX idx_customer_date (customer_id, invoice_date),
+  //   INDEX idx_payment_status (payment_status),
+  //   INDEX idx_return_status (return_status),
+  //   INDEX idx_status (status),
+  //   INDEX idx_bank (bank_id),
+
+  //   /* 🔗 FOREIGN KEYS */
+  //   CONSTRAINT fk_billing_customer
+  //     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT,
+
+  //   CONSTRAINT fk_billing_bank
+  //     FOREIGN KEY (bank_id) REFERENCES company_bank_details(id) ON DELETE RESTRICT
+
+  // ) ENGINE=InnoDB;
+  //   `);
 
   await db.query(`
   CREATE TABLE IF NOT EXISTS customerBilling (
@@ -54,6 +132,8 @@ export const createCustomerBillingTables = async (db) => {
   /* 📝 REMARKS */
   remarks TEXT,
 
+  order_id INT NULL,
+
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -74,7 +154,10 @@ export const createCustomerBillingTables = async (db) => {
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT,
 
   CONSTRAINT fk_billing_bank
-    FOREIGN KEY (bank_id) REFERENCES company_bank_details(id) ON DELETE RESTRICT
+    FOREIGN KEY (bank_id) REFERENCES company_bank_details(id) ON DELETE RESTRICT,
+
+  CONSTRAINT fk_billing_order
+    FOREIGN KEY (order_id) REFERENCES customerOrders(id) ON DELETE RESTRICT
 
 ) ENGINE=InnoDB;
   `);
@@ -168,9 +251,7 @@ CREATE TABLE IF NOT EXISTS customerBillingPayment (
 
 ) ENGINE=InnoDB;
 `);
-
 };
-
 
 // export const createCustomerBillingTables = async (db) => {
 //   await db.query(`
@@ -289,8 +370,8 @@ CREATE TABLE IF NOT EXISTS customerBillingPayment (
 //     INDEX idx_payment_date (payment_date),
 //     INDEX idx_billing_id (billing_id),
 
-//     FOREIGN KEY (billing_id) 
-//     REFERENCES customerBilling(id) 
+//     FOREIGN KEY (billing_id)
+//     REFERENCES customerBilling(id)
 //     ON DELETE CASCADE
 // );
 // `);

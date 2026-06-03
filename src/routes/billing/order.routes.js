@@ -9,6 +9,9 @@ import {
   updateOrderStatus,
   getProductsWithAvailableStock,
   getMyOrders,
+  generateBillFromOrder,
+  cancelOrder,
+  deliverOrder,
 } from "../../controllers/billing/order/order.controller.js";
 
 import { verifyToken } from "../../middlewares/auth.middleware.js";
@@ -25,7 +28,7 @@ import {
 const router = express.Router();
 
 router.use(verifyToken);
-
+router.post("/:id/generate-bill", verifyToken, generateBillFromOrder);
 router.post("/", createOrder);
 router.get("/", getOrders);
 router.get("/my-orders", verifyToken, getMyOrders);
@@ -40,6 +43,8 @@ router.get("/reports/user-order-report", getUserOrderReport);
 router.get("/:id", getOrderById);
 router.put("/:id", updateOrder);
 router.put("/:id/confirm", confirmOrder);
+router.put("/:id/cancel", cancelOrder);
+router.put("/:id/deliver", deliverOrder);
 router.put("/:id/status", updateOrderStatus);
 router.delete("/:id", deleteOrder);
 

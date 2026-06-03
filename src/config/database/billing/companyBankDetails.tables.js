@@ -30,7 +30,7 @@ export const createCompanyBankDetailsTables = async (db) => {
   account_number VARCHAR(50) NOT NULL,
   ifsc_code VARCHAR(20) NOT NULL,
   branch VARCHAR(150) DEFAULT NULL,
-
+  upi_id VARCHAR(150) DEFAULT NULL,
   qr_code_image VARCHAR(255) NOT NULL,
 
   status ENUM('active','inactive') DEFAULT 'active',

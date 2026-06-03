@@ -505,7 +505,8 @@ export const getMyOrders = async (req, res) => {
   try {
     const userId = req.user.id; // logged-in user id
 
-    const [rows] = await db.query(`
+    const [rows] = await db.query(
+      `
       SELECT 
         o.id,
         o.order_number,
@@ -537,13 +538,14 @@ export const getMyOrders = async (req, res) => {
       WHERE o.created_by = ?
 
       ORDER BY o.id DESC
-    `, [userId]);
+    `,
+      [userId],
+    );
 
     res.json({
       count: rows.length,
       data: rows,
     });
-
   } catch (err) {
     console.error("Get my orders error:", err.message);
     res.status(500).json({ message: err.message });
@@ -1294,7 +1296,13 @@ export const updateOrder = async (req, res) => {
         const qty = Number(item.quantity);
         const total = Number(item.total_amount);
 
-        if (!item.product_id || isNaN(qty) || qty <= 0 || isNaN(total) || total <= 0) {
+        if (
+          !item.product_id ||
+          isNaN(qty) ||
+          qty <= 0 ||
+          isNaN(total) ||
+          total <= 0
+        ) {
           throw new Error("Invalid product data");
         }
 
@@ -1308,7 +1316,7 @@ export const updateOrder = async (req, res) => {
           throw new Error(`Product not found: ${item.product_id}`);
         }
 
-        values.push([id, item.product_id, qty , total]);
+        values.push([id, item.product_id, qty, total]);
       }
 
       // 🗑 DELETE OLD PRODUCTS
@@ -1479,15 +1487,25 @@ export const updateOrderStatus = async (req, res) => {
       throw new Error("Cancelled order cannot be updated");
     }
 
-    if (currentStatus === "BILLED") {
-      throw new Error("Billed order cannot be updated");
+    // if (currentStatus === "BILLED") {
+    //   throw new Error("Billed order cannot be updated");
+    // }
+
+    if (status === "BILLED") {
+      throw new Error("BILLED status cannot be set manually");
     }
 
     /* ✅ STATUS FLOW VALIDATION */
+    // const allowedTransitions = {
+    //   PENDING: ["CONFIRMED", "CANCELLED"],
+    //   CONFIRMED: ["DELIVERED", "BILLED", "CANCELLED"],
+    //   DELIVERED: ["BILLED"],
+    // };
+
     const allowedTransitions = {
       PENDING: ["CONFIRMED", "CANCELLED"],
-      CONFIRMED: ["DELIVERED", "BILLED", "CANCELLED"],
-      DELIVERED: ["BILLED"],
+      CONFIRMED: ["DELIVERED", "CANCELLED"],
+      DELIVERED: [], // 🔥 no manual transitions
     };
 
     if (
@@ -1555,6 +1573,3 @@ export const getProductsWithAvailableStock = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-
-

@@ -185,6 +185,11 @@ export const MODULE_CONFIG = [
             code: "BILLING_CURRENT_STOCK",
             actions: ["VIEW", "EDIT", "DELETE"],
           },
+          {
+            name: "returns",
+            code: "BILLING_RETURNS",
+            actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
+          },
         ],
       },
       {
@@ -248,7 +253,7 @@ export const MODULE_CONFIG = [
         name: "company details",
         code: "BILLING_COMPANY_DETAILS",
         actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
-      }
+      },
     ],
   },
 
@@ -271,7 +276,7 @@ export const MODULE_CONFIG = [
       {
         name: "Chit Batches",
         code: "CHIT_BATCHES",
-        actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
+        actions: ["VIEW", "CREATE", "EDIT", "DELETE", "BATCH_VIEW"],
       },
       {
         name: "Agent / Staff",
@@ -296,6 +301,16 @@ export const MODULE_CONFIG = [
           {
             name: "Customer Report",
             code: "CHIT_REPORT_CUSTOMER",
+            actions: ["VIEW", "EXPORT"],
+          },
+          {
+            name: "Batch Report",
+            code: "CHIT_REPORT_BATCH",
+            actions: ["VIEW", "EXPORT"],
+          },
+          {
+            name: "collection report",
+            code: "CHIT_REPORT_COLLECTION",
             actions: ["VIEW", "EXPORT"],
           },
           {

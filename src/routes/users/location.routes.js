@@ -4,7 +4,7 @@ import {
   getCurrentLocation,
   getLocationHistory,
   getAllUsersCurrentLocation
-} from "../../controllers/chit/location.controller.js";
+} from "../../controllers/location.controller.js";
 import { verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();

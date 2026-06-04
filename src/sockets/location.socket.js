@@ -142,7 +142,7 @@ export const locationSocket = (io) => {
         return next(new Error("Unauthorized"));
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
 
       socket.user = {
         id: decoded.id,
@@ -175,7 +175,7 @@ export const locationSocket = (io) => {
 
     // mark last seen
     await db.query(
-      `UPDATE users_roles SET last_seen = NOW() WHERE id = ?`,
+      `UPDATE users_roles SET is_online = 1, last_seen = NOW() WHERE id = ?`,
       [userId]
     );
 
@@ -278,7 +278,7 @@ export const locationSocket = (io) => {
       console.log(`🔴 DISCONNECT → User:${userId} Reason:${reason}`);
 
       await db.query(
-        `UPDATE users_roles SET last_seen = NOW() WHERE id = ?`,
+        `UPDATE users_roles SET is_online = 0, last_seen = NOW() WHERE id = ?`,
         [userId]
       );
 

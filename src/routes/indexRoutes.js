@@ -38,7 +38,7 @@ import chitAgentsAndStaffRoutes from "./chit/agentAndStaff.routes.js";
 import chitCustomerSubscriptionsRoutes from "./chit/customerSubscription.routes.js";
 import collectionPaymentRoutes from "./chit/collectionPayment.routes.js";
 import customerInstallmentRoutes from "./chit/customerInstallment.routes.js";
-import locationRoutes from "./chit/location.routes.js";
+import locationRoutes from "./users/location.routes.js";
 import userCustomerAssignmentRoutes from "./chit/userCustomerAssignment.routes.js";
 
 // reports

@@ -521,58 +521,58 @@ export const getLastInvoiceNumber = async (req, res) => {
   }
 };
 
-export const getNextInvoiceNumber = async (req, res) => {
-  try {
-    const now = new Date();
+// export const getNextInvoiceNumber = async (req, res) => {
+//   try {
+//     const now = new Date();
 
-    let startYear = now.getFullYear();
+//     let startYear = now.getFullYear();
 
-    // Financial year logic (Apr–Mar)
-    if (now.getMonth() < 3) {
-      startYear -= 1;
-    }
+//     // Financial year logic (Apr–Mar)
+//     if (now.getMonth() < 3) {
+//       startYear -= 1;
+//     }
 
-    const shortStartYear = startYear.toString().slice(-2);
-    const shortEndYear = (startYear + 1).toString().slice(-2);
+//     const shortStartYear = startYear.toString().slice(-2);
+//     const shortEndYear = (startYear + 1).toString().slice(-2);
 
-    const financialYear = `${shortStartYear}-${shortEndYear}`;
+//     const financialYear = `${shortStartYear}-${shortEndYear}`;
 
-    const [rows] = await db.query(
-      `
-      SELECT invoice_number 
-      FROM customerBilling 
-      WHERE invoice_number LIKE ?
-      ORDER BY created_at DESC 
-      LIMIT 1
-      `,
-      [`INV/${financialYear}/%`],
-    );
+//     const [rows] = await db.query(
+//       `
+//       SELECT invoice_number 
+//       FROM customerBilling 
+//       WHERE invoice_number LIKE ?
+//       ORDER BY created_at DESC 
+//       LIMIT 1
+//       `,
+//       [`INV/${financialYear}/%`],
+//     );
 
-    let nextNumber = 1;
+//     let nextNumber = 1;
 
-    if (rows.length > 0) {
-      const lastInvoice = rows[0].invoice_number; // INV/26-27/0002
+//     if (rows.length > 0) {
+//       const lastInvoice = rows[0].invoice_number; // INV/26-27/0002
 
-      const parts = lastInvoice.split("/");
-      const lastNumber = Number(parts[2]);
+//       const parts = lastInvoice.split("/");
+//       const lastNumber = Number(parts[2]);
 
-      nextNumber = lastNumber + 1;
-    }
+//       nextNumber = lastNumber + 1;
+//     }
 
-    const padded = String(nextNumber).padStart(4, "0");
+//     const padded = String(nextNumber).padStart(4, "0");
 
-    const nextInvoice = `INV/${financialYear}/${padded}`;
+//     const nextInvoice = `INV/${financialYear}/${padded}`;
 
-    return res.json({
-      nextInvoiceNumber: nextInvoice,
-    });
-  } catch (error) {
-    console.error("Error generating next invoice:", error);
-    return res
-      .status(500)
-      .json({ message: "Failed to generate next invoice number" });
-  }
-};
+//     return res.json({
+//       nextInvoiceNumber: nextInvoice,
+//     });
+//   } catch (error) {
+//     console.error("Error generating next invoice:", error);
+//     return res
+//       .status(500)
+//       .json({ message: "Failed to generate next invoice number" });
+//   }
+// };
 
 // export const getAssignedPendingBills = async (req, res) => {
 //   try {
@@ -631,6 +631,62 @@ export const getNextInvoiceNumber = async (req, res) => {
 //     });
 //   }
 // };
+
+export const getNextInvoiceNumber = async (req, res) => {
+  try {
+    const now = new Date();
+
+    let startYear = now.getFullYear();
+
+    if (now.getMonth() < 3) {
+      startYear -= 1;
+    }
+
+    const shortStartYear = startYear.toString().slice(-2);
+    const shortEndYear = (startYear + 1).toString().slice(-2);
+    const financialYear = `${shortStartYear}-${shortEndYear}`;
+
+    const [rows] = await db.query(
+      `
+      SELECT invoice_number, staff_name, staff_phone 
+      FROM customerBilling 
+      WHERE invoice_number LIKE ?
+      ORDER BY CAST(SUBSTRING_INDEX(invoice_number, '/', -1) AS UNSIGNED) DESC
+      LIMIT 1
+      `,
+      [`INV/${financialYear}/%`],
+    );
+
+    let nextNumber = 1;
+    let staffName = null;
+    let staffPhone = null;
+
+    if (rows.length > 0) {
+      const lastInvoice = rows[0].invoice_number;
+      const parts = lastInvoice.split("/");
+      const lastNumber = parts[2] ? parseInt(parts[2], 10) : 0;
+
+      nextNumber = lastNumber + 1;
+
+      staffName = rows[0].staff_name;
+      staffPhone = rows[0].staff_phone;
+    }
+
+    const padded = String(nextNumber).padStart(4, "0");
+    const nextInvoice = `INV/${financialYear}/${padded}`;
+
+    return res.json({
+      nextInvoiceNumber: nextInvoice,
+      staffName,
+      staffPhone,
+    });
+  } catch (error) {
+    console.error("Error generating next invoice:", error);
+    return res.status(500).json({
+      message: "Failed to generate next invoice number",
+    });
+  }
+};
 
 export const getAssignedPendingBills = async (req, res) => {
   try {

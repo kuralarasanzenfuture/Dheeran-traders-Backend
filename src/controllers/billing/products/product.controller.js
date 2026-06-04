@@ -115,6 +115,7 @@ export const getProducts = async (req, res, next) => {
         hsn_code,
         cgst_rate,
         sgst_rate,
+        igst_rate,
         gst_total_rate,
         price,
         stock
@@ -493,7 +494,7 @@ export const getProductById = async (req, res, next) => {
 
 //     // ✅ DUPLICATE CHECK (matches UNIQUE index)
 //     const [exists] = await connection.query(
-//       `SELECT id FROM products 
+//       `SELECT id FROM products
 //        WHERE product_name = ? AND brand = ? AND category = ? AND quantity = ?`,
 //       [product_name, brand, category, quantity]
 //     );
@@ -619,12 +620,7 @@ export const createProduct = async (req, res, next) => {
 
     quantity = quantity.trim().toLowerCase();
 
-    if (
-      !product_name ||
-      !brand ||
-      !category ||
-      !quantity
-    ) {
+    if (!product_name || !brand || !category || !quantity) {
       throw new Error("Fields cannot be empty");
     }
 
@@ -643,17 +639,12 @@ export const createProduct = async (req, res, next) => {
 
     igst_rate = Number(igst_rate || 0);
 
-    if (
-      cgst_rate < 0 ||
-      sgst_rate < 0 ||
-      igst_rate < 0
-    ) {
+    if (cgst_rate < 0 || sgst_rate < 0 || igst_rate < 0) {
       throw new Error("GST rates cannot be negative");
     }
 
     // ✅ Total GST
-    const gst_total_rate =
-      cgst_rate + sgst_rate + igst_rate;
+    const gst_total_rate = cgst_rate + sgst_rate + igst_rate;
 
     // ======================================================
     // ✅ DUPLICATE CHECK
@@ -669,12 +660,7 @@ export const createProduct = async (req, res, next) => {
         AND category = ?
         AND quantity = ?
       `,
-      [
-        product_name,
-        brand,
-        category,
-        quantity,
-      ]
+      [product_name, brand, category, quantity],
     );
 
     if (exists.length) {
@@ -691,20 +677,16 @@ export const createProduct = async (req, res, next) => {
       FROM products
       ORDER BY id DESC
       LIMIT 1
-      `
+      `,
     );
 
     let nextNum = 1;
 
     if (last?.product_code) {
-      nextNum =
-        parseInt(
-          last.product_code.split("-").pop()
-        ) + 1;
+      nextNum = parseInt(last.product_code.split("-").pop()) + 1;
     }
 
-    const product_code =
-      `DTT-PDT-${String(nextNum).padStart(4, "0")}`;
+    const product_code = `DTT-PDT-${String(nextNum).padStart(4, "0")}`;
 
     // ======================================================
     // ✅ INSERT PRODUCT
@@ -749,7 +731,7 @@ export const createProduct = async (req, res, next) => {
 
         price,
         userId,
-      ]
+      ],
     );
 
     const id = result.insertId;
@@ -794,7 +776,7 @@ export const createProduct = async (req, res, next) => {
         userId,
 
         remarks || "Product created",
-      ]
+      ],
     );
 
     await connection.commit();
@@ -821,16 +803,12 @@ export const createProduct = async (req, res, next) => {
         price,
       },
     });
-
   } catch (err) {
     await connection.rollback();
 
-    console.error(
-      `Error creating product: ${err.message}`
-    );
+    console.error(`Error creating product: ${err.message}`);
 
     next(err);
-
   } finally {
     connection.release();
   }
@@ -932,7 +910,7 @@ export const updateProduct = async (req, res, next) => {
       FROM products
       WHERE id = ?
       `,
-      [id]
+      [id],
     );
 
     if (!oldData) {
@@ -950,23 +928,19 @@ export const updateProduct = async (req, res, next) => {
     // ======================================================
 
     if (data.product_name) {
-      data.product_name =
-        data.product_name.trim();
+      data.product_name = data.product_name.trim();
     }
 
     if (data.brand) {
-      data.brand =
-        data.brand.trim().toLowerCase();
+      data.brand = data.brand.trim().toLowerCase();
     }
 
     if (data.category) {
-      data.category =
-        data.category.trim().toLowerCase();
+      data.category = data.category.trim().toLowerCase();
     }
 
     if (data.quantity) {
-      data.quantity =
-        data.quantity.trim().toLowerCase();
+      data.quantity = data.quantity.trim().toLowerCase();
     }
 
     // ======================================================
@@ -975,10 +949,7 @@ export const updateProduct = async (req, res, next) => {
 
     if (
       data.price !== undefined &&
-      (
-        isNaN(data.price) ||
-        Number(data.price) <= 0
-      )
+      (isNaN(data.price) || Number(data.price) <= 0)
     ) {
       throw new Error("Invalid price");
     }
@@ -1003,37 +974,24 @@ export const updateProduct = async (req, res, next) => {
         : Number(oldData.igst_rate || 0);
 
     // ✅ GST Validation
-    if (
-      cgst_rate < 0 ||
-      sgst_rate < 0 ||
-      igst_rate < 0
-    ) {
-      throw new Error(
-        "GST rates cannot be negative"
-      );
+    if (cgst_rate < 0 || sgst_rate < 0 || igst_rate < 0) {
+      throw new Error("GST rates cannot be negative");
     }
 
     // ✅ Auto Calculate GST Total
-    data.gst_total_rate =
-      cgst_rate +
-      sgst_rate +
-      igst_rate;
+    data.gst_total_rate = cgst_rate + sgst_rate + igst_rate;
 
     // ======================================================
     // ✅ DUPLICATE CHECK
     // ======================================================
 
-    const product_name =
-      data.product_name || oldData.product_name;
+    const product_name = data.product_name || oldData.product_name;
 
-    const brand =
-      data.brand || oldData.brand;
+    const brand = data.brand || oldData.brand;
 
-    const category =
-      data.category || oldData.category;
+    const category = data.category || oldData.category;
 
-    const quantity =
-      data.quantity || oldData.quantity;
+    const quantity = data.quantity || oldData.quantity;
 
     const [exists] = await connection.query(
       `
@@ -1046,19 +1004,11 @@ export const updateProduct = async (req, res, next) => {
         AND quantity = ?
         AND id != ?
       `,
-      [
-        product_name,
-        brand,
-        category,
-        quantity,
-        id,
-      ]
+      [product_name, brand, category, quantity, id],
     );
 
     if (exists.length) {
-      throw new Error(
-        "Another product already exists with same details"
-      );
+      throw new Error("Another product already exists with same details");
     }
 
     // ======================================================
@@ -1077,7 +1027,7 @@ export const updateProduct = async (req, res, next) => {
       SET ?
       WHERE id = ?
       `,
-      [data, id]
+      [data, id],
     );
 
     // ======================================================
@@ -1090,7 +1040,7 @@ export const updateProduct = async (req, res, next) => {
       FROM products
       WHERE id = ?
       `,
-      [id]
+      [id],
     );
 
     // ======================================================
@@ -1124,7 +1074,7 @@ export const updateProduct = async (req, res, next) => {
         userId,
 
         remarks || "Product updated",
-      ]
+      ],
     );
 
     await connection.commit();
@@ -1133,16 +1083,12 @@ export const updateProduct = async (req, res, next) => {
       message: "Product updated successfully",
       product: newData,
     });
-
   } catch (err) {
     await connection.rollback();
 
-    console.error(
-      `❌ UPDATE PRODUCT ERROR: ${err.message}`
-    );
+    console.error(`❌ UPDATE PRODUCT ERROR: ${err.message}`);
 
     next(err);
-
   } finally {
     connection.release();
   }
@@ -1247,7 +1193,7 @@ export const updateProduct = async (req, res, next) => {
 //     const checkQuantity = updateData.quantity || oldData.quantity;
 
 //     const [duplicate] = await connection.query(
-//       `SELECT id FROM products 
+//       `SELECT id FROM products
 //        WHERE product_name = ? AND brand = ? AND category = ? AND quantity = ?
 //        AND id != ?`,
 //       [checkName, checkBrand, checkCategory, checkQuantity, id]
@@ -1323,7 +1269,7 @@ export const deleteProduct = async (req, res, next) => {
 
     const [[oldData]] = await connection.query(
       "SELECT * FROM products WHERE id = ?",
-      [id]
+      [id],
     );
 
     if (!oldData) throw new Error("Product not found");
@@ -1338,18 +1284,14 @@ export const deleteProduct = async (req, res, next) => {
         JSON.stringify(oldData),
         userId,
         remarks || "Hard delete",
-      ]
+      ],
     );
 
-    await connection.query(
-      "DELETE FROM products WHERE id = ?",
-      [id]
-    );
+    await connection.query("DELETE FROM products WHERE id = ?", [id]);
 
     await connection.commit();
 
     res.json({ message: "Deleted permanently" });
-
   } catch (err) {
     await connection.rollback();
     console.error("delete Product", err);
@@ -1439,7 +1381,7 @@ export const updateProductStock = async (req, res, next) => {
     ========================= */
     const [[product]] = await connection.query(
       `SELECT id, stock FROM products WHERE id = ? FOR UPDATE`,
-      [id]
+      [id],
     );
 
     if (!product) throw new Error("Product not found");
@@ -1463,7 +1405,7 @@ export const updateProductStock = async (req, res, next) => {
       `UPDATE products 
        SET stock = ?, updated_by = ?
        WHERE id = ?`,
-      [newStock, userId, id]
+      [newStock, userId, id],
     );
 
     /* =========================
@@ -1478,11 +1420,11 @@ export const updateProductStock = async (req, res, next) => {
         id,
         changeQty,
         newStock,
-        "ADJUSTMENT",   // 🔥 important
-        id,             // reference = product itself
+        "ADJUSTMENT", // 🔥 important
+        id, // reference = product itself
         remarks || `Manual stock update ${oldStock} → ${newStock}`,
         userId,
-      ]
+      ],
     );
 
     /* =========================
@@ -1500,7 +1442,7 @@ export const updateProductStock = async (req, res, next) => {
         JSON.stringify({ stock: newStock, change: changeQty }),
         userId,
         remarks || `Stock updated ${oldStock} → ${newStock}`,
-      ]
+      ],
     );
 
     await connection.commit();
@@ -1511,7 +1453,6 @@ export const updateProductStock = async (req, res, next) => {
       new_stock: newStock,
       change: changeQty,
     });
-
   } catch (err) {
     await connection.rollback();
     console.error("❌ STOCK UPDATE ERROR:", err);

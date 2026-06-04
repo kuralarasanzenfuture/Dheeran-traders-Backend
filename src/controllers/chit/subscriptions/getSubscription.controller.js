@@ -1,6 +1,96 @@
 import db from "../../../config/db.js";
 
 
+// export const getCustomerSubscriptions = async (req, res) => {
+//   try {
+//     const [rows] = await db.query(`
+      
+//       SELECT 
+//         s.id AS subscription_id,
+//         s.nominee_name,
+//         s.nominee_phone,
+
+//         c.id AS customer_id,
+//         c.name AS customer_name,
+//         c.phone,
+//         c.place,
+
+//         b.id AS batch_id,
+//         b.batch_name,
+//         b.batch_duration,
+//         b.start_date AS batch_start_date,
+//         b.end_date AS batch_end_date,
+
+//         p.id AS plan_id,
+//         p.plan_name,
+//         p.duration_days,
+//         p.collection_type,
+//         p.total_installments,
+
+//         s.installment_amount,
+//         s.investment_amount,
+//         s.start_date,
+//         s.duration,
+//         s.end_date,
+
+//         s.reference_mode,
+//         s.agent_staff_id,
+//         s.created_at,
+
+//         bs.total_members,
+//         bs.active_members,
+//         bs.batch_plan_count
+
+//       FROM chit_customer_subscriptions s
+
+//       LEFT JOIN chit_customers c 
+//         ON c.id = s.customer_id
+
+//       LEFT JOIN batches b 
+//         ON b.id = s.batch_id
+
+//       LEFT JOIN plans p 
+//         ON p.id = s.plan_id
+
+//       -- ✅ Pre-aggregated batch stats (ONLY ONCE)
+//       LEFT JOIN (
+//         SELECT 
+//           batch_id,
+//           COUNT(*) AS total_members,
+
+//           COUNT(
+//             CASE 
+//               WHEN CURRENT_DATE BETWEEN start_date AND end_date 
+//               THEN 1 
+//             END
+//           ) AS active_members,
+
+//           COUNT(DISTINCT plan_id) AS batch_plan_count
+
+//         FROM chit_customer_subscriptions
+//         GROUP BY batch_id
+//       ) bs 
+//         ON bs.batch_id = s.batch_id
+
+//       ORDER BY s.id DESC
+//     `);
+
+//     res.status(200).json({
+//       success: true,
+//       count: rows.length,
+//       data: rows,
+//     });
+
+//   } catch (error) {
+//     console.error("getCustomerSubscriptions error:", error);
+
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error",
+//     });
+//   }
+// };
+
 export const getCustomerSubscriptions = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -39,7 +129,13 @@ export const getCustomerSubscriptions = async (req, res) => {
 
         bs.total_members,
         bs.active_members,
-        bs.batch_plan_count
+        bs.batch_plan_count,
+
+        /* 💰 PAYMENT DATA */
+        COALESCE(pay.total_paid, 0) AS amount_paid,
+
+        /* 🔥 PENDING */
+        (s.investment_amount - COALESCE(pay.total_paid, 0)) AS pending_amount
 
       FROM chit_customer_subscriptions s
 
@@ -52,7 +148,7 @@ export const getCustomerSubscriptions = async (req, res) => {
       LEFT JOIN plans p 
         ON p.id = s.plan_id
 
-      -- ✅ Pre-aggregated batch stats (ONLY ONCE)
+      /* ✅ Batch Stats */
       LEFT JOIN (
         SELECT 
           batch_id,
@@ -71,6 +167,18 @@ export const getCustomerSubscriptions = async (req, res) => {
         GROUP BY batch_id
       ) bs 
         ON bs.batch_id = s.batch_id
+
+      /* 🔥 PAYMENT AGGREGATION */
+      LEFT JOIN (
+        SELECT 
+          subscription_id,
+          SUM(total_amount) AS total_paid
+        FROM chit_collections_payments
+        WHERE payment_type = 'INSTALLMENT'
+          AND subscription_id IS NOT NULL
+        GROUP BY subscription_id
+      ) pay 
+        ON pay.subscription_id = s.id
 
       ORDER BY s.id DESC
     `);

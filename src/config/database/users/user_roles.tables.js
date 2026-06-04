@@ -45,7 +45,8 @@ export const createUserRolesTables = async (db) => {
 
       status ENUM('active', 'inactive') DEFAULT 'active',
       token_version INT DEFAULT 0,
-      
+      is_online TINYINT(1) DEFAULT 0,
+      last_seen TIMESTAMP NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       last_login_at TIMESTAMP NULL,

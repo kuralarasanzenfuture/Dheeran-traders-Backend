@@ -466,14 +466,23 @@ export const getOrders = async (req, res) => {
       SELECT 
         o.id,
         o.order_number,
+
+        /* 👤 CUSTOMER */
         o.customer_id,
         o.customer_name,
+        c.phone AS customer_phone,
+        c.email AS customer_email,
+        c.place AS customer_place,
+        c.address AS customer_address,
+
+        /* 📅 ORDER */
         o.order_date,
         o.expected_delivery_date,
         o.delivery_date,
         o.status,
         o.remarks,
 
+        /* 👤 CREATED / UPDATED */
         o.created_by,
         uc.username AS created_by_name,
 
@@ -484,6 +493,10 @@ export const getOrders = async (req, res) => {
         o.updated_at
 
       FROM customerOrders o
+
+      /* 🔥 JOIN CUSTOMER */
+      LEFT JOIN customers c 
+        ON o.customer_id = c.id
 
       LEFT JOIN users_roles uc 
         ON o.created_by = uc.id
@@ -498,6 +511,7 @@ export const getOrders = async (req, res) => {
       count: rows.length,
       data: rows,
     });
+
   } catch (err) {
     console.error("Get orders error:", err.message);
     res.status(500).json({ message: err.message });
@@ -515,6 +529,10 @@ export const getMyOrders = async (req, res) => {
         o.order_number,
         o.customer_id,
         o.customer_name,
+        c.phone AS customer_phone,
+        c.email AS customer_email,
+        c.place AS customer_place,
+        c.address AS customer_address,
         o.order_date,
         o.expected_delivery_date,
         o.delivery_date,
@@ -537,6 +555,9 @@ export const getMyOrders = async (req, res) => {
 
       LEFT JOIN users_roles uu 
         ON o.updated_by = uu.id
+
+      LEFT JOIN customers c 
+        ON o.customer_id = c.id
 
       WHERE o.created_by = ?
 

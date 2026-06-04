@@ -54,6 +54,8 @@ await db.query(`
   brand_id INT NOT NULL,
   name VARCHAR(100) NOT NULL,
   hsn_code VARCHAR(20),
+  created_by INT,
+  updated_by INT,
 
   -- ✅ Audit fields (don’t skip this in real apps)
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -362,8 +362,8 @@ export const createCategory = async (req, res, next) => {
     let result;
     try {
       [result] = await connection.query(
-        "INSERT INTO categories (brand_id, name, hsn_code) VALUES (?, ?, ?)",
-        [brand_id, name, hsn_code || null]
+        "INSERT INTO categories (brand_id, name, hsn_code, created_by) VALUES (?, ?, ?, ?)",
+        [brand_id, name, hsn_code || null, userId]
       );
     } catch (err) {
       if (err.code === "ER_DUP_ENTRY") {
@@ -455,9 +455,10 @@ export const updateCategory = async (req, res, next) => {
          SET 
            brand_id = COALESCE(?, brand_id),
            name = COALESCE(?, name),
-           hsn_code = COALESCE(?, hsn_code)
+           hsn_code = COALESCE(?, hsn_code),
+           updated_by = ?
          WHERE id = ?`,
-        [brand_id, name, hsn_code, id]
+        [brand_id, name, hsn_code, userId, id]
       );
     } catch (err) {
       if (err.code === "ER_DUP_ENTRY") {

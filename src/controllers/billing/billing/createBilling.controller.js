@@ -1,5 +1,5 @@
 import db from "../../../config/db.js";
-import { sendSMS } from "../../../sendSms.js";
+// import { sendSMS } from "../../../sendSms.js";
 import { AuditLog } from "../../../services/audit.service.js";
 import { applyStockChange } from "../../../services/billing/inventory.service.js";
 
@@ -1159,11 +1159,11 @@ export const createCustomerBilling = async (req, res) => {
 
     await connection.commit();
 
-    await sendSMS({
-  phone: phone_number,
-  message:
-    `Invoice ${invoice_number} generated. Amount ₹${grand_total}`
-});
+//     await sendSMS({
+//   phone: phone_number,
+//   message:
+//     `Invoice ${invoice_number} generated. Amount ₹${grand_total}`
+// });
 
     // ======================================================
     // ✅ RESPONSE

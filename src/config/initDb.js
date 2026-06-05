@@ -32,7 +32,7 @@ import { createAuditsTable } from "./database/audits/audits.tables.js";
 import { createStockManageTables } from "./database/billing/stockManage.js";
 import { createReturnBillingTables } from "./database/billing/returnBilling.tables.js";
 import { createCompanyGstNumberTable } from "./database/billing/companygstNumber.tables.js";
-import { seed } from "../seed/seedindex.js";
+// import { seed } from "../seed/seedindex.js";
 import { createOrderTables } from "./database/billing/order.tables.js";
 import { createUserBillAssignTable } from "./database/billing/userAssign.tables.js";
 import { createBillingAreasTable } from "./database/billing/areas.tables.js";
@@ -129,7 +129,7 @@ export const initDatabase = async () => {
 
     await createTermsAndConditionsTable(db);
 
-    await seed(db);
+    // await seed(db);
 
     console.log("✅ Database & tables initialized successfully");
   } catch (error) {

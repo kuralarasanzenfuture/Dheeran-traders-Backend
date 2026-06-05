@@ -113,14 +113,60 @@ export const updateLocation = async (req, res) => {
   }
 };
 
+// export const getCurrentLocation = async (req, res) => {
+//   try {
+//     const { user_id } = req.params;
+
+//     const [rows] = await db.query(`
+//       SELECT 
+//         ulc.user_id,
+//         ulc.latitude,
+//         ulc.longitude,
+//         ulc.updated_at,
+//         u.username,
+//         u.email,
+//         u.phone,
+//         u.is_online,
+//         r.role_name
+//       FROM user_locations_current ulc
+//       LEFT JOIN users_roles u ON u.id = ulc.user_id
+//       LEFT JOIN role_based r ON r.id = u.role_id
+//       WHERE ulc.user_id = ?
+//     `, [user_id]);
+
+//     res.json({
+//       success: true,
+//       data: rows[0] || null
+//     });
+
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// };
+
 export const getCurrentLocation = async (req, res) => {
   try {
     const { user_id } = req.params;
 
-    const [rows] = await db.query(
-      `SELECT * FROM user_locations_current WHERE user_id = ?`,
-      [user_id]
-    );
+    const [rows] = await db.query(`
+      SELECT 
+        ulc.user_id,
+        ulc.latitude,
+        ulc.longitude,
+        ulc.updated_at,
+        u.username,
+        u.email,
+        u.phone,
+        CASE WHEN u.is_online = 1 THEN true ELSE false END AS is_online,
+        r.role_name
+      FROM user_locations_current ulc
+      LEFT JOIN users_roles u ON u.id = ulc.user_id
+      LEFT JOIN role_based r ON r.id = u.role_id
+      WHERE ulc.user_id = ?
+    `, [user_id]);
 
     res.json({
       success: true,
@@ -162,9 +208,20 @@ export const getLocationHistory = async (req, res) => {
 export const getAllUsersCurrentLocation = async (req, res) => {
   try {
 
-    const [rows] = await db.query(
-      `SELECT * FROM user_locations_current`
-    );
+    const [rows] = await db.query(`
+      SELECT 
+        ulc.user_id,
+        ulc.latitude,
+        ulc.longitude,
+        ulc.updated_at,
+        u.username,
+        u.email,
+        u.phone,
+        u.is_online,
+        u.role_id
+      FROM user_locations_current ulc
+      LEFT JOIN users_roles u ON u.id = ulc.user_id
+    `);
 
     res.json({
       success: true,

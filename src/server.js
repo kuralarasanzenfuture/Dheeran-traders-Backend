@@ -30,7 +30,6 @@ const PORT = process.env.PORT || 5000;
 // ipconfig
 
 import os from "os";
-import { startMultiUserTracking } from "../test/location.js";
 
 // function getLocalIP() {
 //   const interfaces = os.networkInterfaces();
@@ -74,8 +73,6 @@ const startServer = async () => {
 
   // Initialize socket logic
   locationSocket(io);
-
-  startMultiUserTracking(io);
 
   // server.listen(PORT, () => {
   //   console.log(`🚀 Server running on http://localhost:${PORT}`);

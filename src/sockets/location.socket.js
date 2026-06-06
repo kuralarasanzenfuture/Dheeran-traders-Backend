@@ -317,24 +317,671 @@
 
 /* ======================================================*/
 
+// import db from "../config/db.js";
+// import jwt from "jsonwebtoken";
+
+// function getDistance(lat1, lon1, lat2, lon2) {
+//   const R = 6371000;
+
+//   const dLat = ((lat2 - lat1) * Math.PI) / 180;
+//   const dLon = ((lon2 - lon1) * Math.PI) / 180;
+
+//   const a =
+//     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+//     Math.cos((lat1 * Math.PI) / 180) *
+//       Math.cos((lat2 * Math.PI) / 180) *
+//       Math.sin(dLon / 2) *
+//       Math.sin(dLon / 2);
+
+//   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+// }
+
+// const LOCATION_INTERVAL = 5000; // 5 sec     // throttle current update
+// const HISTORY_INTERVAL = 30000; // 30 sec    // history insert
+// const ONLINE_THRESHOLD = 10000; // online detection
+// const MIN_DISTANCE = 50; // meters
+
+// export const locationSocket = (io) => {
+//   console.log("🚀 Socket.IO initialized");
+
+//   /* ================= AUTH ================= */
+//   io.use((socket, next) => {
+//     try {
+//       const token = socket.handshake.auth?.token;
+
+//       if (!token) {
+//         console.log("❌ AUTH: No token");
+//         return next(new Error("Unauthorized"));
+//       }
+
+//       const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+
+//       socket.user = {
+//         id: decoded.id,
+//         role: decoded.role,
+//       };
+
+//       console.log(`🔐 AUTH OK → User:${decoded.id}`);
+//       next();
+//     } catch (err) {
+//       console.log("❌ AUTH FAILED:", err.message);
+//       next(new Error("Unauthorized"));
+//     }
+//   });
+
+//   const lastLocations = new Map();
+
+//   /* ================= CONNECTION ================= */
+//   io.on("connection", async (socket) => {
+//     const userId = socket.user.id;
+//     const role = socket.user.role;
+
+//     console.log(`🟢 CONNECT → User:${userId}`);
+
+//     if (role === "ADMIN") {
+//       socket.join("admins");
+//     } else {
+//       socket.join(`user_${userId}`);
+//     }
+
+//     // mark online
+//     await db.query(
+//       `UPDATE users_roles SET is_online = 1, last_seen = NOW() WHERE id = ?`,
+//       [userId],
+//     );
+
+//     const lastLocationUpdate = new Map();
+//     const lastHistoryInsert = new Map();
+
+//     /* ================= LOCATION EVENT ================= */
+//     // socket.on("staffLocation", async (data) => {
+//     //   const start = Date.now();
+
+//     //   try {
+//     //     let { latitude, longitude, speed = 0, heading = 0 } = data;
+
+//     //     latitude = Number(latitude);
+//     //     longitude = Number(longitude);
+//     //     speed = Number(speed);
+//     //     heading = Number(heading);
+
+//     //     // ===== VALIDATION =====
+//     //     if (
+//     //       !Number.isFinite(latitude) ||
+//     //       !Number.isFinite(longitude) ||
+//     //       latitude < -90 ||
+//     //       latitude > 90 ||
+//     //       longitude < -180 ||
+//     //       longitude > 180
+//     //     ) {
+//     //       console.log(`⚠️ INVALID GPS → User:${userId}`, data);
+//     //       return;
+//     //     }
+
+//     //     const now = Date.now();
+
+//     //     // ===== THROTTLE =====
+//     //     const lastUpdate = lastLocationUpdate.get(userId) || 0;
+//     //     if (now - lastUpdate < LOCATION_INTERVAL) {
+//     //       return;
+//     //     }
+//     //     lastLocationUpdate.set(userId, now);
+
+//     //     // ===== CURRENT LOCATION UPSERT =====
+//     //     await db.query(
+//     //       `INSERT INTO user_locations_current
+//     //        (user_id, latitude, longitude, speed, heading, is_online)
+//     //        VALUES (?, ?, ?, ?, ?, TRUE)
+//     //        ON DUPLICATE KEY UPDATE
+//     //          latitude = VALUES(latitude),
+//     //          longitude = VALUES(longitude),
+//     //          speed = VALUES(speed),
+//     //          heading = VALUES(heading),
+//     //          is_online = TRUE,
+//     //          updated_at = NOW()`,
+//     //       [userId, latitude, longitude, speed, heading],
+//     //     );
+
+//     //     // ===== HISTORY INSERT =====
+//     //     const lastHistory = lastHistoryInsert.get(userId) || 0;
+//     //     if (now - lastHistory > HISTORY_INTERVAL) {
+//     //       await db.query(
+//     //         `INSERT INTO user_locations_history
+//     //          (user_id, latitude, longitude, speed, heading)
+//     //          VALUES (?, ?, ?, ?, ?)`,
+//     //         [userId, latitude, longitude, speed, heading],
+//     //       );
+
+//     //       lastHistoryInsert.set(userId, now);
+//     //     }
+
+//     //     // ===== EMIT TO ADMINS =====
+//     //     const payload = {
+//     //       user_id: userId,
+//     //       latitude,
+//     //       longitude,
+//     //       speed,
+//     //       heading,
+//     //       is_online: true,
+//     //       timestamp: new Date().toISOString(),
+//     //     };
+
+//     //     io.to("admins").emit("staffLocationUpdate", payload);
+
+//     //     // ===== CLEAN LOG =====
+//     //     console.log(
+//     //       `📡 [${userId}] ${latitude},${longitude} | speed:${speed} | ${Date.now() - start}ms`,
+//     //     );
+//     //   } catch (err) {
+//     //     console.error(`❌ SOCKET ERROR [${userId}]`, err.message);
+//     //   }
+//     // });
+
+//     socket.on("staffLocation", async (data) => {
+//       try {
+//         let { latitude, longitude, speed = 0, heading = 0 } = data;
+
+//         latitude = Number(latitude);
+//         longitude = Number(longitude);
+//         speed = Number(speed);
+//         heading = Number(heading);
+
+//         if (
+//           !Number.isFinite(latitude) ||
+//           !Number.isFinite(longitude) ||
+//           latitude < -90 ||
+//           latitude > 90 ||
+//           longitude < -180 ||
+//           longitude > 180
+//         ) {
+//           return;
+//         }
+
+//         const now = Date.now();
+
+//         // ===== 5 SEC THROTTLE =====
+
+//         const lastUpdate = lastLocationUpdate.get(userId) || 0;
+
+//         if (now - lastUpdate < LOCATION_INTERVAL) {
+//           return;
+//         }
+
+//         // ===== DISTANCE CHECK =====
+
+//         const previous = lastLocations.get(userId);
+
+//         if (previous) {
+//           const distance = getDistance(
+//             previous.latitude,
+//             previous.longitude,
+//             latitude,
+//             longitude,
+//           );
+
+//           if (distance < MIN_DISTANCE) {
+//             return;
+//           }
+//         }
+
+//         lastLocationUpdate.set(userId, now);
+
+//         lastLocations.set(userId, {
+//           latitude,
+//           longitude,
+//         });
+
+//         // ===== UPDATE CURRENT LOCATION =====
+
+//         await db.query(
+//           `
+//       INSERT INTO user_locations_current
+//       (
+//         user_id,
+//         latitude,
+//         longitude,
+//         speed,
+//         heading,
+//         is_online
+//       )
+//       VALUES (?, ?, ?, ?, ?, TRUE)
+//       ON DUPLICATE KEY UPDATE
+//         latitude = VALUES(latitude),
+//         longitude = VALUES(longitude),
+//         speed = VALUES(speed),
+//         heading = VALUES(heading),
+//         is_online = TRUE,
+//         updated_at = NOW()
+//       `,
+//           [userId, latitude, longitude, speed, heading],
+//         );
+
+//         // ===== HISTORY EVERY 30 SEC =====
+
+//         const lastHistory = lastHistoryInsert.get(userId) || 0;
+
+//         if (now - lastHistory > HISTORY_INTERVAL) {
+//           await db.query(
+//             `
+//         INSERT INTO user_locations_history
+//         (
+//           user_id,
+//           latitude,
+//           longitude,
+//           speed,
+//           heading
+//         )
+//         VALUES (?, ?, ?, ?, ?)
+//         `,
+//             [userId, latitude, longitude, speed, heading],
+//           );
+
+//           lastHistoryInsert.set(userId, now);
+//         }
+
+//         // ===== SEND TO ADMINS =====
+
+//         io.to("admins").emit("staffLocationUpdate", {
+//           user_id: userId,
+//           latitude,
+//           longitude,
+//           speed,
+//           heading,
+//           is_online: true,
+//           timestamp: new Date().toISOString(),
+//         });
+
+//         console.log(`📡 USER:${userId} LAT:${latitude} LNG:${longitude}`);
+
+//         console.log(
+//           `📡 [${userId}] ${latitude},${longitude} | speed:${speed} | ${Date.now() - start}ms`,
+//         );
+//       } catch (err) {
+//         console.error(`❌ SOCKET ERROR [${userId}]`, err.message);
+//       }
+//     });
+
+//     /* ================= DISCONNECT ================= */
+//     socket.on("disconnect", async (reason) => {
+//       console.log(`🔴 DISCONNECT → User:${userId} (${reason})`);
+
+//       await db.query(
+//         `UPDATE users_roles SET is_online = 0, last_seen = NOW() WHERE id = ?`,
+//         [userId],
+//       );
+//     });
+//   });
+
+//   /* ================= BACKGROUND STATUS CHECK ================= */
+//   setInterval(async () => {
+//     try {
+//       const [rows] = await db.query(`
+//         SELECT user_id, updated_at FROM user_locations_current
+//       `);
+
+//       const now = Date.now();
+
+//       for (const row of rows) {
+//         const diff = now - new Date(row.updated_at).getTime();
+
+//         let is_online = 0;
+
+//         if (diff <= ONLINE_THRESHOLD) {
+//           is_online = 1;
+//         }
+
+//         await db.query(
+//           `UPDATE user_locations_current
+//            SET is_online = ?
+//            WHERE user_id = ?`,
+//           [is_online, row.user_id],
+//         );
+
+//         console.log(
+//           `📊 STATUS → ${row.user_id} = ${is_online ? "ONLINE" : "OFFLINE"}`,
+//         );
+//       }
+//     } catch (err) {
+//       console.error("❌ STATUS CHECK ERROR:", err.message);
+//     }
+//   }, 15000);
+// };
+
+/* ======================================================*/
+
+// import db from "../config/db.js";
+// import jwt from "jsonwebtoken";
+
+// const LOCATION_INTERVAL = 5000; // 5 sec
+// const HISTORY_INTERVAL = 30000; // 30 sec
+// const MIN_DISTANCE = 50; // meters
+// const MAX_ACCURACY = 30; // meters
+
+// const lastLocationUpdate = new Map();
+// const lastHistoryInsert = new Map();
+// const lastLocations = new Map();
+
+// function getDistance(lat1, lon1, lat2, lon2) {
+//   const R = 6371000;
+
+//   const dLat = ((lat2 - lat1) * Math.PI) / 180;
+//   const dLon = ((lon2 - lon1) * Math.PI) / 180;
+
+//   const a =
+//     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+//     Math.cos((lat1 * Math.PI) / 180) *
+//       Math.cos((lat2 * Math.PI) / 180) *
+//       Math.sin(dLon / 2) *
+//       Math.sin(dLon / 2);
+
+//   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+// }
+
+// export const locationSocket = (io) => {
+//   console.log("🚀 Location Socket Initialized");
+
+//   /* ================= AUTH ================= */
+
+//   io.use((socket, next) => {
+//     try {
+//       const token = socket.handshake.auth?.token;
+
+//       if (!token) {
+//         return next(new Error("Unauthorized"));
+//       }
+
+//       const decoded = jwt.verify(
+//         token,
+//         process.env.JWT_ACCESS_SECRET
+//       );
+
+//       socket.user = {
+//         id: decoded.id,
+//         role: decoded.role,
+//       };
+
+//       next();
+//     } catch (err) {
+//       console.error("❌ AUTH ERROR:", err.message);
+//       next(new Error("Unauthorized"));
+//     }
+//   });
+
+//   /* ================= CONNECTION ================= */
+
+//   io.on("connection", async (socket) => {
+//     const userId = socket.user.id;
+//     const role = socket.user.role;
+
+//     console.log(`🟢 CONNECTED -> ${userId}`);
+
+//     try {
+//       await db.query(
+//         `
+//         UPDATE users_roles
+//         SET
+//           is_online = 1,
+//           last_seen = NOW()
+//         WHERE id = ?
+//         `,
+//         [userId]
+//       );
+//     } catch (err) {
+//       console.error(err);
+//     }
+
+//     if (role === "ADMIN") {
+//       socket.join("admins");
+//     } else {
+//       socket.join(`user_${userId}`);
+//     }
+
+//     /* ================= LOCATION EVENT ================= */
+
+//     socket.on("staffLocation", async (data) => {
+//       try {
+//         let {
+//           latitude,
+//           longitude,
+//           speed = 0,
+//           heading = 0,
+//           accuracy = 999,
+//         } = data;
+
+//         latitude = Number(latitude);
+//         longitude = Number(longitude);
+//         speed = Number(speed);
+//         heading = Number(heading);
+//         accuracy = Number(accuracy);
+
+//         /* ===== GPS VALIDATION ===== */
+
+//         if (
+//           !Number.isFinite(latitude) ||
+//           !Number.isFinite(longitude) ||
+//           latitude < -90 ||
+//           latitude > 90 ||
+//           longitude < -180 ||
+//           longitude > 180
+//         ) {
+//           return;
+//         }
+
+//         /* ===== ACCURACY CHECK ===== */
+
+//         if (accuracy > MAX_ACCURACY) {
+//           console.log(
+//             `⚠️ Poor GPS Accuracy (${accuracy}m) User:${userId}`
+//           );
+//           return;
+//         }
+
+//         const now = Date.now();
+
+//         /* ===== THROTTLE ===== */
+
+//         const lastUpdate =
+//           lastLocationUpdate.get(userId) || 0;
+
+//         if (
+//           now - lastUpdate <
+//           LOCATION_INTERVAL
+//         ) {
+//           return;
+//         }
+
+//         /* ===== DISTANCE CHECK ===== */
+
+//         const previous =
+//           lastLocations.get(userId);
+
+//         if (previous) {
+//           const distance = getDistance(
+//             previous.latitude,
+//             previous.longitude,
+//             latitude,
+//             longitude
+//           );
+
+//           if (
+//             distance < MIN_DISTANCE &&
+//             speed < 1
+//           ) {
+//             return;
+//           }
+//         }
+
+//         lastLocationUpdate.set(userId, now);
+
+//         lastLocations.set(userId, {
+//           latitude,
+//           longitude,
+//         });
+
+//         /* ===== CURRENT LOCATION ===== */
+
+//         await db.query(
+//           `
+//           INSERT INTO user_locations_current
+//           (
+//             user_id,
+//             latitude,
+//             longitude,
+//             speed,
+//             heading,
+//             accuracy
+//           )
+//           VALUES (?, ?, ?, ?, ?, ?)
+
+//           ON DUPLICATE KEY UPDATE
+//             latitude = VALUES(latitude),
+//             longitude = VALUES(longitude),
+//             speed = VALUES(speed),
+//             heading = VALUES(heading),
+//             accuracy = VALUES(accuracy),
+//             updated_at = NOW()
+//           `,
+//           [
+//             userId,
+//             latitude,
+//             longitude,
+//             speed,
+//             heading,
+//             accuracy,
+//           ]
+//         );
+
+//         /* ===== HISTORY ===== */
+
+//         const lastHistory =
+//           lastHistoryInsert.get(userId) || 0;
+
+//         if (
+//           now - lastHistory >
+//           HISTORY_INTERVAL
+//         ) {
+//           await db.query(
+//             `
+//             INSERT INTO user_locations_history
+//             (
+//               user_id,
+//               latitude,
+//               longitude,
+//               speed,
+//               heading,
+//               accuracy
+//             )
+//             VALUES (?, ?, ?, ?, ?, ?)
+//             `,
+//             [
+//               userId,
+//               latitude,
+//               longitude,
+//               speed,
+//               heading,
+//               accuracy,
+//             ]
+//           );
+
+//           lastHistoryInsert.set(userId, now);
+//         }
+
+//         /* ===== REALTIME ADMIN UPDATE ===== */
+
+//         io.to("admins").emit(
+//           "staffLocationUpdate",
+//           {
+//             user_id: userId,
+//             latitude,
+//             longitude,
+//             speed,
+//             heading,
+//             accuracy,
+//             timestamp: new Date().toISOString(),
+//           }
+//         );
+
+//         console.log(
+//           `📡 User:${userId} | Lat:${latitude} | Lng:${longitude} | Acc:${accuracy}m`
+//         );
+//       } catch (err) {
+//         console.error(
+//           `❌ LOCATION ERROR [${userId}]`,
+//           err.message
+//         );
+//       }
+//     });
+
+//     /* ================= DISCONNECT ================= */
+
+//     socket.on("disconnect", async (reason) => {
+//       console.log(
+//         `🔴 DISCONNECTED -> ${userId} (${reason})`
+//       );
+
+//       try {
+//         await db.query(
+//           `
+//           UPDATE users_roles
+//           SET
+//             is_online = 0,
+//             last_seen = NOW()
+//           WHERE id = ?
+//           `,
+//           [userId]
+//         );
+//       } catch (err) {
+//         console.error(err);
+//       }
+
+//       lastLocationUpdate.delete(userId);
+//       lastHistoryInsert.delete(userId);
+//       lastLocations.delete(userId);
+//     });
+//   });
+// };
+
+/* ==================== debug version==================================*/
+
 import db from "../config/db.js";
 import jwt from "jsonwebtoken";
 
-const LOCATION_INTERVAL = 5000;     // throttle current update
-const HISTORY_INTERVAL = 30000;     // history insert
-const ONLINE_THRESHOLD = 10000;     // online detection
+const LOCATION_INTERVAL = 5000;
+const HISTORY_INTERVAL = 30000;
+const MIN_DISTANCE = 50;
+const MAX_ACCURACY = 30;
+
+const lastLocationUpdate = new Map();
+const lastHistoryInsert = new Map();
+const lastLocations = new Map();
+
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 export const locationSocket = (io) => {
-
-  console.log("🚀 Socket.IO initialized");
+  console.log("🚀 LOCATION SOCKET STARTED");
 
   /* ================= AUTH ================= */
+
   io.use((socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
 
+      console.log("🔐 TOKEN RECEIVED:", token ? "YES" : "NO");
+
       if (!token) {
-        console.log("❌ AUTH: No token");
         return next(new Error("Unauthorized"));
       }
 
@@ -342,170 +989,278 @@ export const locationSocket = (io) => {
 
       socket.user = {
         id: decoded.id,
-        role: decoded.role
+        role: decoded.role,
       };
 
-      console.log(`🔐 AUTH OK → User:${decoded.id}`);
-      next();
+      console.log(`✅ AUTH SUCCESS USER:${decoded.id} ROLE:${decoded.role}`);
 
+      next();
     } catch (err) {
-      console.log("❌ AUTH FAILED:", err.message);
+      console.error("❌ AUTH FAILED:", err.message);
       next(new Error("Unauthorized"));
     }
   });
 
   /* ================= CONNECTION ================= */
-  io.on("connection", async (socket) => {
 
+  io.on("connection", async (socket) => {
     const userId = socket.user.id;
     const role = socket.user.role;
 
-    console.log(`🟢 CONNECT → User:${userId}`);
+    console.log("\n================================");
+    console.log("🟢 NEW CONNECTION");
+    console.log("USER :", userId);
+    console.log("ROLE :", role);
+    console.log("SOCKET :", socket.id);
+    console.log("================================\n");
+
+    try {
+      await db.query(
+        `
+        UPDATE users_roles
+        SET is_online = 1,
+            last_seen = NOW()
+        WHERE id = ?
+        `,
+        [userId],
+      );
+
+      console.log(`✅ USER ${userId} ONLINE`);
+    } catch (err) {
+      console.error("❌ ONLINE UPDATE ERROR:", err.message);
+    }
 
     if (role === "ADMIN") {
       socket.join("admins");
+      console.log(`👨‍💼 ADMIN JOINED ROOM`);
     } else {
       socket.join(`user_${userId}`);
+      console.log(`👤 USER ROOM user_${userId}`);
     }
 
-    // mark online
-    await db.query(
-      `UPDATE users_roles SET is_online = 1, last_seen = NOW() WHERE id = ?`,
-      [userId]
-    );
-
-    const lastLocationUpdate = new Map();
-    const lastHistoryInsert = new Map();
-
     /* ================= LOCATION EVENT ================= */
-    socket.on("staffLocation", async (data) => {
 
-      const start = Date.now();
+    socket.on("staffLocation", async (data) => {
+      const startTime = Date.now();
 
       try {
-        let { latitude, longitude, speed = 0, heading = 0 } = data;
+        console.log("\n--------------------------------");
+        console.log(`📥 LOCATION RECEIVED USER:${userId}`);
+        console.log("RAW DATA:", data);
+
+        let {
+          latitude,
+          longitude,
+          speed = 0,
+          heading = 0,
+          accuracy = null,
+        } = data;
 
         latitude = Number(latitude);
         longitude = Number(longitude);
-        speed = Number(speed);
-        heading = Number(heading);
+        speed = Number(speed || 0);
+        heading = Number(heading || 0);
 
-        // ===== VALIDATION =====
+        if (accuracy !== null) {
+          accuracy = Number(accuracy);
+        }
+
+        console.log("PARSED:");
+        console.log({
+          latitude,
+          longitude,
+          speed,
+          heading,
+          accuracy,
+        });
+
+        /* VALIDATION */
+
         if (
           !Number.isFinite(latitude) ||
           !Number.isFinite(longitude) ||
-          latitude < -90 || latitude > 90 ||
-          longitude < -180 || longitude > 180
+          latitude < -90 ||
+          latitude > 90 ||
+          longitude < -180 ||
+          longitude > 180
         ) {
-          console.log(`⚠️ INVALID GPS → User:${userId}`, data);
+          console.log("❌ INVALID GPS");
           return;
+        }
+
+        /* ACCURACY */
+
+        if (accuracy !== null && Number.isFinite(accuracy)) {
+          console.log(`🎯 GPS ACCURACY = ${accuracy}m`);
+
+          if (accuracy > MAX_ACCURACY) {
+            console.log(
+              `⚠️ REJECTED ACCURACY (${accuracy}m > ${MAX_ACCURACY}m)`,
+            );
+            return;
+          }
+        } else {
+          console.log("⚠️ ACCURACY NOT RECEIVED FROM MOBILE");
         }
 
         const now = Date.now();
 
-        // ===== THROTTLE =====
+        /* THROTTLE */
+
         const lastUpdate = lastLocationUpdate.get(userId) || 0;
-        if (now - lastUpdate < LOCATION_INTERVAL) {
+
+        const diffTime = now - lastUpdate;
+
+        console.log(`⏱ LAST UPDATE ${diffTime}ms`);
+
+        if (diffTime < LOCATION_INTERVAL) {
+          console.log("⚠️ THROTTLED");
           return;
         }
+
+        /* DISTANCE */
+
+        const previous = lastLocations.get(userId);
+
+        if (previous) {
+          const distance = getDistance(
+            previous.latitude,
+            previous.longitude,
+            latitude,
+            longitude,
+          );
+
+          console.log(`📏 DISTANCE = ${distance.toFixed(2)}m`);
+
+          if (distance < MIN_DISTANCE) {
+            console.log(`⚠️ MOVEMENT < ${MIN_DISTANCE}m`);
+            return;
+          }
+        } else {
+          console.log("🆕 FIRST LOCATION");
+        }
+
         lastLocationUpdate.set(userId, now);
 
-        // ===== CURRENT LOCATION UPSERT =====
+        lastLocations.set(userId, {
+          latitude,
+          longitude,
+        });
+
+        /* CURRENT LOCATION */
+
+        console.log("💾 INSERT CURRENT LOCATION");
+
+        console.log([userId, latitude, longitude, speed, heading, accuracy]);
+
         await db.query(
-          `INSERT INTO user_locations_current 
-           (user_id, latitude, longitude, speed, heading, is_online)
-           VALUES (?, ?, ?, ?, ?, TRUE)
-           ON DUPLICATE KEY UPDATE
-             latitude = VALUES(latitude),
-             longitude = VALUES(longitude),
-             speed = VALUES(speed),
-             heading = VALUES(heading),
-             is_online = TRUE,
-             updated_at = NOW()`,
-          [userId, latitude, longitude, speed, heading]
+          `
+          INSERT INTO user_locations_current
+          (
+            user_id,
+            latitude,
+            longitude,
+            speed,
+            heading,
+            accuracy
+          )
+          VALUES (?, ?, ?, ?, ?, ?)
+
+          ON DUPLICATE KEY UPDATE
+            latitude = VALUES(latitude),
+            longitude = VALUES(longitude),
+            speed = VALUES(speed),
+            heading = VALUES(heading),
+            accuracy = VALUES(accuracy),
+            updated_at = NOW()
+          `,
+          [userId, latitude, longitude, speed, heading, accuracy],
         );
 
-        // ===== HISTORY INSERT =====
-        const lastHistory = lastHistoryInsert.get(userId) || 0;
-        if (now - lastHistory > HISTORY_INTERVAL) {
+        console.log("✅ CURRENT LOCATION SAVED");
 
+        /* HISTORY */
+
+        const lastHistory = lastHistoryInsert.get(userId) || 0;
+
+        const historyDiff = now - lastHistory;
+
+        console.log(`🕒 HISTORY DIFF ${historyDiff}ms`);
+
+        if (historyDiff > HISTORY_INTERVAL) {
           await db.query(
-            `INSERT INTO user_locations_history
-             (user_id, latitude, longitude, speed, heading)
-             VALUES (?, ?, ?, ?, ?)`,
-            [userId, latitude, longitude, speed, heading]
+            `
+            INSERT INTO user_locations_history
+            (
+              user_id,
+              latitude,
+              longitude,
+              speed,
+              heading,
+              accuracy
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            `,
+            [userId, latitude, longitude, speed, heading, accuracy],
           );
 
           lastHistoryInsert.set(userId, now);
+
+          console.log("📚 HISTORY INSERTED");
         }
 
-        // ===== EMIT TO ADMINS =====
+        /* ADMIN UPDATE */
+
         const payload = {
           user_id: userId,
           latitude,
           longitude,
           speed,
           heading,
-          is_online: true,
-          timestamp: new Date().toISOString()
+          accuracy,
+          timestamp: new Date().toISOString(),
         };
 
         io.to("admins").emit("staffLocationUpdate", payload);
 
-        // ===== CLEAN LOG =====
-        console.log(
-          `📡 [${userId}] ${latitude},${longitude} | speed:${speed} | ${Date.now() - start}ms`
-        );
+        console.log("📤 EMITTED TO ADMINS");
 
+        console.log(`⚡ PROCESS TIME ${Date.now() - startTime}ms`);
+
+        console.log("--------------------------------\n");
       } catch (err) {
-        console.error(`❌ SOCKET ERROR [${userId}]`, err.message);
+        console.error(`❌ LOCATION ERROR USER:${userId}`, err);
       }
     });
 
     /* ================= DISCONNECT ================= */
+
     socket.on("disconnect", async (reason) => {
-      console.log(`🔴 DISCONNECT → User:${userId} (${reason})`);
+      console.log("\n================================");
+      console.log("🔴 DISCONNECTED");
+      console.log("USER :", userId);
+      console.log("REASON :", reason);
+      console.log("================================\n");
 
-      await db.query(
-        `UPDATE users_roles SET is_online = 0, last_seen = NOW() WHERE id = ?`,
-        [userId]
-      );
-    });
-
-  });
-
-  /* ================= BACKGROUND STATUS CHECK ================= */
-  setInterval(async () => {
-    try {
-      const [rows] = await db.query(`
-        SELECT user_id, updated_at FROM user_locations_current
-      `);
-
-      const now = Date.now();
-
-      for (const row of rows) {
-        const diff = now - new Date(row.updated_at).getTime();
-
-        let is_online = 0;
-
-        if (diff <= ONLINE_THRESHOLD) {
-          is_online = 1;
-        }
-
+      try {
         await db.query(
-          `UPDATE user_locations_current 
-           SET is_online = ? 
-           WHERE user_id = ?`,
-          [is_online, row.user_id]
+          `
+          UPDATE users_roles
+          SET is_online = 0,
+              last_seen = NOW()
+          WHERE id = ?
+          `,
+          [userId],
         );
 
-        console.log(`📊 STATUS → ${row.user_id} = ${is_online ? "ONLINE" : "OFFLINE"}`);
+        console.log(`✅ USER ${userId} OFFLINE`);
+      } catch (err) {
+        console.error("❌ OFFLINE UPDATE ERROR:", err.message);
       }
 
-    } catch (err) {
-      console.error("❌ STATUS CHECK ERROR:", err.message);
-    }
-  }, 15000);
-
+      lastLocationUpdate.delete(userId);
+      lastHistoryInsert.delete(userId);
+      lastLocations.delete(userId);
+    });
+  });
 };
-

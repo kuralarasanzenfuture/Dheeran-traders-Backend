@@ -74,7 +74,7 @@ export const createLocationTable = async (db) => {
 
   speed FLOAT DEFAULT 0,
   heading FLOAT DEFAULT 0,
-
+  accuracy FLOAT DEFAULT NULL,
   is_online BOOLEAN DEFAULT TRUE,
 
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

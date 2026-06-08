@@ -973,6 +973,58 @@ function getDistance(lat1, lon1, lat2, lon2) {
 export const locationSocket = (io) => {
   console.log("🚀 LOCATION SOCKET STARTED");
 
+  // Engine-level socket errors
+  io.engine.on("connection_error", (err) => {
+    console.error("❌ SOCKET ENGINE ERROR");
+
+    console.error({
+      code: err.code,
+      message: err.message,
+      context: err.context,
+    });
+  });
+
+  // Auto mark inactive users offline  - Every 1 minute run:
+  // No location for 2 minutes → offline.
+  setInterval(async () => {
+    try {
+      const [result] = await db.query(`
+        UPDATE user_locations_current
+        SET is_online = 0
+        WHERE updated_at < NOW() - INTERVAL 2 MINUTE
+          AND is_online = 1
+      `);
+
+      await db.query(`
+      UPDATE users_roles ur
+      JOIN user_locations_current ulc
+        ON ur.id = ulc.user_id
+      SET ur.is_online = 0
+      WHERE ulc.updated_at < NOW() - INTERVAL 2 MINUTE
+        AND ur.is_online = 1
+    `);
+
+      if (result.affectedRows > 0) {
+        console.log(
+          `📴 ${result.affectedRows} users marked offline (no location updates)`,
+        );
+      }
+    } catch (err) {
+      console.error("❌ Offline checker error:", err);
+    }
+  }, 60000);
+
+  // setInterval(() => {
+  //   console.log(`Connected sockets: ${io.engine.clientsCount}`);
+  // }, 30000);
+
+  setInterval(() => {
+    console.log({
+      sockets: io.engine.clientsCount,
+      timestamp: new Date().toISOString(),
+    });
+  }, 30000);
+
   /* ================= AUTH ================= */
 
   io.use((socket, next) => {
@@ -1006,6 +1058,13 @@ export const locationSocket = (io) => {
   io.on("connection", async (socket) => {
     const userId = socket.user.id;
     const role = socket.user.role;
+
+    console.log(
+      `🟢 User Connected ${socket.user.id} via ${socket.conn.transport.name}`,
+    );
+    socket.conn.on("upgrade", () => {
+      console.log(`⬆️ Transport upgraded to ${socket.conn.transport.name}`);
+    });
 
     console.log("\n================================");
     console.log("🟢 NEW CONNECTION");
@@ -1162,9 +1221,10 @@ export const locationSocket = (io) => {
             longitude,
             speed,
             heading,
-            accuracy
+            accuracy,
+            is_online
           )
-          VALUES (?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, 1)
 
           ON DUPLICATE KEY UPDATE
             latitude = VALUES(latitude),
@@ -1172,6 +1232,7 @@ export const locationSocket = (io) => {
             speed = VALUES(speed),
             heading = VALUES(heading),
             accuracy = VALUES(accuracy),
+            is_online = 1,
             updated_at = NOW()
           `,
           [userId, latitude, longitude, speed, heading, accuracy],
@@ -1225,6 +1286,16 @@ export const locationSocket = (io) => {
 
         console.log("📤 EMITTED TO ADMINS");
 
+        console.log(
+          `📍 USER:${userId}
+              LAT:${latitude}
+              LNG:${longitude}
+              SPEED:${speed}
+              HEADING:${heading}
+              ACCURACY:${accuracy}
+              CURRENT TIME:${new Date().toISOString()}`,
+        );
+
         console.log(`⚡ PROCESS TIME ${Date.now() - startTime}ms`);
 
         console.log("--------------------------------\n");
@@ -1241,7 +1312,7 @@ export const locationSocket = (io) => {
       console.log("USER :", userId);
       console.log("REASON :", reason);
       console.log("================================\n");
-
+      console.log(`🔴 USER:${userId} DISCONNECTED | REASON:${reason}`);
       try {
         await db.query(
           `
@@ -1249,6 +1320,15 @@ export const locationSocket = (io) => {
           SET is_online = 0,
               last_seen = NOW()
           WHERE id = ?
+          `,
+          [userId],
+        );
+
+        await db.query(
+          `
+          UPDATE user_locations_current
+          SET is_online = 0
+          WHERE user_id = ?
           `,
           [userId],
         );
@@ -1264,3 +1344,73 @@ export const locationSocket = (io) => {
     });
   });
 };
+
+// Example Scenario
+
+// User is sending locations:
+
+// 12:00:00 Connected
+// 12:00:25 Ping
+// 12:00:25 Pong
+// 12:00:50 Ping
+// 12:00:50 Pong
+
+// Everything is normal.
+
+// User Loses Internet
+// 12:00:00 Connected
+// 12:00:25 Ping
+// 12:00:25 Pong
+
+// 12:00:30 Mobile internet OFF
+
+// 12:00:50 Ping
+// (no response)
+
+// 12:01:15 Ping
+// (no response)
+
+// 12:01:50 Disconnect
+// Reason: ping timeout
+
+// Socket.IO automatically closes the connection.
+
+// Why It's Useful
+
+// Without heartbeat settings:
+
+// User closes app
+// Network drops
+// Server still thinks user is connected
+
+// You may have "ghost" online users.
+
+// With heartbeat:
+
+// Network lost
+// ↓
+// No pong received
+// ↓
+// Socket disconnects automatically
+// ↓
+// User marked offline
+// For Your GPS Tracking App
+
+// A common production configuration is:
+
+// const io = new Server(server, {
+//   cors: {
+//     origin: "*",
+//   },
+//   transports: ["websocket", "polling"],
+//   pingInterval: 25000,
+//   pingTimeout: 60000,
+// });
+
+// This means:
+
+// Ping every 25 seconds.
+// Wait up to 60 seconds for a response.
+// If no response, disconnect the user automatically.
+
+// Since you're already using location updates plus an updated_at offline checker, these settings provide an additional safety net for detecting dead connections.

@@ -49,7 +49,11 @@ function getLocalIP() {
 
   for (let name in interfaces) {
     // 🔥 prioritize WiFi / Ethernet only
-    if (!name.toLowerCase().includes("wi-fi") && !name.toLowerCase().includes("ethernet")) continue;
+    if (
+      !name.toLowerCase().includes("wi-fi") &&
+      !name.toLowerCase().includes("ethernet")
+    )
+      continue;
 
     for (let net of interfaces[name]) {
       if (net.family === "IPv4" && !net.internal) {
@@ -69,6 +73,15 @@ const startServer = async () => {
     cors: {
       origin: "*",
     },
+    transports: ["websocket", "polling"],
+    //Every 25 seconds, the server sends a ping packet to the client.
+    // Server ---> Ping ---> Mobile App -> This checks whether the connection is still alive.
+    pingInterval: 25000,
+    // After sending pings, if the server does not receive a response from the client within 60 seconds, Socket.IO considers the connection dead and triggers:
+    //     socket.on("disconnect", (reason) => {
+    //   console.log(reason);
+    // });
+    pingTimeout: 60000,
   });
 
   // Initialize socket logic
@@ -84,13 +97,12 @@ const startServer = async () => {
   //   console.log(`Server running on http://192.168.1.4:${PORT}`);
   // });
 
-  // const localIP = getLocalIP();
+  const localIP = getLocalIP();
 
   server.listen(PORT, HOST, () => {
     console.log(`🚀 Server running`);
     console.log(`Local: http://localhost:${PORT}`);
-    // console.log(`Network: http://192.168.1.4:${PORT}`);
-    // console.log(`Network: http://${localIP}:${PORT}`);
+    console.log(`Network: http://${localIP}:${PORT}`);
   });
 };
 

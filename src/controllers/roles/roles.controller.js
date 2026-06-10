@@ -212,7 +212,7 @@ export const updateRole = async (req, res) => {
 
     const [[role]] = await db.query(
       "SELECT role_name, status FROM role_based WHERE id = ?",
-      [id]
+      [id],
     );
 
     if (!role) {
@@ -231,7 +231,7 @@ export const updateRole = async (req, res) => {
 
     const [exist] = await db.query(
       "SELECT id FROM role_based WHERE role_name = ? AND id != ?",
-      [role_name, id]
+      [role_name, id],
     );
 
     if (exist.length) {
@@ -242,11 +242,10 @@ export const updateRole = async (req, res) => {
       `UPDATE role_based 
        SET role_name = ?, role_description = ?, status = ?
        WHERE id = ?`,
-      [role_name, role_description, status, id]
+      [role_name, role_description, status, id],
     );
 
     res.json({ message: "Role updated successfully" });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -258,6 +257,7 @@ export const deleteRole = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Check role exists
     const [[role]] = await db.query(
       "SELECT role_name FROM role_based WHERE id = ?",
       [id],
@@ -267,14 +267,31 @@ export const deleteRole = async (req, res) => {
       return res.status(404).json({ message: "Role not found" });
     }
 
+    // Prevent deleting ADMIN
     if (role.role_name === "ADMIN") {
-      return res.status(403).json({ message: "ADMIN role cannot be deleted" });
+      return res.status(403).json({
+        message: "ADMIN role cannot be deleted",
+      });
     }
 
+    // 🔴 Check if role is assigned to any users
+    const [[assigned]] = await db.query(
+      "SELECT COUNT(*) as count FROM users_roles WHERE role_id = ?",
+      [id],
+    );
+
+    if (assigned.count > 0) {
+      return res.status(400).json({
+        message: `Cannot delete role. ${assigned.count} user(s) are assigned to this role.`,
+      });
+    }
+
+    // Delete role
     await db.query("DELETE FROM role_based WHERE id = ?", [id]);
 
     res.json({ message: "Role deleted successfully" });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -345,7 +362,6 @@ export const deleteRole = async (req, res) => {
 //   }
 // };
 
-
 // Uses transaction (important)
 // Updates role
 // Updates users
@@ -378,7 +394,7 @@ export const updateRoleStatus = async (req, res) => {
     ========================= */
     const [[role]] = await connection.query(
       "SELECT id, role_name, status FROM role_based WHERE id = ?",
-      [id]
+      [id],
     );
 
     if (!role) {
@@ -407,17 +423,17 @@ export const updateRoleStatus = async (req, res) => {
     /* =========================
        2️⃣ UPDATE ROLE
     ========================= */
-    await connection.query(
-      "UPDATE role_based SET status = ? WHERE id = ?",
-      [status, id]
-    );
+    await connection.query("UPDATE role_based SET status = ? WHERE id = ?", [
+      status,
+      id,
+    ]);
 
     /* =========================
        3️⃣ UPDATE USERS 🔥
     ========================= */
     await connection.query(
       "UPDATE users_roles SET status = ? WHERE role_id = ?",
-      [status, id]
+      [status, id],
     );
 
     /* =========================
@@ -429,7 +445,7 @@ export const updateRoleStatus = async (req, res) => {
       SET token_version = token_version + 1
       WHERE role_id = ?
       `,
-      [id]
+      [id],
     );
 
     await connection.commit();
@@ -437,7 +453,6 @@ export const updateRoleStatus = async (req, res) => {
     res.json({
       message: `Role and all users ${status} successfully`,
     });
-
   } catch (err) {
     await connection.rollback();
     console.error(err);
@@ -445,7 +460,6 @@ export const updateRoleStatus = async (req, res) => {
     res.status(500).json({
       message: "Server error",
     });
-
   } finally {
     connection.release();
   }
@@ -489,7 +503,7 @@ export const updateRoleStatus = async (req, res) => {
 //     // 🔴 Kill all sessions of users under this role
 //     if (status === "inactive") {
 //       await db.query(`
-//         UPDATE users_roles 
+//         UPDATE users_roles
 //         SET token_version = token_version + 1
 //         WHERE role_id = ?
 //       `, [id]);
@@ -506,4 +520,3 @@ export const updateRoleStatus = async (req, res) => {
 //     });
 //   }
 // };
-

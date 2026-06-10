@@ -987,15 +987,15 @@ export const locationSocket = (io) => {
   // Auto mark inactive users offline  - Every 1 minute run:
   // No location for 2 minutes → offline.
   setInterval(async () => {
-    try {
-      const [result] = await db.query(`
-        UPDATE user_locations_current
-        SET is_online = 0
-        WHERE updated_at < NOW() - INTERVAL 2 MINUTE
-          AND is_online = 1
-      `);
+  try {
+    const [locationResult] = await db.query(`
+      UPDATE user_locations_current
+      SET is_online = 0
+      WHERE updated_at < NOW() - INTERVAL 2 MINUTE
+        AND is_online = 1
+    `);
 
-      await db.query(`
+    const [userResult] = await db.query(`
       UPDATE users_roles ur
       JOIN user_locations_current ulc
         ON ur.id = ulc.user_id
@@ -1004,15 +1004,18 @@ export const locationSocket = (io) => {
         AND ur.is_online = 1
     `);
 
-      if (result.affectedRows > 0) {
-        console.log(
-          `📴 ${result.affectedRows} users marked offline (no location updates)`,
-        );
-      }
-    } catch (err) {
-      console.error("❌ Offline checker error:", err);
+    if (
+      locationResult.affectedRows > 0 ||
+      userResult.affectedRows > 0
+    ) {
+      console.log(
+        `📴 Offline checker: locations=${locationResult.affectedRows}, users=${userResult.affectedRows}`
+      );
     }
-  }, 60000);
+  } catch (err) {
+    console.error("❌ Offline checker error:", err);
+  }
+}, 60000);
 
   // setInterval(() => {
   //   console.log(`Connected sockets: ${io.engine.clientsCount}`);

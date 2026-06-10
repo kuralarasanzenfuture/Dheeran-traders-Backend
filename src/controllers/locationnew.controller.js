@@ -1,5 +1,23 @@
 import db from "../config/db.js";
 
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) ** 2;
+
+  return R * 2 * Math.atan2(
+    Math.sqrt(a),
+    Math.sqrt(1 - a)
+  );
+}
+
 /* ======================================================
    COMMON VALIDATIONS
 ====================================================== */
@@ -156,6 +174,7 @@ export const getLocationHistory = async (req, res) => {
         longitude,
         speed,
         heading,
+        accuracy,
         created_at
       FROM user_locations_history
       WHERE user_id = ?
@@ -164,8 +183,41 @@ export const getLocationHistory = async (req, res) => {
       [user_id, limit]
     );
 
+     let totalDistanceMeters = 0;
+
+    for (let i = 1; i < rows.length; i++) {
+      const previous = rows[i - 1];
+      const current = rows[i];
+
+      totalDistanceMeters += getDistance(
+        Number(previous.latitude),
+        Number(previous.longitude),
+        Number(current.latitude),
+        Number(current.longitude)
+      );
+    }
+
+    const totalDistanceKm = Number(
+      (totalDistanceMeters / 1000).toFixed(2)
+    );
+
+    const firstLocation =
+      rows.length > 0
+        ? rows[0].created_at
+        : null;
+
+    const lastLocation =
+      rows.length > 0
+        ? rows[rows.length - 1].created_at
+        : null;
+
     return res.json({
       success: true,
+      user_id: user_id,
+      total_distance_km: totalDistanceKm,
+      first_location: firstLocation,
+      last_location: lastLocation,
+
       count: rows.length,
       data: rows
     });
@@ -214,6 +266,140 @@ export const getAllUsersCurrentLocation = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Internal server error"
+    });
+  }
+};
+
+export const getLocationHistoryByDate = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    let {
+      limit = 1000,
+      date,
+      from,
+      to,
+    } = req.query;
+
+    if (!user_id || isNaN(user_id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user_id",
+      });
+    }
+
+    limit = Number(limit);
+
+    if (isNaN(limit) || limit <= 0 || limit > 10000) {
+      limit = 1000;
+    }
+
+    let query = `
+      SELECT
+        latitude,
+        longitude,
+        speed,
+        heading,
+        accuracy,
+        created_at
+      FROM user_locations_history
+      WHERE user_id = ?
+    `;
+
+    const params = [user_id];
+
+    // Single date filter
+    if (date) {
+      query += `
+        AND DATE(created_at) = ?
+      `;
+      params.push(date);
+    }
+
+    // Date range filter
+    if (from) {
+      query += `
+        AND created_at >= ?
+      `;
+      params.push(`${from} 00:00:00`);
+    }
+
+    if (to) {
+      query += `
+        AND created_at <= ?
+      `;
+      params.push(`${to} 23:59:59`);
+    }
+
+    query += `
+      ORDER BY created_at ASC
+      LIMIT ?
+    `;
+
+    params.push(limit);
+
+    const [rows] = await db.query(query, params);
+
+    let totalDistanceMeters = 0;
+
+    for (let i = 1; i < rows.length; i++) {
+      const previous = rows[i - 1];
+      const current = rows[i];
+
+      totalDistanceMeters += getDistance(
+        Number(previous.latitude),
+        Number(previous.longitude),
+        Number(current.latitude),
+        Number(current.longitude)
+      );
+    }
+
+    const totalDistanceKm = Number(
+      (totalDistanceMeters / 1000).toFixed(2)
+    );
+
+    const firstLocation =
+      rows.length > 0
+        ? rows[0].created_at
+        : null;
+
+    const lastLocation =
+      rows.length > 0
+        ? rows[rows.length - 1].created_at
+        : null;
+
+    return res.status(200).json({
+      success: true,
+
+      user_id: Number(user_id),
+      count: rows.length,
+      filters: {
+        date: date || null,
+        from: from || null,
+        to: to || null,
+      },
+
+      summary: {
+        total_points: rows.length,
+        total_distance_meters: Math.round(
+          totalDistanceMeters
+        ),
+        total_distance_km: totalDistanceKm,
+        first_location: firstLocation,
+        last_location: lastLocation,
+      },
+
+      data: rows,
+    });
+  } catch (error) {
+    console.error(
+      "GET LOCATION HISTORY ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
     });
   }
 };

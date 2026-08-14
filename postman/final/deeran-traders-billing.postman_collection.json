@@ -1,0 +1,4514 @@
+{
+  "info": {
+    "_postman_id": "294977da-4403-4f54-878a-fa7287e4bc3c",
+    "name": "deeran-traders-billing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "51069067",
+    "_collection_link": "https://go.postman.co/collection/51069067-294977da-4403-4f54-878a-fa7287e4bc3c?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "admin",
+      "item": [
+        {
+          "name": "adminLogin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"username\": \"admin\",\r\n// //   \"email\": \"admin@gmail.com\",\r\n//   \"password\": \"admin\"\r\n// }\r\n\r\n{\r\n  \"identifier\": \"admin\",\r\n  \"password\": \"admin\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/auth/admin/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "auth",
+                "admin",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "users",
+      "item": [
+        {
+          "name": "register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"username\": \"admin\",\r\n//   \"email\": \"admin@test.com\",\r\n//   \"password\": \"admin\"\r\n// }\r\n\r\n{\r\n  \"username\": \"kural\",\r\n  \"email\": \"kural@test.com\",\r\n  \"password\": \"kural\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"email\": \"admin@test.com\",\r\n//   \"password\": \"admin\"\r\n// }\r\n\r\n// {\r\n//   \"identifier\": \"admin@test.com\",\r\n//   \"password\": \"admin\"\r\n// }\r\n\r\n{\r\n  \"identifier\": \"admin\",\r\n  \"password\": \"admin\"\r\n}\r\n\r\n// {\r\n//   \"identifier\": \"kural\",\r\n//   \"password\": \"kural\"\r\n// }\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getme",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzc0NTI0MzM0LCJleHAiOjE3NzQ2MTA3MzR9.5INfW4XdlsQe4_ltxYyv_fsSJZbXPK-YTglhEB_EvFA",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/users/me",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllUsers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzY3Njc1NDYxLCJleHAiOjE3Njc3NjE4NjF9.jtWI2nnBIbcGwiRulPNEzQ7cHle-q-jy0lvE5vHreTs",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/users/",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "assignRole",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzY3Njc1NDYxLCJleHAiOjE3Njc3NjE4NjF9.jtWI2nnBIbcGwiRulPNEzQ7cHle-q-jy0lvE5vHreTs",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"role\": \"admin\"\r\n}\r\n\r\n// {\r\n//   \"role\": \"user\"\r\n// }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/1/role",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "1",
+                "role"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "employee",
+      "item": [
+        {
+          "name": "createEmployee",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"employee_name\": \"Kuralarasan M\",\r\n//   \"email\": \"kuralarasan@gmail.com\",\r\n//   \"phone\": \"9876543210\",\r\n//   \"date_of_birth\": \"1998-06-15\",\r\n//   \"gender\": \"male\",\r\n//   \"address\": \"No 10, Anna Nagar, Chennai, Tamil Nadu\",\r\n\r\n//   \"aadhar_number\": \"1234-5678-9012\",\r\n//   \"pan_number\": \"ABCDE1234F\",\r\n\r\n//   \"bank_account_number\": \"123456789012\",\r\n//   \"ifsc_code\": \"SBIN0000456\",\r\n\r\n//   \"status\": \"active\"\r\n// }\r\n\r\n{\r\n  \"employee_name\": \"Kuralarasan M\",\r\n  \"email\": \"kuralarasan@gmail.com\",\r\n  \"phone\": \"9876543210\",\r\n  \"date_of_birth\": \"1998-05-12\",\r\n  \"gender\": \"male\",\r\n  \"address\": \"Chennai, Tamil Nadu\",\r\n\r\n  \"aadhar_number\": \"123456789012\",\r\n  \"pan_number\": \"ABCDE1234F\",\r\n\r\n  \"bank_name\": \"HDFC Bank\",\r\n  \"bank_account_number\": \"12345678901234\",\r\n  \"ifsc_code\": \"HDFC0001234\",\r\n\r\n  \"emergency_contact_name\": \"Murugan\",\r\n  \"emergency_contact_phone\": \"9998887776\",\r\n  \"emergency_contact_relation\": \"Father\",\r\n\r\n  \"status\": \"active\"\r\n}\r\n\r\n\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/employees",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "employees"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllEmployees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/employees",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "employees"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getOneEmployee",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/employees/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "employees",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateEmployee",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"emergency_contact_name\": \"Ravi\",\r\n  \"emergency_contact_phone\": \"9876501234\",\r\n  \"emergency_contact_relation\": \"Brother\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/employees/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "employees",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteEmployee",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/employees/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "employees",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Brand",
+      "item": [
+        {
+          "name": "addBrand",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4OTY5MTExLCJleHAiOjE3NjkwNTU1MTF9.-7i49bzDqsCZuNuFL5trhUg-3pN-FGvJmcyLrVc1A18",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"surya\"\r\n}\r\n\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/brands",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "brands"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllBrand",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkzMDA3LCJleHAiOjE3NjgyNzk0MDd9.osBSlZxyFcd06ruzKWDR5q-M7fpOZ-5BQN6_wJqKXHo",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/brands",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "brands"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateBrand",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkzMDA3LCJleHAiOjE3NjgyNzk0MDd9.osBSlZxyFcd06ruzKWDR5q-M7fpOZ-5BQN6_wJqKXHo",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"SuryaHalfBoil\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/brands/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "brands",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteBrand",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkzMDA3LCJleHAiOjE3NjgyNzk0MDd9.osBSlZxyFcd06ruzKWDR5q-M7fpOZ-5BQN6_wJqKXHo",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/brands/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "brands",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getBrandById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkzMDA3LCJleHAiOjE3NjgyNzk0MDd9.osBSlZxyFcd06ruzKWDR5q-M7fpOZ-5BQN6_wJqKXHo",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/brands/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "brands",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "categories",
+      "item": [
+        {
+          "name": "addCategories",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzcxMzI2NzU4LCJleHAiOjE3NzE0MTMxNTh9.p4n6402B9AxXWg22Fp9YQKjMf9sktRF1RVxWd6EtPQc",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"brand_id\": 1,\r\n//   \"name\": \"Raw Rice\",\r\n//   \"status\": \"active\"\r\n// }\r\n\r\n// {\r\n//   \"brand_id\": 1,\r\n//   \"name\": \"Raw Rice\"\r\n// }\r\n\r\n{\r\n  \"brand_id\": 1,\r\n  \"name\": \"OFF BOIL\",\r\n  \"hsn_code\": \"1006\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/categories",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "categories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllCategories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkzMDA3LCJleHAiOjE3NjgyNzk0MDd9.osBSlZxyFcd06ruzKWDR5q-M7fpOZ-5BQN6_wJqKXHo",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/categories",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "categories"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update-Categories",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkzMDA3LCJleHAiOjE3NjgyNzk0MDd9.osBSlZxyFcd06ruzKWDR5q-M7fpOZ-5BQN6_wJqKXHo",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Full Boil\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/categories/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "categories",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delete-Categories",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzY3Njc1NDYxLCJleHAiOjE3Njc3NjE4NjF9.jtWI2nnBIbcGwiRulPNEzQ7cHle-q-jy0lvE5vHreTs",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/categories/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "categories",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getCategoriesById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkzMDA3LCJleHAiOjE3NjgyNzk0MDd9.osBSlZxyFcd06ruzKWDR5q-M7fpOZ-5BQN6_wJqKXHo",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/categories/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "categories",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getCategoriesByBrand",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkzMDA3LCJleHAiOjE3NjgyNzk0MDd9.osBSlZxyFcd06ruzKWDR5q-M7fpOZ-5BQN6_wJqKXHo",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/categories/brand/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "categories",
+                "brand",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllBrandCategory",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkzMDA3LCJleHAiOjE3NjgyNzk0MDd9.osBSlZxyFcd06ruzKWDR5q-M7fpOZ-5BQN6_wJqKXHo",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/categories/brand-category",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "categories",
+                "brand-category"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Quantity",
+      "item": [
+        {
+          "name": "addQuantity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4OTY5MTExLCJleHAiOjE3NjkwNTU1MTF9.-7i49bzDqsCZuNuFL5trhUg-3pN-FGvJmcyLrVc1A18",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"brand_id\": 1,\r\n  \"category_id\": 1,\r\n  \"name\": \"25kg\"\r\n}\r\n\r\n"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/quantities",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "quantities"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GetAllQuantity",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkyODg2LCJleHAiOjE3NjgyNzkyODZ9.hEtwATF591iXumdFm35FN_sKof7HuHfgBrYw7wT3E6E",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/quantities",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "quantities"
+              ],
+              "query": [
+                {
+                  "key": "",
+                  "value": null,
+                  "type": "text",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateQuantity",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkyODg2LCJleHAiOjE3NjgyNzkyODZ9.hEtwATF591iXumdFm35FN_sKof7HuHfgBrYw7wT3E6E",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n\"name\": \"50kg\",\r\n  \"status\": \"inactive\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/quantities/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "quantities",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteQuantity",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY3ODUxNDkzLCJleHAiOjE3Njc5Mzc4OTN9.K9IJtFQ7216UGn9S4aa2O5Ms3MYMLxM0iGboXw57TX0",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/quantities/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "quantities",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getOneQuantity",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkyODg2LCJleHAiOjE3NjgyNzkyODZ9.hEtwATF591iXumdFm35FN_sKof7HuHfgBrYw7wT3E6E",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/quantities/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "quantities",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getQuantitiesByCategory",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkyODg2LCJleHAiOjE3NjgyNzkyODZ9.hEtwATF591iXumdFm35FN_sKof7HuHfgBrYw7wT3E6E",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/quantities/?brand=1&category=1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "quantities",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "brand",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "1",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "products",
+      "item": [
+        {
+          "name": "addProduct",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accesstoken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"product_name\": \"Rice Bag\",\r\n//   \"brand\": \"Surya1\",\r\n//   \"category\": \"Full Boil1\",\r\n//   \"quantity\": \"90 KG\",\r\n//   \"price\": 1251\r\n// }\r\n\r\n// {\r\n//   \"product_name\": \"Rice\",\r\n//   \"brand\": \"Surya\",\r\n//   \"category\": \"half Boil\",\r\n//   \"quantity\": \"25kg\",\r\n//   \"price\": 1450\r\n// }\r\n\r\n// {\r\n//   \"product_name\": \"RICE\",\r\n//   \"brand\": \"DHEERAN\",\r\n//   \"category\": \"OFF BOIL\",\r\n//   \"quantity\": \"26 Kg\",\r\n// //   \"hsn_code\": \"1006\",\r\n//   \"cgst_rate\": 2.5,\r\n//   \"sgst_rate\": 2.5,\r\n//   \"price\": 1160\r\n// }\r\n\r\n\r\n{\r\n  \"product_name\": \"Rice\",\r\n  \"brand\": \"Dheeran\",\r\n  \"category\": \"Grain\",\r\n  \"quantity\": \"26 KG\",\r\n  \"price\": 1160,\r\n  \"hsn_code\": \"1006\",\r\n  \"cgst_rate\": 2.5,\r\n  \"sgst_rate\": 2.5,\r\n  \"igst_rate\": 2.5\r\n}\r\n\r\n// {\r\n//   \"product_name\": \"Gunny Bag\",\r\n//   \"brand\": \"Local\",\r\n//   \"category\": \"Packing\",\r\n//   \"quantity\": \"1 Piece\",\r\n//   \"price\": 20\r\n// }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/products",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getOneProducts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkyODg2LCJleHAiOjE3NjgyNzkyODZ9.hEtwATF591iXumdFm35FN_sKof7HuHfgBrYw7wT3E6E",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/products/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "products",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateProduct",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkyODg2LCJleHAiOjE3NjgyNzkyODZ9.hEtwATF591iXumdFm35FN_sKof7HuHfgBrYw7wT3E6E",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"price\": 1255\r\n// }\r\n\r\n// {\r\n//   \"product_name\": \"RICE\",\r\n//   \"brand\": \"DHEERAN\",\r\n//   \"category\": \"OFF BOIL\",\r\n//   \"quantity\": \"26 Kg\",\r\n//   \"hsn_code\": \"1006\",\r\n//   \"cgst_rate\": 3,\r\n//   \"sgst_rate\": 2.5,\r\n//   \"price\": 1160\r\n// }\r\n\r\n// {\r\n//   \"product_name\": \"Rice Premium\",\r\n//   \"brand\": \"Dheeran\",\r\n//   \"category\": \"Grain\",\r\n//   \"quantity\": \"26 KG\",\r\n//   \"price\": 1200,\r\n//   \"hsn_code\": \"1006\",\r\n//   \"cgst_rate\": 2.5,\r\n//   \"sgst_rate\": 2.5,\r\n//   \"igst_rate\": 3\r\n// }\r\n\r\n\r\n// {\r\n//   \"price\": 1300\r\n// }\r\n\r\n// {\r\n//   \"cgst_rate\": null,\r\n//   \"sgst_rate\": null\r\n// }\r\n\r\n// {\r\n//   \"cgst_rate\": 1.5,\r\n//   \"sgst_rate\": 1.5\r\n// }\r\n\r\n{\r\n    \"igst_rate\": 5\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/products/5",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "products",
+                "5"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteProduct",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkyODg2LCJleHAiOjE3NjgyNzkyODZ9.hEtwATF591iXumdFm35FN_sKof7HuHfgBrYw7wT3E6E",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/products/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "products",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllProducts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/products",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update-stockbyId",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzY5NzY5OTI2LCJleHAiOjE3Njk4NTYzMjZ9.YIZQb9m6-0MWXjToT6owpIbqK6W9ygxH4BpIVet77ys",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n// \"stock\": 2050\r\n// }\r\n\r\n{\r\n  \"adminPassword\": \"admin\",\r\n  \"stock\": 2000\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/products/update-stock/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "products",
+                "update-stock",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "customer",
+      "item": [
+        {
+          "name": "addCustomer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzcwMzU5MzUwLCJleHAiOjE3NzA0NDU3NTB9.i1g40xUvoFkegqyLb6DBiyJ1fEe71TMwiVLGkz6AoWM",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"first_name\": \"Suresh\",\r\n  \"last_name\": \"Kumar\",\r\n  \"phone\": \"9876583298\",\r\n  \"place\": \"dharmapuri\",\r\n  \"email\": \"suresh1@gmail.com\",\r\n  \"address\": \"12, Main Road, Chennai\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/customers",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllCustomers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{acessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customers",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getCustomerById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkyODg2LCJleHAiOjE3NjgyNzkyODZ9.hEtwATF591iXumdFm35FN_sKof7HuHfgBrYw7wT3E6E",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customers/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customers",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteCustomer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkyODg2LCJleHAiOjE3NjgyNzkyODZ9.hEtwATF591iXumdFm35FN_sKof7HuHfgBrYw7wT3E6E",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customers/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customers",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateCustomers",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzcwMzU5MzUwLCJleHAiOjE3NzA0NDU3NTB9.i1g40xUvoFkegqyLb6DBiyJ1fEe71TMwiVLGkz6AoWM",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//     \"name\": \"ak\",\r\n//     \"phone\": \"9998887536\",\r\n//     // \"email\": \"new@gmail.com\",\r\n//     \"address\": \"New Address\"\r\n// }\r\n\r\n{\r\n  \"first_name\": \"Suresh1\",\r\n  \"last_name\": \"Kumar\",\r\n  \"phone\": \"9876583298\",\r\n  \"place\": \"dharmapuri\",\r\n  \"email\": \"suresh1@gmail.com\",\r\n  \"address\": \"12, Main Road, Chennai\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/customers/6",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customers",
+                "6"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "vendors",
+      "item": [
+        {
+          "name": "addVendors",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzcxNDkzMjc3LCJleHAiOjE3NzE1Nzk2Nzd9.I4zBC0PthxFpHYg-7kAUygY1T_wYoFT4TMCgOyKECsA",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"first_name\": \"Suresh\",\r\n  \"last_name\": \"Raj\",\r\n  \"phone\": \"9876543211\",\r\n  \"email\": \"suresh@vendor.com\",\r\n  \"address\": \"45, Market Street, Madurai\",\r\n  \"bank_name\": \"State Bank of India\",\r\n  \"bank_account_number\": \"123456789012\",\r\n//   \"bank_ifsc_code\": \"SBIN0000456\",\r\n  \"bank_ifsc_code\": \"TMBL0000028\",\r\n  \"bank_branch_name\": \"Madurai Main Branch\"\r\n}\r\n"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/vendors",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "vendors"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllVendors",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkyODg2LCJleHAiOjE3NjgyNzkyODZ9.hEtwATF591iXumdFm35FN_sKof7HuHfgBrYw7wT3E6E",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/vendors",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "vendors"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getVendorsById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkyODg2LCJleHAiOjE3NjgyNzkyODZ9.hEtwATF591iXumdFm35FN_sKof7HuHfgBrYw7wT3E6E",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/vendors/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "vendors",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateVendors",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkyODg2LCJleHAiOjE3NjgyNzkyODZ9.hEtwATF591iXumdFm35FN_sKof7HuHfgBrYw7wT3E6E",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"phone\": \"9876543210\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/vendors/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "vendors",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteVendors",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4MTkyODg2LCJleHAiOjE3NjgyNzkyODZ9.hEtwATF591iXumdFm35FN_sKof7HuHfgBrYw7wT3E6E",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/vendors/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "vendors",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "companyBankDetails",
+      "item": [
+        {
+          "name": "add-companyBankDetails",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "qr_code_image",
+                  "type": "file",
+                  "uuid": "fa7c7fa7-8455-4034-b529-aae140e1af56",
+                  "src": "postman-cloud:///1f129229-9cca-4ab0-aeeb-ed25de3a9a5f"
+                },
+                {
+                  "key": "bank_name",
+                  "value": "HDFC Bank",
+                  "type": "text",
+                  "uuid": "ed832364-a27a-4b9a-98af-376ecb44609f"
+                },
+                {
+                  "key": "account_name",
+                  "value": "Deeran Traders Pvt Ltd",
+                  "type": "text",
+                  "uuid": "6aea7a13-6199-4dcb-8b0f-a73be0e82c18"
+                },
+                {
+                  "key": "account_number",
+                  "value": "123456789011331212",
+                  "type": "text",
+                  "uuid": "daabb2b6-2fb1-4f59-b9b4-6ac3ebccd34d"
+                },
+                {
+                  "key": "ifsc_code",
+                  "value": "HDFC0001234",
+                  "type": "text",
+                  "uuid": "58b3233e-e6e5-41ec-b7bf-4bfd4a3fa6d4"
+                },
+                {
+                  "key": "branch",
+                  "value": "T Nagar, Chennai",
+                  "type": "text",
+                  "uuid": "eb9a4dde-8a0b-4fe6-b6b8-b314d66a591f"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "type": "text",
+                  "uuid": "f8045038-8921-4342-a6da-03fdbeef900b"
+                },
+                {
+                  "key": "is_primary",
+                  "value": "true",
+                  "type": "text",
+                  "uuid": "d3190fba-e0a5-4c16-846f-e3b5d1cfd236"
+                },
+                {
+                  "key": "upi_id",
+                  "value": "upi12345",
+                  "type": "text",
+                  "uuid": "9242999f-7a8b-4096-a825-3b2372a7e878"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/company-bank",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-bank"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAll-companyBankDetails",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4ODA2MzU3LCJleHAiOjE3Njg4OTI3NTd9.HE52kdazUlDpfatR_yRfErpJtHX7bb2R0Sm1_mN3ol8",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "qr_code",
+                  "type": "file",
+                  "uuid": "fa7c7fa7-8455-4034-b529-aae140e1af56",
+                  "src": "/C:/Users/zenfu/Downloads/WhatsApp Image 2026-01-09 at 3.14.15 PM.jpeg"
+                },
+                {
+                  "key": "bank_name",
+                  "value": "HDFC Bank",
+                  "type": "text",
+                  "uuid": "ed832364-a27a-4b9a-98af-376ecb44609f"
+                },
+                {
+                  "key": "account_name",
+                  "value": "Deeran Traders Pvt Ltd",
+                  "type": "text",
+                  "uuid": "6aea7a13-6199-4dcb-8b0f-a73be0e82c18"
+                },
+                {
+                  "key": "account_number",
+                  "value": "123456789012",
+                  "type": "text",
+                  "uuid": "daabb2b6-2fb1-4f59-b9b4-6ac3ebccd34d"
+                },
+                {
+                  "key": "ifsc_code",
+                  "value": "HDFC0001234",
+                  "type": "text",
+                  "uuid": "58b3233e-e6e5-41ec-b7bf-4bfd4a3fa6d4"
+                },
+                {
+                  "key": "branch",
+                  "value": "T Nagar, Chennai",
+                  "type": "text",
+                  "uuid": "eb9a4dde-8a0b-4fe6-b6b8-b314d66a591f"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "type": "text",
+                  "uuid": "f8045038-8921-4342-a6da-03fdbeef900b"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/company-bank",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-bank"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getById-companyBankDetails",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4ODA2MzU3LCJleHAiOjE3Njg4OTI3NTd9.HE52kdazUlDpfatR_yRfErpJtHX7bb2R0Sm1_mN3ol8",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "qr_code",
+                  "type": "file",
+                  "uuid": "fa7c7fa7-8455-4034-b529-aae140e1af56",
+                  "src": "/C:/Users/zenfu/Downloads/WhatsApp Image 2026-01-09 at 3.14.15 PM.jpeg"
+                },
+                {
+                  "key": "bank_name",
+                  "value": "HDFC Bank",
+                  "type": "text",
+                  "uuid": "ed832364-a27a-4b9a-98af-376ecb44609f"
+                },
+                {
+                  "key": "account_name",
+                  "value": "Deeran Traders Pvt Ltd",
+                  "type": "text",
+                  "uuid": "6aea7a13-6199-4dcb-8b0f-a73be0e82c18"
+                },
+                {
+                  "key": "account_number",
+                  "value": "123456789012",
+                  "type": "text",
+                  "uuid": "daabb2b6-2fb1-4f59-b9b4-6ac3ebccd34d"
+                },
+                {
+                  "key": "ifsc_code",
+                  "value": "HDFC0001234",
+                  "type": "text",
+                  "uuid": "58b3233e-e6e5-41ec-b7bf-4bfd4a3fa6d4"
+                },
+                {
+                  "key": "branch",
+                  "value": "T Nagar, Chennai",
+                  "type": "text",
+                  "uuid": "eb9a4dde-8a0b-4fe6-b6b8-b314d66a591f"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "type": "text",
+                  "uuid": "f8045038-8921-4342-a6da-03fdbeef900b"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/company-bank/8",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-bank",
+                "8"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delete-companyBankDetails",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4ODA2MzU3LCJleHAiOjE3Njg4OTI3NTd9.HE52kdazUlDpfatR_yRfErpJtHX7bb2R0Sm1_mN3ol8",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "qr_code",
+                  "type": "file",
+                  "uuid": "fa7c7fa7-8455-4034-b529-aae140e1af56",
+                  "src": "/C:/Users/zenfu/Downloads/WhatsApp Image 2026-01-09 at 3.14.15 PM.jpeg"
+                },
+                {
+                  "key": "bank_name",
+                  "value": "HDFC Bank",
+                  "type": "text",
+                  "uuid": "ed832364-a27a-4b9a-98af-376ecb44609f"
+                },
+                {
+                  "key": "account_name",
+                  "value": "Deeran Traders Pvt Ltd",
+                  "type": "text",
+                  "uuid": "6aea7a13-6199-4dcb-8b0f-a73be0e82c18"
+                },
+                {
+                  "key": "account_number",
+                  "value": "123456789012",
+                  "type": "text",
+                  "uuid": "daabb2b6-2fb1-4f59-b9b4-6ac3ebccd34d"
+                },
+                {
+                  "key": "ifsc_code",
+                  "value": "HDFC0001234",
+                  "type": "text",
+                  "uuid": "58b3233e-e6e5-41ec-b7bf-4bfd4a3fa6d4"
+                },
+                {
+                  "key": "branch",
+                  "value": "T Nagar, Chennai",
+                  "type": "text",
+                  "uuid": "eb9a4dde-8a0b-4fe6-b6b8-b314d66a591f"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "type": "text",
+                  "uuid": "f8045038-8921-4342-a6da-03fdbeef900b"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/company-bank/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-bank",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update-companyBankDetails",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "qr_code_image",
+                  "type": "file",
+                  "uuid": "fa7c7fa7-8455-4034-b529-aae140e1af56",
+                  "src": "/C:/Users/zenfu/Downloads/erp.zoho.in_app_60071598442.png"
+                },
+                {
+                  "key": "bank_name",
+                  "value": "HDFC Bank",
+                  "type": "text",
+                  "uuid": "ed832364-a27a-4b9a-98af-376ecb44609f"
+                },
+                {
+                  "key": "account_name",
+                  "value": "Deeran Traders",
+                  "type": "text",
+                  "uuid": "6aea7a13-6199-4dcb-8b0f-a73be0e82c18"
+                },
+                {
+                  "key": "account_number",
+                  "value": "1234567890121",
+                  "type": "text",
+                  "uuid": "daabb2b6-2fb1-4f59-b9b4-6ac3ebccd34d"
+                },
+                {
+                  "key": "ifsc_code",
+                  "value": "HDFC0001234",
+                  "type": "text",
+                  "uuid": "58b3233e-e6e5-41ec-b7bf-4bfd4a3fa6d4"
+                },
+                {
+                  "key": "branch",
+                  "value": "Chennai",
+                  "type": "text",
+                  "uuid": "eb9a4dde-8a0b-4fe6-b6b8-b314d66a591f"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "type": "text",
+                  "uuid": "f8045038-8921-4342-a6da-03fdbeef900b"
+                },
+                {
+                  "key": "isprimary",
+                  "value": "1",
+                  "type": "text",
+                  "uuid": "39d8891d-328c-4592-b342-0a5eb10a3699"
+                },
+                {
+                  "key": "upi_id",
+                  "value": "upi1234567890",
+                  "type": "text",
+                  "uuid": "7c30b18d-77c9-4760-b52d-405b7c2f5907"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/company-bank/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-bank",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "setPrimaryBank",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4ODA2MzU3LCJleHAiOjE3Njg4OTI3NTd9.HE52kdazUlDpfatR_yRfErpJtHX7bb2R0Sm1_mN3ol8",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/company-bank/2/set-primary",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-bank",
+                "2",
+                "set-primary"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "vendor-stock",
+      "item": [
+        {
+          "name": "add-vendorStock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4OTY5MTExLCJleHAiOjE3NjkwNTU1MTF9.-7i49bzDqsCZuNuFL5trhUg-3pN-FGvJmcyLrVc1A18",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"vendor_name\": \"Ramesh Traders\",\r\n//   \"vendor_phone\": \"9876543210\",\r\n//   \"product_id\": \"1\",\r\n//   \"product_name\": \"Rice Bag\",\r\n//   \"product_brand\": \"Surya\",\r\n//   \"product_category\": \"Full Boil\",\r\n//   \"product_quantity\": \"25kg\",\r\n//   \"total_stock\": 100\r\n// }\r\n\r\n// {\r\n//   \"vendor_name\": \"Ramesh Traders\",\r\n//   \"vendor_phone\": \"9876543210\",\r\n//   \"product_id\": \"1\",\r\n//   \"product_name\": \"Rice Bag\",\r\n//   \"product_brand\": \"Surya\",\r\n//   \"product_category\": \"Full Boil\",\r\n//   \"product_quantity\": \"25kg\",\r\n//   \"total_stock\": 100,\r\n//   \"entry_date\": \"2026-01-19\",\r\n//   \"entry_time\": \"10:45:00\"\r\n// }\r\n\r\n// {\r\n//   \"vendor_name\": \"Ramesh Traders1\",\r\n//   \"vendor_phone\": \"9876543210\",\r\n//   \"product_id\": 1,\r\n//   \"product_name\": \"Rice\",\r\n//   \"product_brand\": \"Surya\",\r\n//   \"product_category\": \"Full Boil\",\r\n//   \"product_quantity\": \"25kg\",\r\n//   \"total_stock\": 100,\r\n//   \"entry_date\": \"2026-01-21\",\r\n//   \"entry_time\": \"10:30\"\r\n// }\r\n\r\n{\r\n  \"vendor_name\": \"kural\",\r\n  \"vendor_phone\": \"9876543216\",\r\n  \"entry_date\": \"2026-01-21\",\r\n  \"entry_time\": \"10:30:00\",\r\n  \"products\": [\r\n    {\r\n      \"product_id\": 1,\r\n      \"product_quantity\": \"25kg\",\r\n      \"total_stock\": 50\r\n    },\r\n    {\r\n      \"product_id\": 2,\r\n      \"product_quantity\": \"50kg\",\r\n      \"total_stock\": 20\r\n    },\r\n    {\r\n      \"product_id\": 3,\r\n      \"product_quantity\": \"10kg\",\r\n      \"total_stock\": 100\r\n    }\r\n  ]\r\n}\r\n"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/vendor-stocks",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "vendor-stocks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAll-vendorStock",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4OTY5MTExLCJleHAiOjE3NjkwNTU1MTF9.-7i49bzDqsCZuNuFL5trhUg-3pN-FGvJmcyLrVc1A18",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/vendor-stocks",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "vendor-stocks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getById-vendorStock",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4Mjk5NTE4LCJleHAiOjE3NjgzODU5MTh9.EG51CsFDVFND9TXGZ5BF1m6zKoKnp1TDu3cfRGKZ-Gw",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/vendor-stocks/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "vendor-stocks",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update-vendor-stock",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4OTY5MTExLCJleHAiOjE3NjkwNTU1MTF9.-7i49bzDqsCZuNuFL5trhUg-3pN-FGvJmcyLrVc1A18",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"vendor_name\": \"Ramesh Traders Updated\",\r\n//   \"vendor_phone\": \"9876543210\",\r\n//   \"product_name\": \"Rice Bag\",\r\n//   \"product_brand\": \"Surya\",\r\n//   \"product_category\": \"Full Boil\",\r\n//   \"product_quantity\": \"25kg\",\r\n//   \"total_stock\": 120\r\n// }\r\n\r\n{\r\n  \"vendor_name\": \"Ramesh Traders\",\r\n  \"vendor_phone\": \"9876543210\",\r\n  \"product_name\": \"Rice Bag\",\r\n  \"product_brand\": \"Surya\",\r\n  \"product_category\": \"Full Boil\",\r\n  \"product_quantity\": \"25kg\",\r\n  \"total_stock\": 150,\r\n  \"entry_date\": \"2026-01-20\",\r\n  \"entry_time\": \"11:30:00\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/vendor-stocks/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "vendor-stocks",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delete-vendor-stock",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4Mjk5NTE4LCJleHAiOjE3NjgzODU5MTh9.EG51CsFDVFND9TXGZ5BF1m6zKoKnp1TDu3cfRGKZ-Gw",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/vendor-stocks/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "vendor-stocks",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "New Request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4Mjk5NTE4LCJleHAiOjE3NjgzODU5MTh9.EG51CsFDVFND9TXGZ5BF1m6zKoKnp1TDu3cfRGKZ-Gw",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"stock_added\": 30\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/vendor-stocks/2/add",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "vendor-stocks",
+                "2",
+                "add"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delete-vendorStockEntryId",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY4OTY5MTExLCJleHAiOjE3NjkwNTU1MTF9.-7i49bzDqsCZuNuFL5trhUg-3pN-FGvJmcyLrVc1A18",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/vendor-stocks/entry/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "vendor-stocks",
+                "entry",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "customer-billing",
+      "item": [
+        {
+          "name": "createCustomerBilling",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"customer_id\": 1,\r\n//   \"customer_name\": \"Ravi Traders\",\r\n//   \"phone_number\": \"9876543210\",\r\n//   \"gst_number\": \"33ABCDE1234F1Z5\",\r\n//   \"tax_gst_percent\": 5,\r\n//   \"advance_paid\": 500,\r\n//   \"cash_amount\": 300,\r\n//   \"upi_amount\": 200,\r\n//   \"products\": [\r\n//     {\r\n//       \"product_id\": 1,\r\n//       \"quantity\": 10,\r\n//       \"rate\": 600\r\n//     },\r\n//     {\r\n//       \"product_id\": 2,\r\n//       \"quantity\": 5,\r\n//       \"rate\": 550\r\n//     }\r\n//   ]\r\n// }\r\n// {\r\n//   \"customer_id\": 1,\r\n//   \"customer_name\": \"Suresh Kumar\",\r\n//   \"phone_number\": \"9876543210\",\r\n//   \"gst_number\": \"33ABCDE1234F1Z5\",\r\n//   \"tax_gst_percent\": 10,\r\n//   \"advance_paid\": 500,\r\n//   \"cash_amount\": 500,\r\n//   \"upi_amount\": 10000,\r\n//   \"products\": [\r\n//     {\r\n//       \"product_id\": 1,\r\n//       \"quantity\": 10,\r\n//       \"rate\": 1500\r\n//     },\r\n//     {\r\n//       \"product_id\": 2,\r\n//       \"quantity\": 5,\r\n//       \"rate\": 1200\r\n//     }\r\n//   ]\r\n// }\r\n// {\r\n// \"customer_id\": 1,\r\n// \"customer_name\": \"kural\",\r\n// \"phone_number\": \"9876543210\",\r\n// \"gst_number\": \"22AAAAA0000A1Z5\",\r\n// \"staff_name\": \"Suresh\",\r\n// \"staff_phone\": \"9123456789\",\r\n// \"bank_id\": 1,\r\n// \"tax_gst_percent\": 18,\r\n// \"advance_paid\": 100,\r\n// \"cash_amount\": 500,\r\n// \"upi_amount\": 200,\r\n// \"products\": [\r\n// {\r\n// \"product_id\": 2,\r\n// \"quantity\": 10,\r\n// \"rate\": 1200\r\n// }\r\n// ]\r\n// }\r\n// {\r\n// \"customer_id\": 1,\r\n// \"customer_name\": \"kural\",\r\n// \"phone_number\": \"9876543210\",\r\n// \"gst_number\": \"22AAAAA0000A1Z5\",\r\n// \"staff_name\": \"Suresh\",\r\n// \"staff_phone\": \"9123456789\",\r\n// \"bank_id\": 1,\r\n// \"tax_gst_percent\": 18,\r\n// \"advance_paid\": 10000,\r\n// \"cash_amount\": 1500,\r\n// \"upi_amount\": 200,\r\n// \"products\": [\r\n// {\r\n// \"product_id\": 2,\r\n// \"quantity\": 10,\r\n// \"rate\": 1200,\r\n// \"product_quantity\": \"25kg\"\r\n// }\r\n// ]\r\n// }\r\n// {\r\n//   \"customer_id\": 1,\r\n//   \"customer_name\": \"Ravi Traders\",\r\n//   \"phone_number\": \"9876543210\",\r\n//   \"customer_gst_number\": \"27ABCDE1234F1Z5\",\r\n//   \"company_gst_number\":\"gst0001\",\r\n//   \"vehicle_number\": \"TN09AB1234\",\r\n//   \"eway_bill_number\": \"181234567890\",\r\n//   \"staff_name\": \"Suresh\",\r\n//   \"staff_phone\": \"9123456789\",\r\n//   \"bank_id\": 1,\r\n//   \"tax_gst_percent\": 18,\r\n// //   \"advance_paid\": 0,\r\n//   \"cash_amount\": 500,\r\n//   \"upi_amount\": 1000,\r\n//   \"cheque_amount\": 500,\r\n//   \"upi_reference\": \"UPI12345678912\",\r\n//   \"products\": [\r\n//     // {\r\n//     //   \"product_id\": 3,\r\n//     //   \"quantity\": 5,\r\n//     //   \"rate\": 200,\r\n//     //   \"product_quantity\": \"pcs\"\r\n//     // },\r\n//     {\r\n//       \"product_id\": 1,\r\n//       \"quantity\": 2,\r\n//       \"rate\": 1500,\r\n//       \"product_quantity\": \"25kg\"\r\n//     }\r\n//   ]\r\n// }\r\n// {\r\n//   \"customer_id\": 1,\r\n//   \"customer_name\": \"ramesh\",\r\n//   \"phone_number\": \"9876543210\",\r\n//   \"customer_gst_number\": \"33ABCDE1234F1Z5\",\r\n//   \"company_gst_number\": \"33AAAAA0000A1Z5\",\r\n//   \"vehicle_number\": \"TN09AB1234\",\r\n//   \"eway_bill_number\": \"EWAY123456\",\r\n//   \"staff_name\": \"Suresh\",\r\n// //   \"staff_phone\": \"9876543210\",\r\n//   \"bank_id\": 1,\r\n//   \"tax_gst_percent\": 5,\r\n//   \"cash_amount\": 1000,\r\n//   \"upi_amount\": 0,\r\n//   \"cheque_amount\": 0,\r\n//   \"upi_reference\": \"UPI-kskeoe-001\",\r\n//   \"products\": [\r\n//     {\r\n//       \"product_id\": 1,\r\n//       \"product_quantity\": \"25 Kg\",\r\n//       \"quantity\": 2,\r\n//       \"rate\": 1200\r\n//     //   \"final_rate\": 1100\r\n//     },\r\n//     {\r\n//       \"product_id\": 2,\r\n//       \"product_quantity\": \"25 Kg\",\r\n//       \"quantity\": 1,\r\n//       \"rate\": 1300,\r\n//       \"final_rate\": 15\r\n//     }\r\n//   ]\r\n// }\r\n// {\r\n//   \"customer_id\": 1,\r\n//   \"customer_name\": \"Suresh Kumar\",\r\n//   \"phone_number\": \"9876543210\",\r\n//   \"customer_gst_number\": \"33ABCDE1234F1Z5\",\r\n//   \"company_gst_number\": \"33AAAAA0000A1Z5\",\r\n//   \"vehicle_number\": \"TN43AB1234\",\r\n//   \"eway_bill_number\": \"EWAY12345\",\r\n//   \"staff_name\": \"Suresh\",\r\n//   \"staff_phone\": \"9999999999\",\r\n//   \"bank_id\": 1,\r\n// //   \"cash_amount\": 500,\r\n//   \"upi_amount\": 20,\r\n//   \"cheque_amount\": 0,\r\n//   \"upi_reference\": \"UPI12347813232\",\r\n//   \"products\": [\r\n//     {\r\n//       \"product_id\": 2,\r\n//       \"quantity\": 2,\r\n//       \"hsn_code\": \"1006\",\r\n//       \"cgst_rate\": 2.5,\r\n//       \"sgst_rate\": 2.5,\r\n//       \"gst_total_rate\": 5,\r\n//       \"discount_percent\": 0,\r\n//       \"discount_amount\": 0\r\n//     }\r\n//   ]\r\n// }\r\n// {\r\n//   \"customer_id\": 1,\r\n//   \"customer_name\": \"Suresh Kumar\",\r\n//   \"phone_number\": \"9876543210\",\r\n//   \"customer_gst_number\": \"33ABCDE1234F1Z5\",\r\n//   \"company_gst_number\": \"33AAAAA0000A1Z5\",\r\n//   \"vehicle_number\": \"TN43AB1234\",\r\n//   \"eway_bill_number\": \"EWAY12345\",\r\n//   \"staff_name\": \"Suresh\",\r\n//   \"staff_phone\": \"9999999999\",\r\n//   \"bank_id\": 1,\r\n//   \"cash_amount\": 0,\r\n//   \"upi_amount\": 20,\r\n//   \"cheque_amount\": 0,\r\n//   \"upi_reference\": \"UPI32324552133\",\r\n//   \"products\": [\r\n//     {\r\n//       \"product_id\": 2,\r\n//       \"quantity\": 2,\r\n//       \"hsn_code\": \"1006\",\r\n//       \"cgst_rate\": \"2.5\",\r\n//       \"sgst_rate\": 2.5,\r\n//     //   \"gst_total_rate\": 5,\r\n//       \"final_rate\": 18\r\n//     }\r\n//   ]\r\n// }\r\n// {\r\n//     \"customer_id\": 1,\r\n//     \"customer_name\": \"Suresh Kumar\",\r\n//     \"phone_number\": \"9876543210\",\r\n//     \"customer_gst_number\": \"33ABCDE1234F1Z5\",\r\n//     \"company_gst_number\": \"33AAAAA0000A1Z5\",\r\n//     \"vehicle_number\": \"TN43AB1234\",\r\n//     \"eway_bill_number\": \"EWAY12345\",\r\n//     \"staff_name\": \"Suresh\",\r\n//     \"staff_phone\": \"9999999999\",\r\n//     \"bank_id\": 1,\r\n//     \"cash_amount\": 1000,\r\n//     //   \"upi_amount\": 1000,\r\n//     \"cheque_amount\": 0,\r\n//     //   \"upi_reference\": \"UPI3288996\",\r\n//     \"products\": [\r\n//         // {\r\n//         //     \"product_id\": 2,\r\n//         //     \"quantity\": 2,\r\n//         //     \"hsn_code\": \"1006\",\r\n//         //     \"cgst_rate\": 2.5,\r\n//         //     \"sgst_rate\": 2.5,\r\n//         //     //   \"gst_total_rate\": 5,\r\n//         //     \"final_rate\": 18\r\n//         // },\r\n//         {\r\n//             \"product_id\": 6,\r\n//             \"quantity\": 2,\r\n//             \"hsn_code\": \"2106\",\r\n//             \"cgst_rate\": \"2.50\",\r\n//             \"sgst_rate\": \"2.50\",\r\n//             \"igst_rate\": \"2.50\",\r\n//             \"gst_total_rate\": \"7.50\",\r\n//             \"final_rate\": 1100\r\n//         }\r\n//     ]\r\n// }\r\n\r\n\r\n{\r\n  \"customer_id\": 1,\r\n  \"customer_name\": \"Rajesh Kumar\",\r\n  \"phone_number\": \"9876543210\",\r\n  \"customer_gst_number\": \"33ABCDE1234F1Z5\",\r\n  \"company_gst_number\": \"33COMPANY1234F1Z5\",\r\n\r\n  \"vehicle_number\": \"TN10AB1234\",\r\n  \"eway_bill_number\": \"EWB123456\",\r\n\r\n  \"staff_name\": \"Manikandan\",\r\n  \"staff_phone\": \"9876543211\",\r\n\r\n  \"bank_id\": 1,\r\n\r\n  \"cash_amount\": 1000,\r\n  \"upi_amount\": 500,\r\n  \"cheque_amount\": 0,\r\n  \"upi_reference\": \"UPI123456\",\r\n\r\n  \"products\": [\r\n    {\r\n      \"product_id\": 1,\r\n      \"quantity\": 2,\r\n      \"final_rate\": 1300\r\n    },\r\n    {\r\n      \"product_id\": 2,\r\n      \"quantity\": 1,\r\n      \"final_rate\": 2500\r\n    }\r\n  ]\r\n}\r\n\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllCustomerBillings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing"
+              ],
+              "query": [
+                {
+                  "key": "",
+                  "value": null,
+                  "type": "text",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getHighestSellingBrand",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/stats/highest-selling-brand",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "stats",
+                "highest-selling-brand"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getCustomerProductFullData",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/customer-products",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "customer-products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getCustomerBillingById",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/6",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "6"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "productWiseReport",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/products",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "brandWiseReport",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/brands",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "brands"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "customerWiseReport",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/customers",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "customers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getPendingBills",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/pending",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "pending"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteCustomerBilling",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateCustomerBilling",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"customer_id\": 1,\r\n//   \"customer_name\": \"kuralarasan\",\r\n//   \"phone_number\": \"6380564945\",\r\n//   \"customer_gst_number\": \"FDSDGFDG253\",\r\n//   \"company_gst_number\": \"VDFGFDG\",\r\n\r\n//   \"vehicle_number\": \"TN59AB1234\",\r\n//   \"eway_bill_number\": \"EWAY999999\",\r\n\r\n//   \"staff_name\": \"kural\",\r\n//   \"staff_phone\": \"6050403020\",\r\n\r\n//   \"bank_id\": 1,\r\n\r\n// //   \"cash_amount\": 5000,\r\n// //   \"upi_amount\": 3000,\r\n// //   \"cheque_amount\": 0,\r\n// //   \"upi_reference\": \"UPI-UPDATED-001\",\r\n\r\n//   \"products\": [\r\n//     {\r\n//       \"product_id\": 6,\r\n//       \"quantity\": 4,\r\n//       \"final_rate\": 1050,\r\n\r\n//       \"hsn_code\": \"1006\",\r\n//       \"cgst_rate\": 2.5,\r\n//       \"sgst_rate\": 2.5,\r\n//       \"igst_rate\": 5\r\n//     }\r\n//   ]\r\n// }\r\n\r\n\r\n{\r\n  \"customer_id\": 1,\r\n  \"customer_name\": \"Rajesh Kumar Updated\",\r\n  \"phone_number\": \"9876543210\",\r\n  \"customer_gst_number\": \"33ABCDE1234F1Z5\",\r\n  \"company_gst_number\": \"33COMPANY1234F1Z5\",\r\n\r\n  \"vehicle_number\": \"TN10AB4321\",\r\n  \"eway_bill_number\": \"EWB654321\",\r\n\r\n  \"staff_name\": \"Manikandan\",\r\n  \"staff_phone\": \"9876543211\",\r\n\r\n  \"bank_id\": 1,\r\n\r\n  \"cash_amount\": 2000,\r\n  \"upi_amount\": 1000,\r\n  \"cheque_amount\": 0,\r\n  \"upi_reference\": \"UPIUPDATED123\",\r\n\r\n  \"products\": [\r\n    {\r\n      \"product_id\": 1,\r\n      \"quantity\": 3,\r\n      \"final_rate\": 1300\r\n    },\r\n    {\r\n      \"product_id\": 2,\r\n      \"quantity\": 2,\r\n      \"final_rate\": 2500\r\n    }\r\n  ]\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "productWiseReportByDate",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/products-by-date?fromDate=2026-02-18&toDate=2026-02-24",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "products-by-date"
+              ],
+              "query": [
+                {
+                  "key": "fromDate",
+                  "value": "2026-02-18"
+                },
+                {
+                  "key": "toDate",
+                  "value": "2026-02-24"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getLastInvoiceNumber",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/last-invoice-number",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "last-invoice-number"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getNextInvoiceNumber",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/next-invoice-number",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "next-invoice-number"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAssignedPendingBills",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/assigned-pending-bills",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "assigned-pending-bills"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getUserPaymentCollectionReport",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/reports/user-payment-collection",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "reports",
+                "user-payment-collection"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getUserDateWiseCollection",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-billing/reports/user-date-wise-collection?from=2026-01-01&to=2026-01-31",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-billing",
+                "reports",
+                "user-date-wise-collection"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-01-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "customer-payments",
+      "item": [
+        {
+          "name": "add-customer-payments",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n\"billing_id\": 1,\r\n\"payment_date\": \"2026-02-09\",\r\n// \"cash_amount\": 9200,\r\n// \"upi_amount\": 1300,\r\n\"cheque_amount\": 300,\r\n// \"reference_no\": \"TXN123\",\r\n\"remarks\": \"partial payment\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/customer-payments",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getPaymentsByBillingId",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-payments/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-payments",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getInvoiceWithPayments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-payments/invoice/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-payments",
+                "invoice",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "customer-payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-payments",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateCustomerPayment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n\"payment_date\": \"2026-04-22\",\r\n\"cash_amount\": 200,\r\n\"upi_amount\": 300,\r\n\"cheque_amount\": 300,\r\n\"reference_no\": \"TXN123\",\r\n\"remarks\": \"partial payment\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/customer-payments/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-payments",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteCustomerPayment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/customer-payments/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-payments",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getMyPayments",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-payments/my-payments",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-payments",
+                "my-payments"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "company-details",
+      "item": [
+        {
+          "name": "saveCompanyDetails",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzY5NjgxNjU1LCJleHAiOjE3Njk3NjgwNTV9.jmnMdw5ndOz0soHyb-tAaFDe53fOyw_06LRaY2AOgYw",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"company_name\": \"My Company\",\r\n  \"company_quotes\": \"Quality First\",\r\n\r\n  \"company_address\": \"Main Road\",\r\n  \"district\": \"Chennai\",\r\n  \"state\": \"Tamil Nadu\",\r\n  \"pincode\": \"600001\",\r\n\r\n  \"phone\": \"9876543210\",\r\n  \"email\": \"info@test.com\",\r\n  \"website\": \"www.test.com\",\r\n\r\n  \"disclaimer\": \"No return policy\",\r\n  \"instruction\": \"Pay within 15 days\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/company-details",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-details"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getCompanyDetails",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/company-details",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-details"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateCompanyDetails",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzY5NjgxNjU1LCJleHAiOjE3Njk3NjgwNTV9.jmnMdw5ndOz0soHyb-tAaFDe53fOyw_06LRaY2AOgYw",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"company_name\": \"Test Company Pvt Ltd\",\r\n  \"company_quotes\": \"Quality is our priority\",\r\n  \"company_address\": \"No 10, Main Road\",\r\n  \"district\": \"Chennai\",\r\n  \"state\": \"Tamil Nadu\",\r\n  \"pincode\": \"600001\",\r\n  \"phone\": \"9876543210\",\r\n  \"email\": \"test@company.com\",\r\n  \"website\": \"www.testcompany.com\",\r\n  \"disclaimer\": \"No refund after purchase\",\r\n  \"instruction\": \"Pay within 30 days\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/company-details/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-details",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteCompanyDetails",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzY5NjgxNjU1LCJleHAiOjE3Njk3NjgwNTV9.jmnMdw5ndOz0soHyb-tAaFDe53fOyw_06LRaY2AOgYw",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/company-details/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-details",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "chit",
+      "item": []
+    },
+    {
+      "name": "return",
+      "item": [
+        {
+          "name": "createCustomerReturn",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"billing_id\": 1,\r\n  \"remarks\": \"Customer returned damaged items\",\r\n  \"products\": [\r\n    {\r\n      \"billing_product_id\": 1,\r\n      \"return_quantity\": 10\r\n    }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/returns",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "returns"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllReturns",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/returns",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "returns"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getReturnById",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"billing_id\": 2,\r\n  \"return_date\": \"2026-04-17\",\r\n  \"remarks\": \"Customer returned damaged items\",\r\n  \"products\": [\r\n    {\r\n      \"billing_product_id\": 2,\r\n      \"return_quantity\": 2\r\n    }\r\n  ]\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/returns/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "returns",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getReturnsByBillingId",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"billing_id\": 2,\r\n  \"return_date\": \"2026-04-17\",\r\n  \"remarks\": \"Customer returned damaged items\",\r\n  \"products\": [\r\n    {\r\n      \"billing_product_id\": 2,\r\n      \"return_quantity\": 2\r\n    }\r\n  ]\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/returns/billing/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "returns",
+                "billing",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getReturnSummary",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"billing_id\": 2,\r\n  \"return_date\": \"2026-04-17\",\r\n  \"remarks\": \"Customer returned damaged items\",\r\n  \"products\": [\r\n    {\r\n      \"billing_product_id\": 2,\r\n      \"return_quantity\": 2\r\n    }\r\n  ]\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/returns/summary/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "returns",
+                "summary",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getReturnWithInvoice",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"billing_id\": 2,\r\n  \"return_date\": \"2026-04-17\",\r\n  \"remarks\": \"Customer returned damaged items\",\r\n  \"products\": [\r\n    {\r\n      \"billing_product_id\": 2,\r\n      \"return_quantity\": 2\r\n    }\r\n  ]\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/returns/invoice/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "returns",
+                "invoice",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteCustomerReturn",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/returns/7",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "returns",
+                "7"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateCustomerReturn",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"remarks\": \"Updated return - corrected quantity\",\r\n  \"products\": [\r\n    {\r\n      \"billing_product_id\": 1,\r\n      \"return_quantity\": 1\r\n    }\r\n    // {\r\n    //   \"billing_product_id\": 11,\r\n    //   \"return_quantity\": 1\r\n    // }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/returns/6",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "returns",
+                "6"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "company GST number",
+      "item": [
+        {
+          "name": "createGST",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"gst_number\": \"33ABCDE5788F1Z0\",\r\n  \"is_default\": true,\r\n  \"is_active\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/company-gst",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-gst"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllGST",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/company-gst",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-gst"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateGST",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n//   \"gst_number\": \"33ABCDE5238F1Z5\",  \r\n//   \"is_default\": true,\r\n  \"is_default\": 1,\r\n  \"is_active\": true\r\n//   \"is_active\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/company-gst/6",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-gst",
+                "6"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteGST",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/company-gst/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-gst",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "setDefaultGST",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/company-gst/set-default/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "company-gst",
+                "set-default",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "order",
+      "item": [
+        {
+          "name": "createOrder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"customer_id\": 1,\r\n// //   \"employee_id\": 1,\r\n//     \"expected_delivery_date\": \"2026-04-28\",\r\n//   \"products\": [\r\n//     { \"product_id\": 1, \"quantity\": 5 },\r\n//     { \"product_id\": 2, \"quantity\": 2 }\r\n//   ],\r\n//   \"remarks\": \"Urgent order\"\r\n// }\r\n\r\n{\r\n  \"customer_id\": 1,\r\n  \"expected_delivery_date\": \"2026-05-01\",\r\n  \"remarks\": \"Urgent order\",\r\n  \"products\": [\r\n    {\r\n      \"product_id\": 1,\r\n      \"quantity\": 5,\r\n      \"total_amount\": 5000\r\n    },\r\n    {\r\n      \"product_id\": 2,\r\n      \"quantity\": 3,\r\n      \"total_amount\": 2000\r\n    }\r\n  ]\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/orders",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getOrders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/orders",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getOrderById",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/orders/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateOrder",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n// //   \"status\": \"CONFIRMED\",\r\n//   \"products\": [\r\n//     // { \"product_id\": 1, \"quantity\": 5 },\r\n//     { \"product_id\": 2, \"quantity\": 2 }\r\n//   ],\r\n//   \"remarks\":\"products update\"\r\n// }\r\n\r\n{\r\n  \"customer_id\": 1,\r\n//   \"employee_id\": 2,\r\n  \"expected_delivery_date\": \"2026-04-30\",\r\n  \"status\": \"CONFIRMED\",\r\n  \"remarks\": \"Updated order\",\r\n\r\n  \"products\": [\r\n    {\r\n      \"product_id\": 1,\r\n      \"quantity\": 5,\r\n      \"total_amount\": 4000\r\n    },\r\n    {\r\n      \"product_id\": 2,\r\n      \"quantity\": 3,\r\n      \"total_amount\": 5000\r\n    }\r\n  ]\r\n}\r\n\r\n// {\r\n//   \"status\": \"DELIVERED\"\r\n// }\r\n\r\n// {\r\n//   \"products\": [\r\n//     {\r\n//       \"product_id\": 3,\r\n//       \"quantity\": 10\r\n//     }\r\n//   ]\r\n// }\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/orders/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteOrder",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "confirmOrder",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/1/confirm",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "1",
+                "confirm"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "cancelOrder",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/4/cancel",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "4",
+                "cancel"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateOrderStatus",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"status\": \"CONFIRMED\"\r\n// }\r\n\r\n// {\r\n//   \"status\": \"DELIVERED\"\r\n// }\r\n\r\n// {\r\n//   \"status\": \"BILLED\"\r\n// }\r\n// {\r\n//   \"status\": \"CANCELLED\"\r\n// }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/orders/2/status",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "2",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "available-stock",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/available-stock",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "available-stock"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getOrderSummary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/report-orderSummary",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "report-orderSummary"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getOrdersByDateRange",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/report-orders-by-date-range?from=2026-01-01&to=2026-12-31",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "report-orders-by-date-range"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getCustomerReport",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/reports/customer-report",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "reports",
+                "customer-report"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getProductSalesReport",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/reports/product-sales-report",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "reports",
+                "product-sales-report"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getDeliveryReport",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/reports/delivery-performance",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "reports",
+                "delivery-performance"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getCancelledOrders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/reports/cancelled-orders",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "reports",
+                "cancelled-orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getMyOrders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/my-orders",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "my-orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getUserOrderReport",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/reports/user-order-report?from=2026-01-01&to=2026-12-31",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "reports",
+                "user-order-report"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "generateBillFromOrder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"company_gst_number\": \"33ABCDE1234F1Z5\",\r\n//   \"customer_gst_number\": \"33XYZ9876L1Z2\",\r\n\r\n//   \"vehicle_number\": \"TN10AB1234\",\r\n//   \"eway_bill_number\": \"EWB123456\",\r\n\r\n//   \"staff_name\": \"Ravi\",\r\n//   \"staff_phone\": \"9876543210\",\r\n\r\n//   \"bank_id\": 1,\r\n\r\n//   \"cash_amount\": 5000,\r\n//   \"upi_amount\": 2000,\r\n//   \"cheque_amount\": 0,\r\n//   \"upi_reference\": \"UPI123456\",\r\n\r\n//   \"remarks\": \"Full billing\"\r\n// }\r\n\r\n\r\n{\r\n  \"items\": [\r\n    { \"product_id\": 5, \"quantity\": 4 }\r\n  ],\r\n\r\n  \"company_gst_number\": \"33ABCDE1234F1Z5\",\r\n\r\n  \"staff_name\": \"Ravi\",\r\n  \"bank_id\": 1,\r\n\r\n  \"cash_amount\": 2000,\r\n\r\n  \"remarks\": \"Partial billing\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/orders/3/generate-bill",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "3",
+                "generate-bill"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deliverOrder",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/1/deliver",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "orders",
+                "1",
+                "deliver"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "assign bill customer",
+      "item": [
+        {
+          "name": "assignUserToCustomer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"user_id\": 2,\r\n  \"customer_id\": 8\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/assigned-bill-customers/assign",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "assigned-bill-customers",
+                "assign"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getMyCustomers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/assigned-bill-customers/my-customers",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "assigned-bill-customers",
+                "my-customers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateAssignment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"user_id\": 4\r\n// }\r\n\r\n// {\r\n//   \"is_active\": false\r\n// }\r\n\r\n{\r\n  \"user_id\": 2,\r\n  \"is_active\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/assigned-bill-customers/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "assigned-bill-customers",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "removeUserFromCustomer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"user_id\": 4\r\n// }\r\n\r\n// {\r\n//   \"is_active\": false\r\n// }\r\n\r\n{\r\n  \"user_id\": 2,\r\n  \"is_active\": true\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/assigned-bill-customers/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "assigned-bill-customers",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "areas",
+      "item": [
+        {
+          "name": "createArea",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Andheri\"\r\n//   \"code\": \"AND\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/areas",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "areas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAreas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/areas",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "areas"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ALL",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "type": "text",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateArea",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Bandra\",\r\n//   \"code\": \"BAN\",\r\n  \"status\": \"ACTIVE\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/areas/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "areas",
+                "2"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ALL",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "type": "text",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteArea",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/areas/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "areas",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "terms",
+      "item": [
+        {
+          "name": "createTerms",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"version\": \"v1\",\r\n  \"title\": \"chit Terms & Conditions\",\r\n  \"points\": [\r\n    {\r\n      \"point_order\": 1,\r\n      \"content\": \"Payment must be completed within 7 days\",\r\n      \"is_mandatory\": true\r\n    },\r\n    {\r\n      \"point_order\": 2,\r\n      \"content\": \"No return after billing\",\r\n      \"is_mandatory\": true\r\n    },\r\n    {\r\n      \"point_order\": 3,\r\n      \"content\": \"GST applicable as per government rules\",\r\n      \"is_mandatory\": true\r\n    }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/terms",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "terms"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getActiveTerms",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/terms/active",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "terms",
+                "active"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "acceptTerms",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"terms_id\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/terms/accept",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "terms",
+                "accept"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "checkTermsStatus",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/terms/status",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "terms",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

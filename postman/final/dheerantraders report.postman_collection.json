@@ -1,0 +1,457 @@
+{
+  "info": {
+    "_postman_id": "56ef4bf0-2bbe-42b5-8082-0c54b50ad6ad",
+    "name": "dheerantraders report",
+    "description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "51069067",
+    "_collection_link": "https://go.postman.co/collection/51069067-56ef4bf0-2bbe-42b5-8082-0c54b50ad6ad?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "getBatchReport",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzc0NTA4MDk3LCJleHAiOjE3NzQ1OTQ0OTd9.BLnOi88ylSQBPsX9UiFHWZqjuupNHgXqML1P3b4Z8pg",
+            "type": "text",
+            "disabled": true
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/batch-report",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "batch-report"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getAgentStaffReport",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzc0NTA4MDk3LCJleHAiOjE3NzQ1OTQ0OTd9.BLnOi88ylSQBPsX9UiFHWZqjuupNHgXqML1P3b4Z8pg",
+            "type": "text",
+            "disabled": true
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/agent-report",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "agent-report"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getCustomerReport",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzc0NTA4MDk3LCJleHAiOjE3NzQ1OTQ0OTd9.BLnOi88ylSQBPsX9UiFHWZqjuupNHgXqML1P3b4Z8pg",
+            "type": "text",
+            "disabled": true
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/customer-report",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "customer-report"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getPlanReport",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzc0NTA4MDk3LCJleHAiOjE3NzQ1OTQ0OTd9.BLnOi88ylSQBPsX9UiFHWZqjuupNHgXqML1P3b4Z8pg",
+            "type": "text",
+            "disabled": true
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/plan-report",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "plan-report"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getAssignedCustomerReport",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/assigned-customer-report",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "assigned-customer-report"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getCollectionReportDateRange",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/collection-report?from_date=2026-04-01&to_date=2026-04-07",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "collection-report"
+          ],
+          "query": [
+            {
+              "key": "from_date",
+              "value": "2026-04-01"
+            },
+            {
+              "key": "to_date",
+              "value": "2026-04-07"
+            },
+            {
+              "key": "date",
+              "value": "2026-04-07",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getMonthlyCollectionReport",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/collection-report-monthly?year=2026",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "collection-report-monthly"
+          ],
+          "query": [
+            {
+              "key": "year",
+              "value": "2026",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getPendingAndOverdueReport",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/collection-report-Pending-Overdue",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "collection-report-Pending-Overdue"
+          ],
+          "query": [
+            {
+              "key": "type",
+              "value": "pending",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "type",
+              "value": "overdue",
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getCollectorPendingReport",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/collection-collector-pending-report",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "collection-collector-pending-report"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getCollectionReport",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/collection-report",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "collection-report"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getCollectorPerformance",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/collector-performance?from_date=2026-04-01&to_date=2026-04-09",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "collector-performance"
+          ],
+          "query": [
+            {
+              "key": "from_date",
+              "value": "2026-04-01"
+            },
+            {
+              "key": "to_date",
+              "value": "2026-04-09"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getDailyAnalytics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/daily-analytics?from_date=2026-04-01&to_date=2026-04-09",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "daily-analytics"
+          ],
+          "query": [
+            {
+              "key": "from_date",
+              "value": "2026-04-01"
+            },
+            {
+              "key": "to_date",
+              "value": "2026-04-09"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getMonthlyAnalytics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/monthly-analytics",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "monthly-analytics"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getDashboard",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/dashboard",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "dashboard"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "getMobileDashboard",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/chit-reports/mobile-dashboard",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "chit-reports",
+            "mobile-dashboard"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

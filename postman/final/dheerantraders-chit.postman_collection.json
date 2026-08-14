@@ -1,0 +1,2185 @@
+{
+  "info": {
+    "_postman_id": "1ee8c0b5-fc9a-4077-a312-52ff6248036a",
+    "name": "dheerantraders-chit",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "51069067",
+    "_collection_link": "https://go.postman.co/collection/51069067-1ee8c0b5-fc9a-4077-a312-52ff6248036a?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "plan",
+      "item": [
+        {
+          "name": "createPlan",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"plan_name\": \"Weekly\",\r\n//   \"plan_duration\": 35\r\n// }\r\n\r\n// {\r\n//   \"plan_name\": \"100 Days Daily\",\r\n//   \"duration_days\": 100,\r\n//   \"collection_type\": \"DAILY\",\r\n//   \"total_installments\": 100\r\n// }\r\n\r\n// {\r\n//   \"plan_name\": \"50 Days Plan\",\r\n//   \"duration_days\": 50,\r\n//   \"collection_type\": \"SINGLE\",\r\n//   \"total_installments\": 1\r\n// }\r\n\r\n// {\r\n//   \"plan_name\": \"90 Days Plan\",\r\n//   \"duration_days\": 90,\r\n//   \"collection_type\": \"SINGLE\",\r\n//   \"total_installments\": 1\r\n// }\r\n\r\n{\r\n  \"plan_name\": \"16 Weekly Chit\",\r\n  \"duration_days\": 112,\r\n  \"collection_type\": \"WEEKLY\",\r\n  \"total_installments\": 16\r\n}\r\n\r\n// {\r\n//   \"plan_name\": \"Wrong Plan\",\r\n//   \"duration_days\": 50,\r\n//   \"collection_type\": \"YEARLY\",\r\n//   \"total_installments\": 50\r\n// }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/plans/create",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "plans",
+                "create"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllPlans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/plans",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "plans"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getPlanById",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/plans/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "plans",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updatePlan",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"plan_name\": \"Monthly\",\r\n//   \"plan_duration\": 112\r\n// }\r\n\r\n{\r\n  \"plan_name\": \"100 Days Daily Updated\",\r\n  \"duration_days\": 100,\r\n  \"collection_type\": \"DAILY\",\r\n  \"total_installments\": 100\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/plans/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "plans",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deletePlan",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/plans/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "plans",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "plan_Rules",
+      "item": [
+        {
+          "name": "New Request",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"plan_id\": 1,\r\n  \"collection_type\": \"MONTHLY\",\r\n  \"installment_amount\": 5000,\r\n  \"total_installments\": 20\r\n}\r\n\r\n// {\r\n//   \"plan_id\": 1,\r\n//   \"collection_type\": \"Weekly\",\r\n//   \"installment_amount\": 5000,\r\n//   \"total_installments\": 20\r\n// }\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/plan-rules/create",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "plan-rules",
+                "create"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "batches",
+      "item": [
+        {
+          "name": "createBatch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"batch_name\": \"Batch 01\",\r\n//   \"batch_duration\": 7,\r\n//   \"start_date\": \"2026-02-01\",\r\n//   \"end_date\": \"2026-02-07\",\r\n// //   \"status\": \"ACTIVE\"\r\n// //   \"status\": \"WAITING\" // default\r\n// //   \"status\": \"CLOSED\"\r\n// }\r\n// {\r\n//     \"batch_name\": \"Batch 01\",\r\n//     \"batch_duration\": 7,\r\n//     \"start_date\": \"2026-02-28\",\r\n//     \"end_date\": \"2026-03-07\"\r\n// }\r\n\r\n// {\r\n//     \"batch_name\": \"Batch 01\",\r\n//     \"batch_duration\": 7,\r\n//     \"start_date\": \"2026-03-04\",\r\n//     \"end_date\": \"2026-03-07\"\r\n// }\r\n\r\n{\r\n    \"batch_duration\": 7,\r\n    \"start_date\": \"2026-04-02\",\r\n    \"end_date\": \"2026-04-07\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/batches",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "batches"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getBatches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/batches",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "batches"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getBatchById",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/batches/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "batches",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateBatch",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"batch_name\": \"Batch_08\",\r\n//   \"batch_duration\": 7,\r\n//   \"start_date\": \"2026-02-01\",\r\n//   \"end_date\": \"2026-02-08\",\r\n// //   \"status\": \"ACTIVE\"\r\n//   \"status\": \"WAITING\"\r\n// //   \"status\": \"CLOSED\"\r\n// }\r\n\r\n{\r\n//   \"batch_name\": \"Batch_09\",\r\n  \"batch_duration\": 8,\r\n  \"start_date\": \"2026-03-05\",\r\n  \"end_date\": \"2026-03-10\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/batches/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "batches",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteBatch",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/batches/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "batches",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getNextBatchName",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/batches/next-batch-name",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "batches",
+                "next-batch-name"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "batch_plan",
+      "item": [
+        {
+          "name": "addPlanToBatch",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"batch_id\": 1,\r\n  \"plan_id\": 1\r\n}\r\n\r\n// {\r\n//   \"batch_id\": 1,\r\n//   \"plan_id\": 3\r\n// }\r\n\r\n// {\r\n//   \"batch_id\": 1,\r\n//   \"plan_id\": 3\r\n// }\r\n\r\n// {\r\n//   \"batch_id\": 1,\r\n//   \"plan_id\": 3\r\n// }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/batch-plans",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "batch-plans"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getPlansByBatch",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/batch-plans/batch/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "batch-plans",
+                "batch",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "removePlanFromBatch",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/batch-plans/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "batch-plans",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "customer",
+      "item": [
+        {
+          "name": "createChitCustomer",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"Ramesh Kumar1\",\r\n    \"phone\": \"9876543289\",\r\n    \"place\": \"Madurai\",\r\n    \"aadhar\": \"245678905534\",\r\n    \"pan_number\": \"ABCDE7238F\",\r\n    \"door_no\": \"12A\",\r\n    \"address\": \"West street, Madurai\",\r\n    \"state\": \"tamilnadu\",\r\n    \"district\": \"dharmapuri\",\r\n    \"pincode\": \"635202\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-customers",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-customers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getChitCustomers",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Ramesh Kumar\",\r\n  \"phone\": \"9876543210\",\r\n  \"place\": \"Madurai\",\r\n  \"aadhar\": \"123412341234\",\r\n  \"pan_number\": \"ABCDE1234F\",\r\n  \"door_no\": \"12A\",\r\n  \"address\": \"West street, Madurai\"\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-customers",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-customers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getChitCustomerById",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Ramesh Kumar\",\r\n  \"phone\": \"9876543210\",\r\n  \"place\": \"Madurai\",\r\n  \"aadhar\": \"123412341234\",\r\n  \"pan_number\": \"ABCDE1234F\",\r\n  \"door_no\": \"12A\",\r\n  \"address\": \"West street, Madurai\"\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-customers/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-customers",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateChitCustomer",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"name\": \"Ramesh Kumar\",\r\n//   \"phone\": \"9876543210\",\r\n//   \"place\": \"Madurai\",\r\n//   \"aadhar\": \"123412341234\",\r\n//   \"pan_number\": \"ABCDE1234F\",\r\n//   \"door_no\": \"12A\",\r\n//   \"address\": \"West street, Madurai\"\r\n// }\r\n{\r\n    \"name\": \"Ramesh Kumar\",\r\n    \"phone\": \"9876543218\",\r\n    \"place\": \"Chennai\",\r\n    \"aadhar\": \"353560858033\",\r\n    \"pan_number\": \"ABCDE1234F\",\r\n    \"door_no\": \"22B\",\r\n    \"address\": \"Anna Nagar, Chennai\",\r\n    \"state\": \"tamilnadu\",\r\n    \"district\": \"dharmapuri\",\r\n    \"pincode\": \"600001\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-customers/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-customers",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteChitCustomer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Ramesh Kumar\",\r\n  \"phone\": \"9876543210\",\r\n  \"place\": \"Madurai\",\r\n  \"aadhar\": \"123412341234\",\r\n  \"pan_number\": \"ABCDE1234F\",\r\n  \"door_no\": \"12A\",\r\n  \"address\": \"West street, Madurai\"\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-customers/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-customers",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Agent_Staff",
+      "item": [
+        {
+          "name": "createAgentStaff",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"name\": \"Arun Kumar\",\r\n//   \"phone\": \"98765454775\",\r\n//   \"reference_mode\": \"agent\",\r\n//   \"status\": \"inactive\"\r\n// }\r\n\r\n\r\n{\r\n  \"name\": \"Arun Kumar\",\r\n  \"phone\": \"98765454775\",\r\n  \"reference_mode\": \"agent\",\r\n  \"status\": \"active\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-agent-staff/create",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-agent-staff",
+                "create"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAgentStaff",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Arun Kumar\",\r\n  \"phone\": \"9876543210\",\r\n  \"reference_mode\": \"agent\"\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-agent-staff",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-agent-staff"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAgentStaffById",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/chit-agent-staff/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-agent-staff",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateAgentStaff",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"name\": \"Arun Kumar\",\r\n//   \"phone\": \"9876543210\",\r\n//   \"reference_mode\": \"staff\",\r\n//   \"status\": \"active\"\r\n// }\r\n\r\n{\r\n  \"name\": \"Karthik R\",\r\n  \"phone\": \"9887766554\",\r\n  \"reference_mode\": \"agent\",\r\n  \"status\": \"active\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-agent-staff/2",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-agent-staff",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteAgentStaff",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/chit-agent-staff/3",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-agent-staff",
+                "3"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Customer Subscription",
+      "item": [
+        {
+          "name": "createCustomerSubscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"customer_id\": 1,\r\n    \"nominee_name\": \"kural\",\r\n    \"nominee_phone\": 6380564945,\r\n    \"batch_id\": 1,\r\n    \"plan_id\": 1,\r\n    \"installment_amount\":425,\r\n    \"investment_amount\": 50000,\r\n    \"start_date\": \"2026-04-02\",\r\n    \"duration\": 100,\r\n    \"end_date\": \"2026-06-26\",\r\n    \"reference_mode\": \"AGENT\",\r\n    \"agent_staff_id\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions/create",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions",
+                "create"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getCustomerSubscriptions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getCustomerSubscriptionById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accesstoken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateCustomerSubscription",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"nominee_name\": \"Kumar\",\r\n//   \"nominee_phone\": \"9876543210\",\r\n//   \"installment_amount\": 800,\r\n//   \"investment_amount\": 150000,\r\n//   \"start_date\": \"2026-03-01\",\r\n//   \"duration\": 20,\r\n//   \"end_date\": \"2027-11-01\",\r\n//   \"reference_mode\": \"AGENT\",\r\n//   \"agent_staff_id\": 1\r\n// }\r\n\r\n\r\n{\r\n  \"nominee_name\": \"kural updated\",\r\n  \"nominee_phone\": \"6380564945\",\r\n  \"installment_amount\": 27000,\r\n//   \"investment_amount\": 26000,\r\n  \"start_date\": \"2026-04-14\",\r\n  \"duration\": 50,\r\n  \"reference_mode\": \"OFFICE\",\r\n  \"agent_staff_id\": null,\r\n  \"remarks\":\"testing\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions/6",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions",
+                "6"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteCustomerSubscription",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessTOken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions/4",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions",
+                "4"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getCustomerFullDetails",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions/customer-details/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions",
+                "customer-details",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getBatchSummary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions/batch-summary",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions",
+                "batch-summary"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getPlanSummary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions/plan-summary",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions",
+                "plan-summary"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getBatchDetails",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions/batch-details/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions",
+                "batch-details",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getBatchSummaryById",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions/batch-summary/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions",
+                "batch-summary",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getActiveCustomers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions/active-customers",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions",
+                "active-customers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getThisMonthCollection",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions/this-month-collection",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions",
+                "this-month-collection"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getTotalCollection",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions/total-collection",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions",
+                "total-collection"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getPendingCollection",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions/pending-collection",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions",
+                "pending-collection"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getDashboardStats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/customer-subscriptions/dashboard-stats",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "customer-subscriptions",
+                "dashboard-stats"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "collection-payment",
+      "item": [
+        {
+          "name": "collectPayment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n//   \"subscription_id\":2,\r\n  \"installment_id\": 92,\r\n\r\n//   \"pay_upi\": 400,\r\n//   \"pay_upi_reference\": \"UPI123ABC4212\",\r\n  \"pay_cheque\": 400,\r\n//   \"pay_cash\": 100000,\r\n\r\n  \"remarks\": \"March installment\"\r\n}\r\n\r\n// {\r\n//   \"subscription_id\": 1,\r\n//   \"installment_id\": 1,\r\n//   \"pay_cash\": 500\r\n// }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-payment/collect",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-payment",
+                "collect"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "collectPaymentBySubscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZV9pZCI6MSwic2Vzc2lvbl9pZCI6IjNmY2Q1Y2UxLTEyZGEtNDczZS05ZThiLWVhOWI5OTgzMmY4MSIsInRva2VuX3ZlcnNpb24iOjAsInBlcm1pc3Npb25zIjp7IkJJTExJTkdfQ1JFQVRFIjp0cnVlLCJCSUxMSU5HX0RFTEVURSI6dHJ1ZSwiQklMTElOR19FRElUIjp0cnVlLCJCSUxMSU5HX1ZJRVciOnRydWUsIkJJTExJTkdfQUNDT1VOVFNfQ1JFQVRFIjp0cnVlLCJCSUxMSU5HX0FDQ09VTlRTX0RFTEVURSI6dHJ1ZSwiQklMTElOR19BQ0NPVU5UU19FRElUIjp0cnVlLCJCSUxMSU5HX0FDQ09VTlRTX1ZJRVciOnRydWUsIkJJTExJTkdfQUREX1BST0RVQ1RfQ1JFQVRFIjp0cnVlLCJCSUxMSU5HX0FERF9QUk9EVUNUX0RFTEVURSI6dHJ1ZSwiQklMTElOR19BRERfUFJPRFVDVF9FRElUIjp0cnVlLCJCSUxMSU5HX0FERF9QUk9EVUNUX1ZJRVciOnRydWUsIkJJTExJTkdfQlJBTkRfQ1JFQVRFIjp0cnVlLCJCSUxMSU5HX0JSQU5EX0RFTEVURSI6dHJ1ZSwiQklMTElOR19CUkFORF9FRElUIjp0cnVlLCJCSUxMSU5HX0JSQU5EX1ZJRVciOnRydWUsIkJJTExJTkdfQ0FURUdPUklFU19DUkVBVEUiOnRydWUsIkJJTExJTkdfQ0FURUdPUklFU19ERUxFVEUiOnRydWUsIkJJTExJTkdfQ0FURUdPUklFU19FRElUIjp0cnVlLCJCSUxMSU5HX0NBVEVHT1JJRVNfVklFVyI6dHJ1ZSwiQklMTElOR19DVVJSRU5UX1NUT0NLX1ZJRVciOnRydWUsIkJJTExJTkdfQ1VTVE9NRVJTX0NSRUFURSI6dHJ1ZSwiQklMTElOR19DVVNUT01FUlNfREVMRVRFIjp0cnVlLCJCSUxMSU5HX0NVU1RPTUVSU19FRElUIjp0cnVlLCJCSUxMSU5HX0NVU1RPTUVSU19WSUVXIjp0cnVlLCJCSUxMSU5HX0RBU0hCT0FSRF9DUkVBVEUiOnRydWUsIkJJTExJTkdfREFTSEJPQVJEX0RFTEVURSI6dHJ1ZSwiQklMTElOR19EQVNIQk9BUkRfRURJVCI6dHJ1ZSwiQklMTElOR19EQVNIQk9BUkRfVklFVyI6dHJ1ZSwiQklMTElOR19FTVBMT1lFRVNfQ1JFQVRFIjp0cnVlLCJCSUxMSU5HX0VNUExPWUVFU19ERUxFVEUiOnRydWUsIkJJTExJTkdfRU1QTE9ZRUVTX0VESVQiOnRydWUsIkJJTExJTkdfRU1QTE9ZRUVTX1ZJRVciOnRydWUsIkJJTExJTkdfUEVORElOR19DUkVBVEUiOnRydWUsIkJJTExJTkdfUEVORElOR19ERUxFVEUiOnRydWUsIkJJTExJTkdfUEVORElOR19FRElUIjp0cnVlLCJCSUxMSU5HX1BFTkRJTkdfVklFVyI6dHJ1ZSwiQklMTElOR19QUk9EVUNUU19DUkVBVEUiOnRydWUsIkJJTExJTkdfUFJPRFVDVFNfREVMRVRFIjp0cnVlLCJCSUxMSU5HX1BST0RVQ1RTX0VESVQiOnRydWUsIkJJTExJTkdfUFJPRFVDVFNfVklFVyI6dHJ1ZSwiQklMTElOR19RVUFOVElUWV9FRElUIjp0cnVlLCJCSUxMSU5HX1FVQU5USVRZX1ZJRVciOnRydWUsIkJJTExJTkdfUkVQT1JUX0VYUE9SVCI6dHJ1ZSwiQklMTElOR19SRVBPUlRfVklFVyI6dHJ1ZSwiQklMTElOR19SRVBPUlRfQ1VTVE9NRVJfRVhQT1JUIjp0cnVlLCJCSUxMSU5HX1JFUE9SVF9DVVNUT01FUl9WSUVXIjp0cnVlLCJCSUxMSU5HX1JFUE9SVF9EQUlMWV9FWFBPUlQiOnRydWUsIkJJTExJTkdfUkVQT1JUX0RBSUxZX1ZJRVciOnRydWUsIkJJTExJTkdfUkVQT1JUX1BST0RVQ1RfRVhQT1JUIjp0cnVlLCJCSUxMSU5HX1JFUE9SVF9QUk9EVUNUX1ZJRVciOnRydWUsIkJJTExJTkdfU1RPQ0tfQ1JFQVRFIjp0cnVlLCJCSUxMSU5HX1NUT0NLX0RFTEVURSI6dHJ1ZSwiQklMTElOR19TVE9DS19FRElUIjp0cnVlLCJCSUxMSU5HX1NUT0NLX1ZJRVciOnRydWUsIkJJTExJTkdfVkVORE9SU19DUkVBVEUiOnRydWUsIkJJTExJTkdfVkVORE9SU19ERUxFVEUiOnRydWUsIkJJTExJTkdfVkVORE9SU19FRElUIjp0cnVlLCJCSUxMSU5HX1ZFTkRPUlNfVklFVyI6dHJ1ZSwiQ0hJVF9DUkVBVEUiOnRydWUsIkNISVRfREVMRVRFIjp0cnVlLCJDSElUX0VESVQiOnRydWUsIkNISVRfVklFVyI6dHJ1ZSwiQ0hJVF9BR0VOVF9DUkVBVEUiOnRydWUsIkNISVRfQUdFTlRfREVMRVRFIjp0cnVlLCJDSElUX0FHRU5UX0VESVQiOnRydWUsIkNISVRfQUdFTlRfVklFVyI6dHJ1ZSwiQ0hJVF9CQVRDSEVTX0NSRUFURSI6dHJ1ZSwiQ0hJVF9CQVRDSEVTX0RFTEVURSI6dHJ1ZSwiQ0hJVF9CQVRDSEVTX0VESVQiOnRydWUsIkNISVRfQkFUQ0hFU19WSUVXIjp0cnVlLCJDSElUX0NPTExFQ1RJT05TX0NSRUFURSI6dHJ1ZSwiQ0hJVF9DT0xMRUNUSU9OU19WSUVXIjp0cnVlLCJDSElUX0NVU1RPTUVSU19DUkVBVEUiOnRydWUsIkNISVRfQ1VTVE9NRVJTX0RFTEVURSI6dHJ1ZSwiQ0hJVF9DVVNUT01FUlNfRURJVCI6dHJ1ZSwiQ0hJVF9DVVNUT01FUlNfVklFVyI6dHJ1ZSwiQ0hJVF9EQVNIQk9BUkRfQ1JFQVRFIjp0cnVlLCJDSElUX0RBU0hCT0FSRF9ERUxFVEUiOnRydWUsIkNISVRfREFTSEJPQVJEX0VESVQiOnRydWUsIkNISVRfREFTSEJPQVJEX1ZJRVciOnRydWUsIkNISVRfUExBTlNfQ1JFQVRFIjp0cnVlLCJDSElUX1BMQU5TX0RFTEVURSI6dHJ1ZSwiQ0hJVF9QTEFOU19FRElUIjp0cnVlLCJDSElUX1BMQU5TX1ZJRVciOnRydWV9LCJpYXQiOjE3NzQ4NjEzMzYsImV4cCI6MTc3NDg2MzEzNn0.PCC3hmGwd0x8mL4hRw55rJ3T58una4eQ1BAlAcGogZc",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"subscription_id\": 1,\r\n//   \"pay_upi\": 4000,\r\n//   \"pay_upi_reference\": \"UPI123AB3C9994\",\r\n  \"pay_cheque\": 4000,\r\n  \"pay_cash\": 25,\r\n  \"remarks\": \"March payment\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-payment/collect/subscription",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-payment",
+                "collect",
+                "subscription"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "collectPaymentByInstallment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzc0NTA4MDk3LCJleHAiOjE3NzQ1OTQ0OTd9.BLnOi88ylSQBPsX9UiFHWZqjuupNHgXqML1P3b4Z8pg",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "// {\r\n//   \"installment_id\": 1,\r\n//   \"pay_upi\": 4000,\r\n//   \"pay_upi_reference\": \"UPI123ABC99958\",\r\n//   \"pay_cheque\": 0,\r\n//   \"pay_cash\": 25,\r\n//   \"remarks\": \"Manual payment\"\r\n// }\r\n\r\n// {\r\n//   \"installment_id\":1,\r\n// //   \"pay_upi\": 40,\r\n// //   \"pay_upi_reference\": \"UPI123ABC9999\",\r\n//   \"pay_cheque\": 400,\r\n// //   \"pay_cash\": 425,\r\n//   \"remarks\": \"Manual payment\"\r\n// }\r\n\r\n// {\r\n//   \"installment_id\":2,\r\n// //   \"pay_upi\": 40,\r\n// //   \"pay_upi_reference\": \"UPI123ABC9999\",\r\n//   \"pay_cheque\": 20000,\r\n// //   \"pay_cash\": 425,\r\n//   \"remarks\": \"Manual payment\"\r\n// }\r\n\r\n// {\r\n//   \"installment_id\": 1,\r\n// //   \"pay_upi\": 2000,\r\n//   \"pay_cheque\": 0,\r\n//   \"pay_cash\": 425,\r\n//   \"pay_upi_reference\": \"UPI_TXN_123456\",\r\n//   \"remarks\": \"March installment payment\",\r\n//   \"idempotency_key\": \"txn-001-unique\"\r\n// }\r\n\r\n{\r\n  \"installment_id\": 103,\r\n//   \"pay_upi\": 4000,\r\n//   \"pay_upi_reference\": \"UPI123ABC99958\",\r\n  \"pay_cheque\": 0,\r\n  \"pay_cash\": 325,\r\n  \"remarks\": \"Manual payment\"\r\n}\r\n\r\n\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-payment/collect/installment",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-payment",
+                "collect",
+                "installment"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "collectPaymentAutoAllocate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZV9pZCI6MSwic2Vzc2lvbl9pZCI6ImJkZWI1ZmMyLTlkNDktNDk3Zi1iZTc0LTZmOGRkM2Y4NTU3ZCIsInRva2VuX3ZlcnNpb24iOjAsInBlcm1pc3Npb25zIjp7IkJJTExJTkdfQ1JFQVRFIjp0cnVlLCJCSUxMSU5HX0RFTEVURSI6dHJ1ZSwiQklMTElOR19FRElUIjp0cnVlLCJCSUxMSU5HX1ZJRVciOnRydWUsIkJJTExJTkdfQUNDT1VOVFNfQ1JFQVRFIjp0cnVlLCJCSUxMSU5HX0FDQ09VTlRTX0RFTEVURSI6dHJ1ZSwiQklMTElOR19BQ0NPVU5UU19FRElUIjp0cnVlLCJCSUxMSU5HX0FDQ09VTlRTX1ZJRVciOnRydWUsIkJJTExJTkdfQUREX1BST0RVQ1RfQ1JFQVRFIjp0cnVlLCJCSUxMSU5HX0FERF9QUk9EVUNUX0RFTEVURSI6dHJ1ZSwiQklMTElOR19BRERfUFJPRFVDVF9FRElUIjp0cnVlLCJCSUxMSU5HX0FERF9QUk9EVUNUX1ZJRVciOnRydWUsIkJJTExJTkdfQlJBTkRfQ1JFQVRFIjp0cnVlLCJCSUxMSU5HX0JSQU5EX0RFTEVURSI6dHJ1ZSwiQklMTElOR19CUkFORF9FRElUIjp0cnVlLCJCSUxMSU5HX0JSQU5EX1ZJRVciOnRydWUsIkJJTExJTkdfQ0FURUdPUklFU19DUkVBVEUiOnRydWUsIkJJTExJTkdfQ0FURUdPUklFU19ERUxFVEUiOnRydWUsIkJJTExJTkdfQ0FURUdPUklFU19FRElUIjp0cnVlLCJCSUxMSU5HX0NBVEVHT1JJRVNfVklFVyI6dHJ1ZSwiQklMTElOR19DVVJSRU5UX1NUT0NLX1ZJRVciOnRydWUsIkJJTExJTkdfQ1VTVE9NRVJTX0NSRUFURSI6dHJ1ZSwiQklMTElOR19DVVNUT01FUlNfREVMRVRFIjp0cnVlLCJCSUxMSU5HX0NVU1RPTUVSU19FRElUIjp0cnVlLCJCSUxMSU5HX0NVU1RPTUVSU19WSUVXIjp0cnVlLCJCSUxMSU5HX0RBU0hCT0FSRF9DUkVBVEUiOnRydWUsIkJJTExJTkdfREFTSEJPQVJEX0RFTEVURSI6dHJ1ZSwiQklMTElOR19EQVNIQk9BUkRfRURJVCI6dHJ1ZSwiQklMTElOR19EQVNIQk9BUkRfVklFVyI6dHJ1ZSwiQklMTElOR19FTVBMT1lFRVNfQ1JFQVRFIjp0cnVlLCJCSUxMSU5HX0VNUExPWUVFU19ERUxFVEUiOnRydWUsIkJJTExJTkdfRU1QTE9ZRUVTX0VESVQiOnRydWUsIkJJTExJTkdfRU1QTE9ZRUVTX1ZJRVciOnRydWUsIkJJTExJTkdfUEVORElOR19DUkVBVEUiOnRydWUsIkJJTExJTkdfUEVORElOR19ERUxFVEUiOnRydWUsIkJJTExJTkdfUEVORElOR19FRElUIjp0cnVlLCJCSUxMSU5HX1BFTkRJTkdfVklFVyI6dHJ1ZSwiQklMTElOR19QUk9EVUNUU19DUkVBVEUiOnRydWUsIkJJTExJTkdfUFJPRFVDVFNfREVMRVRFIjp0cnVlLCJCSUxMSU5HX1BST0RVQ1RTX0VESVQiOnRydWUsIkJJTExJTkdfUFJPRFVDVFNfVklFVyI6dHJ1ZSwiQklMTElOR19RVUFOVElUWV9FRElUIjp0cnVlLCJCSUxMSU5HX1FVQU5USVRZX1ZJRVciOnRydWUsIkJJTExJTkdfUkVQT1JUX0VYUE9SVCI6dHJ1ZSwiQklMTElOR19SRVBPUlRfVklFVyI6dHJ1ZSwiQklMTElOR19SRVBPUlRfQ1VTVE9NRVJfRVhQT1JUIjp0cnVlLCJCSUxMSU5HX1JFUE9SVF9DVVNUT01FUl9WSUVXIjp0cnVlLCJCSUxMSU5HX1JFUE9SVF9EQUlMWV9FWFBPUlQiOnRydWUsIkJJTExJTkdfUkVQT1JUX0RBSUxZX1ZJRVciOnRydWUsIkJJTExJTkdfUkVQT1JUX1BST0RVQ1RfRVhQT1JUIjp0cnVlLCJCSUxMSU5HX1JFUE9SVF9QUk9EVUNUX1ZJRVciOnRydWUsIkJJTExJTkdfU1RPQ0tfQ1JFQVRFIjp0cnVlLCJCSUxMSU5HX1NUT0NLX0RFTEVURSI6dHJ1ZSwiQklMTElOR19TVE9DS19FRElUIjp0cnVlLCJCSUxMSU5HX1NUT0NLX1ZJRVciOnRydWUsIkJJTExJTkdfVkVORE9SU19DUkVBVEUiOnRydWUsIkJJTExJTkdfVkVORE9SU19ERUxFVEUiOnRydWUsIkJJTExJTkdfVkVORE9SU19FRElUIjp0cnVlLCJCSUxMSU5HX1ZFTkRPUlNfVklFVyI6dHJ1ZSwiQ0hJVF9DUkVBVEUiOnRydWUsIkNISVRfREVMRVRFIjp0cnVlLCJDSElUX0VESVQiOnRydWUsIkNISVRfVklFVyI6dHJ1ZSwiQ0hJVF9BR0VOVF9DUkVBVEUiOnRydWUsIkNISVRfQUdFTlRfREVMRVRFIjp0cnVlLCJDSElUX0FHRU5UX0VESVQiOnRydWUsIkNISVRfQUdFTlRfVklFVyI6dHJ1ZSwiQ0hJVF9CQVRDSEVTX0NSRUFURSI6dHJ1ZSwiQ0hJVF9CQVRDSEVTX0RFTEVURSI6dHJ1ZSwiQ0hJVF9CQVRDSEVTX0VESVQiOnRydWUsIkNISVRfQkFUQ0hFU19WSUVXIjp0cnVlLCJDSElUX0NPTExFQ1RJT05TX0NSRUFURSI6dHJ1ZSwiQ0hJVF9DT0xMRUNUSU9OU19WSUVXIjp0cnVlLCJDSElUX0NVU1RPTUVSU19DUkVBVEUiOnRydWUsIkNISVRfQ1VTVE9NRVJTX0RFTEVURSI6dHJ1ZSwiQ0hJVF9DVVNUT01FUlNfRURJVCI6dHJ1ZSwiQ0hJVF9DVVNUT01FUlNfVklFVyI6dHJ1ZSwiQ0hJVF9EQVNIQk9BUkRfQ1JFQVRFIjp0cnVlLCJDSElUX0RBU0hCT0FSRF9ERUxFVEUiOnRydWUsIkNISVRfREFTSEJPQVJEX0VESVQiOnRydWUsIkNISVRfREFTSEJPQVJEX1ZJRVciOnRydWUsIkNISVRfUExBTlNfQ1JFQVRFIjp0cnVlLCJDSElUX1BMQU5TX0RFTEVURSI6dHJ1ZSwiQ0hJVF9QTEFOU19FRElUIjp0cnVlLCJDSElUX1BMQU5TX1ZJRVciOnRydWV9LCJpYXQiOjE3NzQ4NTcwNDUsImV4cCI6MTc3NDg1ODg0NX0.DtOvNYHQSajP1zC5K-RyQR-s2gdPIEFrl33-_RAvcgE",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"subscription_id\": 1,\r\n  \"pay_cash\": 200\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-payment/collect-auto",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-payment",
+                "collect-auto"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "collectPaymentByCustomer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"customer_id\": 18,\r\n  \"pay_cash\": 4000\r\n//   \"remarks\": \"Full due payment\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-payment/collect/customer",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-payment",
+                "collect",
+                "customer"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "collectPaymentBySelectedInstallments",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"subscription_id\": 1,\r\n  \"installments\": [\r\n    { \"installment_id\": 51, \"amount\": 375 },\r\n    { \"installment_id\": 52, \"amount\": 400 }\r\n  ],\r\n  \"pay_cash\": 775,\r\n  \"remarks\": \"Partial selected payment\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-payment/collect/selected-installments-by-subscription",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-payment",
+                "collect",
+                "selected-installments-by-subscription"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "collectPaymentBySelectedInstallmentsByInstallment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"installments\": [\r\n    { \"installment_id\": 56, \"amount\": 400 },\r\n    { \"installment_id\": 57, \"amount\": 100 }\r\n  ],\r\n  \"pay_cash\": 500,\r\n  \"remarks\": \"Bulk installment payment\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-payment/collect/selected-installments-by-installment",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-payment",
+                "collect",
+                "selected-installments-by-installment"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "collectPaymentBySelectedInstallmentsByCustomer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"installments\": [\r\n    { \"installment_id\": 1, \"amount\": 10000 }\r\n    // { \"installment_id\": 57, \"amount\": 100 }\r\n    // {\"installment_id\": 103, \"amount\": 5000}\r\n  ],\r\n  \"pay_cash\": 10000,\r\n  \"remarks\": \"Bulk installment payment\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-payment/collect/selected-installments-by-customer",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-payment",
+                "collect",
+                "selected-installments-by-customer"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getPaymentWithInstallments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/chit-payment/with-installments/6",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-payment",
+                "with-installments",
+                "6"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllPayments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/chit-payment",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-payment"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getPaymentById",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/chit-payment/3",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-payment",
+                "3"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updatePayment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"installments\": [\r\n    { \"installment_id\": 18, \"amount\": 50000 }\r\n    // { \"installment_id\": 52, \"amount\": 300 }\r\n  ],\r\n  \"pay_cash\": 50000,\r\n  \"pay_upi\": 0,\r\n  \"pay_cheque\": 0,\r\n  \"pay_upi_reference\": null,\r\n  \"remarks\": \"Updated payment\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/chit-payment/update/6",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "chit-payment",
+                "update",
+                "6"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "customer-installment",
+      "item": [
+        {
+          "name": "get apis",
+          "item": [
+            {
+              "name": "getTodayDueSummary",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:5000/api/installments/due/today/summary",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "5000",
+                  "path": [
+                    "api",
+                    "installments",
+                    "due",
+                    "today",
+                    "summary"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "getTodayDueList",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:5000/api/installments/due/today",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "5000",
+                  "path": [
+                    "api",
+                    "installments",
+                    "due",
+                    "today"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "getOverdueInstallments",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:5000/api/installments/due/overdue",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "5000",
+                  "path": [
+                    "api",
+                    "installments",
+                    "due",
+                    "overdue"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "getCollectorDueList",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:5000/api/installments/due/collector",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "5000",
+                  "path": [
+                    "api",
+                    "installments",
+                    "due",
+                    "collector"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "paid",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "overdue",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "pending",
+                      "type": "text",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "getCollectionDashboard",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:5000/api/installments/dashboard/collection",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "5000",
+                  "path": [
+                    "api",
+                    "installments",
+                    "dashboard",
+                    "collection"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "getCollectorDueListByDate",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:5000/api/installments/due/collector/bydate/2026-04-20",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "5000",
+                  "path": [
+                    "api",
+                    "installments",
+                    "due",
+                    "collector",
+                    "bydate",
+                    "2026-04-20"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "all",
+                      "disabled": true
+                    },
+                    {
+                      "key": "type",
+                      "value": "overdue",
+                      "disabled": true
+                    },
+                    {
+                      "key": "type",
+                      "value": "upcoming",
+                      "disabled": true
+                    },
+                    {
+                      "key": "d",
+                      "value": null,
+                      "type": "text",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "getCollectorDueListTree",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{accessToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:5000/api/installments/due/collector-tree?status=all",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "5000",
+                  "path": [
+                    "api",
+                    "installments",
+                    "due",
+                    "collector-tree"
+                  ],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "paid",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "overdue",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "pending",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "all",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "New Request",
+              "request": {
+                "method": "GET",
+                "header": []
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "getPriorityDueList",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/installments/due/priority",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "installments",
+                "due",
+                "priority"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "createInstallments",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"subscription_id\": 1,\r\n  \"installments\": [\r\n    {\r\n      \"installment_number\": 1,\r\n      \"due_date\": \"2026-04-01\",\r\n      \"installment_amount\": 1000\r\n    },\r\n    {\r\n      \"installment_number\": 2,\r\n      \"due_date\": \"2026-05-01\",\r\n      \"installment_amount\": 1000\r\n    }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/installments/create",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "installments",
+                "create"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getAllInstallments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/installments",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "installments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getInstallmentsBySubscription",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/installments/subscription/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "installments",
+                "subscription",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getInstallmentById",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/installments/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "installments",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateInstallment",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"due_date\": \"2026-04-05\",\r\n  \"installment_amount\": 1200,\r\n  \"status\": \"PENDING\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/installments/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "installments",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deleteInstallment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/installments/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "installments",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "payInstallment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"amount\": 425\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/installments/pay/9",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "installments",
+                "pay",
+                "9"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "userCustomerAssignment",
+      "item": [
+        {
+          "name": "assignUserToCustomer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"user_id\": 2,\r\n  \"customer_id\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/assigned-customers/assign",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "assigned-customers",
+                "assign"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "getMyCustomers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/assigned-customers/my-customers",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "assigned-customers",
+                "my-customers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "removeUserFromCustomer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/assigned-customers/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "assigned-customers",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updateAssignment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"user_id\": 3\r\n}\r\n\r\n// {\r\n//   \"is_active\": false\r\n// }\r\n\r\n// {\r\n//   \"user_id\": 2,\r\n//   \"is_active\": true\r\n// }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/assigned-customers/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "assigned-customers",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}

@@ -311,83 +311,92 @@ export const adminOnly = (req, res, next) => {
 //   }
 // };
 
-export const verifyToken = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    // console.log("AUTH HEADER:", authHeader);
+/*
+  Authorization: Bearer <token>
+*/
 
-    // if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    //   return res.status(401).json({ message: "Unauthorized" });
-    // }
+// export const verifyToken = async (req, res, next) => {
+//   try {
+//     const authHeader = req.headers.authorization;
+//     // console.log("AUTH HEADER:", authHeader);
 
-    if (!authHeader) {
-      return res.status(401).json({
-        message: "Authorization header missing",
-      });
-    }
+//     // if (!authHeader || !authHeader.startsWith("Bearer ")) {
+//     //   return res.status(401).json({ message: "Unauthorized" });
+//     // }
 
-    if (!authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        message: "Invalid authorization format. Use: Bearer <token>",
-      });
-    }
+//     if (!authHeader) {
+//       return res.status(401).json({
+//         message: "Authorization header missing",
+//       });
+//     }
 
-    // const parts = authHeader.split(" ");
+//     if (!authHeader.startsWith("Bearer ")) {
+//       return res.status(401).json({
+//         message: "Invalid authorization format. Use: Bearer <token>",
+//       });
+//     }
 
-    // if (parts.length !== 2) {
-    //   return res.status(401).json({
-    //     message: "Invalid authorization format. Expected: Bearer <token>",
-    //   });
-    // }
+//     // const parts = authHeader.split(" ");
 
-    // const [scheme, token] = parts;
+//     // if (parts.length !== 2) {
+//     //   return res.status(401).json({
+//     //     message: "Invalid authorization format. Expected: Bearer <token>",
+//     //   });
+//     // }
 
-    // if (scheme !== "Bearer") {
-    //   return res.status(401).json({
-    //     message: `Invalid auth scheme '${scheme}'. Expected 'Bearer'`,
-    //   });
-    // }
+//     // const [scheme, token] = parts;
 
-    // if (!token) {
-    //   return res.status(401).json({
-    //     message: "Token missing after Bearer",
-    //   });
-    // }
+//     // if (scheme !== "Bearer") {
+//     //   return res.status(401).json({
+//     //     message: `Invalid auth scheme '${scheme}'. Expected 'Bearer'`,
+//     //   });
+//     // }
 
-    const token = authHeader.split(" ")[1];
+//     // if (!token) {
+//     //   return res.status(401).json({
+//     //     message: "Token missing after Bearer",
+//     //   });
+//     // }
 
-    const decoded = jwt.verify(token, ACCESS_SECRET);
+//     const token = authHeader.split(" ")[1];
 
-    // 🔥 CHECK USER STATUS + TOKEN VERSION
-    const [[user]] = await db.query(
-      `SELECT status, token_version FROM users_roles WHERE id=?`,
-      [decoded.id],
-    );
+//     const decoded = jwt.verify(token, ACCESS_SECRET);
 
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
-    }
+//     // 🔥 CHECK USER STATUS + TOKEN VERSION
+//     const [[user]] = await db.query(
+//       `SELECT status, token_version FROM users_roles WHERE id=?`,
+//       [decoded.id],
+//     );
 
-    if (user.status !== "active") {
-      return res.status(403).json({
-        message: "User is inactive",
-      });
-    }
+//     if (!user) {
+//       return res.status(401).json({ message: "User not found" });
+//     }
 
-    if (user.token_version !== decoded.token_version) {
-      return res.status(401).json({
-        message: "Session expired (forced logout)",
-      });
-    }
+//     if (user.status !== "active") {
+//       return res.status(403).json({
+//         message: "User is inactive",
+//       });
+//     }
 
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(401).json({
-      message: "Invalid or expired token",
-    });
-  }
-};
+//     if (user.token_version !== decoded.token_version) {
+//       return res.status(401).json({
+//         message: "Session expired (forced logout)",
+//       });
+//     }
+
+//     req.user = decoded;
+//     next();
+//   } catch (error) {
+//     return res.status(401).json({
+//       message: "Invalid or expired token",
+//     });
+//   }
+// };
+
+/**
+ * 1. Token expired → allow refresh flow
+ * 2. Token invalid → block user completely
+ */
 
 // export const verifyToken = (req, res, next) => {
 //   const requestId = uuidv4(); // unique request tracking
@@ -501,3 +510,111 @@ export const verifyToken = async (req, res, next) => {
 //     });
 //   }
 // };
+
+/* 🔹 1. Check cookie
+🔹 2. Check header (mobile)
+🔹 3. Token required
+🔹 4. Verify token
+🔹 5. Check user status
+🔹 6. Check token version */
+
+export const verifyToken = async (req, res, next) => {
+  try {
+    let token = null;
+
+    // ======================================================
+    // 1. GET TOKEN FROM AUTHORIZATION HEADER
+    // ======================================================
+
+    const authHeader = req.headers.authorization;
+
+    if (authHeader) {
+      if (!authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({
+          message: "Invalid authorization format. Use: Bearer <token>",
+        });
+      }
+
+      token = authHeader.substring(7).trim();
+    }
+
+    // ======================================================
+    // 2. FALLBACK TO COOKIE
+    // ======================================================
+
+    if (!token && req.cookies?.accessToken) {
+      token = req.cookies.accessToken;
+    }
+
+    // ======================================================
+    // 3. TOKEN REQUIRED
+    // ======================================================
+
+    if (!token) {
+      return res.status(401).json({
+        message: "Access token missing",
+      });
+    }
+
+    // ======================================================
+    // 4. VERIFY JWT
+    // ======================================================
+
+    const decoded = jwt.verify(token, ACCESS_SECRET);
+
+    // ======================================================
+    // 5. CHECK USER STATUS + TOKEN VERSION
+    // ======================================================
+
+    const [[user]] = await db.query(
+      `
+      SELECT
+        status,
+        token_version
+      FROM users_roles
+      WHERE id = ?
+      `,
+      [decoded.id],
+    );
+
+    if (!user) {
+      return res.status(401).json({
+        message: "User not found",
+      });
+    }
+
+    // ======================================================
+    // 6. CHECK USER STATUS
+    // ======================================================
+
+    if (user.status !== "active") {
+      return res.status(403).json({
+        message: "User is inactive",
+      });
+    }
+
+    // ======================================================
+    // 7. CHECK TOKEN VERSION
+    // ======================================================
+
+    if (Number(user.token_version) !== Number(decoded.token_version)) {
+      return res.status(401).json({
+        message: "Session expired (forced logout)",
+      });
+    }
+
+    // ======================================================
+    // 8. SET USER
+    // ======================================================
+
+    req.user = decoded;
+
+    next();
+  } catch (error) {
+    console.error("VERIFY TOKEN ERROR:", error.message);
+
+    return res.status(401).json({
+      message: "Invalid or expired token",
+    });
+  }
+};

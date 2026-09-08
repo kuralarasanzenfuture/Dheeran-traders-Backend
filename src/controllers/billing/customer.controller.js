@@ -392,6 +392,9 @@ export const updateCustomer = async (req, res) => {
       "state",
       "pincode",
       "country",
+      "latitude",
+      "longitude",
+      "google_maps_url",
     ];
 
     let data = {};
@@ -473,6 +476,20 @@ export const updateCustomer = async (req, res) => {
         customer: oldData,
         data: oldData,
       });
+    }
+
+    // Handle coordinates update if passed
+    if (data.latitude !== undefined && data.latitude !== null && data.longitude !== undefined && data.longitude !== null) {
+      const parsedLat = parseFloat(data.latitude);
+      const parsedLng = parseFloat(data.longitude);
+      if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
+        data.latitude = parsedLat;
+        data.longitude = parsedLng;
+        data.location_updated_at = new Date();
+        if (!data.google_maps_url || !data.google_maps_url.trim()) {
+          data.google_maps_url = `https://www.google.com/maps?q=${parsedLat},${parsedLng}`;
+        }
+      }
     }
 
     // Attach updater audit

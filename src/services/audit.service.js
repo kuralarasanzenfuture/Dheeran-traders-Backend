@@ -16,6 +16,16 @@ export const AuditLog = async ({
   if (!recordId) throw new Error("recordId is required");
   if (!action) throw new Error("action is required");
 
+  // Normalize action to ENUM('INSERT', 'UPDATE', 'DELETE')
+  const upperAction = String(action).toUpperCase();
+  const normalizedAction = ["INSERT", "UPDATE", "DELETE"].includes(upperAction)
+    ? upperAction
+    : upperAction.includes("DELETE")
+    ? "DELETE"
+    : upperAction.includes("INSERT")
+    ? "INSERT"
+    : "UPDATE";
+
   await connection.query(
     `INSERT INTO audit_logs
     (table_name, record_id, action, old_data, new_data, changed_by, remarks)
@@ -23,7 +33,7 @@ export const AuditLog = async ({
     [
       table,
       recordId,
-      action,
+      normalizedAction,
       oldData ? JSON.stringify(oldData) : null,
       newData ? JSON.stringify(newData) : null,
       userId,

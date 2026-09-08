@@ -1,0 +1,56 @@
+import express from "express";
+import {
+  brandWiseReport,
+  customerWiseReport,
+  getAllCustomerBillings,
+  getAssignedPendingBills,
+  getCustomerBillingById,
+  getCustomerProductFullData,
+  getHighestSellingBrand,
+  getLastInvoiceNumber,
+  getNextInvoiceNumber,
+  getPendingBills,
+  getUserDateWiseCollection,
+  getUserPaymentCollectionReport,
+  productWiseReport,
+  productWiseReportByDate,
+} from "../../controllers/billing/billing/getBilling.controller.js";
+import { verifyAdminPassword } from "../../middlewares/verifyAdminPassword.js";
+import { protect, verifyToken } from "../../middlewares/auth.middleware.js";
+import { checkPermission } from "../../middlewares/permission/permission.middleware.js";
+import { createCustomerBilling } from "../../controllers/billing/billing/createBilling.controller.js";
+import { updateCustomerBilling } from "../../controllers/billing/billing/updateBilling.controller.js";
+import { deleteCustomerBilling } from "../../controllers/billing/billing/deleteBilling.controller.js";
+
+const router = express.Router();
+
+router.use(verifyToken);
+
+/* CREATE INVOICE */
+router.post("/", createCustomerBilling);
+
+router.get("/", getAllCustomerBillings);
+
+/* 📊 HIGHEST SELLING BRAND */
+router.get("/stats/highest-selling-brand", getHighestSellingBrand);
+
+router.get("/customer-products", getCustomerProductFullData);
+
+router.get("/products", productWiseReport);
+router.get("/products-by-date", productWiseReportByDate);
+router.get("/brands", brandWiseReport);
+router.get("/customers", customerWiseReport);
+router.get("/pending", getPendingBills);
+router.get("/assigned-pending-bills", getAssignedPendingBills);
+router.get("/reports/user-payment-collection", getUserPaymentCollectionReport);
+router.get("/reports/user-date-wise-collection", getUserDateWiseCollection);
+
+router.get("/last-invoice-number", getLastInvoiceNumber);
+router.get("/next-invoice-number", getNextInvoiceNumber);
+
+router.get("/:id", getCustomerBillingById);
+
+router.put("/:id",verifyAdminPassword, updateCustomerBilling);
+router.delete("/:id",verifyAdminPassword, deleteCustomerBilling);
+
+export default router;

@@ -1,0 +1,101 @@
+import express from "express";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
+import { attachDb } from "./middlewares/dbMiddleware.js";
+import routes from "./routes/indexRoutes.js";
+
+// Middlewares
+import {
+  errorHandler,
+  globalErrorHandler,
+} from "./middlewares/error.middleware.js";
+
+import cookieParser from "cookie-parser";
+import { startCleanupJob } from "./jobs/cleanupTokens.job.js";
+import { requestLogger } from "./middlewares/logger.js";
+import { requestContext } from "./utils/requestContext.js";
+import { verifyToken } from "./middlewares/auth.middleware.js";
+
+// ------------------------------------------------------------------
+// App & dirname setup (IMPORTANT for ES Modules)
+// ------------------------------------------------------------------
+const app = express();
+
+app.set("trust proxy", true);
+
+app.use(cookieParser());
+
+// start cron job ONCE
+// startCleanupJob();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ------------------------------------------------------------------
+// Global Middlewares
+// ------------------------------------------------------------------
+app.use(
+  // cors({
+  //   origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  //   credentials: true,
+  // })
+  //   cors({
+  //   origin: ["http://localhost:5173", "http://192.168.1.4:5173", 'https://unselect-remember-living.ngrok-free.dev'],
+  //   credentials: true
+  // })
+
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://192.168.1.4:5173",
+      "https://unselect-remember-living.ngrok-free.dev",
+      process.env.FRONTEND_URL, // from .env
+    ].filter(Boolean), // removes undefined if not set
+    credentials: true,
+  }),
+);
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ------------------------------------------------------------------
+// Static Files
+// ------------------------------------------------------------------
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+app.use(attachDb);
+
+// router.get("/:role_id", attachDb, getRolePermissions);
+
+// ------------------------------------------------------------------
+// API Routes
+// ------------------------------------------------------------------
+
+// 🔥 attach logger BEFORE routes
+/* 🔥 CONTEXT FIRST */
+// app.use(requestContext);
+
+/* 🔥 LOG RAW REQUEST */
+// app.use(requestLogger);
+
+app.use("/api", routes);
+
+// ------------------------------------------------------------------
+// Health Check (optional but recommended)
+// ------------------------------------------------------------------
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "OK", message: "Server is running" });
+});
+
+app.get("/", (req, res) => {
+  res.send("API Server Running");
+});
+
+// ------------------------------------------------------------------
+// Error Handler (ALWAYS LAST)
+// ------------------------------------------------------------------
+app.use(errorHandler);
+app.use(globalErrorHandler);
+
+export default app;

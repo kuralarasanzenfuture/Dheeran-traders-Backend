@@ -219,125 +219,78 @@ export const getCustomerSubscriptionById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // const [rows] = await db.query(
-    //   `
-    //   SELECT
-    //     s.id AS subscription_id,
+    const [rows] = await db.query(
+      `SELECT 
+        s.id AS subscription_id,
+        s.nominee_name,
+        s.nominee_phone,
 
-    //     c.id AS customer_id,
-    //     c.name AS customer_name,
-    //     c.phone,
-    //     c.place,
-    //     c.address,
-    //     c.state,
-    //     c.district,
-    //     c.pincode,
+        c.id AS customer_id,
+        c.name AS customer_name,
+        c.phone,
+        c.place,
+        c.aadhar,
+        c.pan_number,
+        c.address,
 
-    //     b.id AS batch_id,
-    //     b.batch_name,
-    //     b.batch_duration,
-    //     b.start_date AS batch_start_date,
-    //     b.end_date AS batch_end_date,
+        b.id AS batch_id,
+        b.batch_name,
+        b.batch_duration,
+        b.start_date AS batch_start_date,
+        b.end_date AS batch_end_date,
 
-    //     p.id AS plan_id,
-    //     p.plan_name,
-    //     p.duration_days,
-    //     p.collection_type,
-    //     p.total_installments,
+        p.id AS plan_id,
+        p.plan_name,
+        p.duration_days,
+        p.collection_type,
+        p.total_installments,
 
-    //     s.installment_amount,
-    //     s.investment_amount,
-    //     s.start_date,
-    //     s.duration,
-    //     s.end_date,
+        s.chit_quantity,
+        s.installment_amount,
+        s.total_installment_amount,
+        s.investment_amount,
+        s.total_investment_amount,
+        s.start_date,
+        s.duration,
+        s.end_date,
+        s.maturity_date,
 
-    //     s.reference_mode,
-    //     s.agent_staff_id,
+        s.is_maturity_paid,
+        s.maturity_paid_date,
+        s.maturity_paid_amount,
+        s.maturity_paid_by,
+        s.maturity_payment_mode,
+        s.maturity_remarks,
 
-    //     s.created_at
+        s.reference_mode,
+        s.agent_staff_id,
+        a.name AS agent_name,
+        a.phone AS agent_phone,
 
-    //   FROM chit_customer_subscriptions s
+        maturity_user.username AS maturity_paid_by_name,
 
-    //   LEFT JOIN chit_customers c
-    //     ON c.id = s.customer_id
+        COALESCE(pay.total_paid, 0) AS amount_paid,
+        (COALESCE(s.total_investment_amount, s.investment_amount) - COALESCE(pay.total_paid, 0)) AS pending_amount,
 
-    //   LEFT JOIN batches b
-    //     ON b.id = s.batch_id
+        s.created_at
 
-    //   LEFT JOIN batch_plans bp
-    //     ON bp.batch_id = b.id
-
-    //   LEFT JOIN plans p
-    //     ON p.id = bp.plan_id
-
-    //   WHERE s.id = ?
-    // `,
-    //   [id],
-    // );
-
-    const [rows] = await db.query(`
-      SELECT 
-  s.id AS subscription_id,
-  s.nominee_name,
-  s.nominee_phone,
-
-  c.id AS customer_id,
-  c.name AS customer_name,
-  c.phone,
-  c.place,
-
-  b.id AS batch_id,
-  b.batch_name,
-  b.batch_duration,
-  b.start_date AS batch_start_date,
-  b.end_date AS batch_end_date,
-
-  p.id AS plan_id,
-  p.plan_name,
-  p.duration_days,
-  p.collection_type,
-  p.total_installments,
-
-  s.chit_quantity,
-  s.installment_amount,
-  s.total_installment_amount,
-  s.investment_amount,
-  s.total_investment_amount,
-  s.start_date,
-  s.duration,
-  s.end_date,
-  s.maturity_date,
-
-  s.is_maturity_paid,
-  s.maturity_paid_date,
-  s.maturity_paid_amount,
-  s.maturity_paid_by,
-  s.maturity_payment_mode,
-  s.maturity_remarks,
-
-  maturity_user.username AS maturity_paid_by_name,
-
-  s.reference_mode,
-  s.agent_staff_id,
-
-  s.created_at
-
-FROM chit_customer_subscriptions s
-
-LEFT JOIN chit_customers c 
-  ON c.id = s.customer_id
-
-LEFT JOIN batches b 
-  ON b.id = s.batch_id
-
-LEFT JOIN plans p 
-  ON p.id = s.plan_id
-
-LEFT JOIN users_roles maturity_user
-  ON maturity_user.id = s.maturity_paid_by
-
-ORDER BY s.id DESC
-    `);
+      FROM chit_customer_subscriptions s
+      LEFT JOIN chit_customers c ON c.id = s.customer_id
+      LEFT JOIN batches b ON b.id = s.batch_id
+      LEFT JOIN plans p ON p.id = s.plan_id
+      LEFT JOIN chit_agent_and_staff a ON a.id = s.agent_staff_id
+      LEFT JOIN users_roles maturity_user ON maturity_user.id = s.maturity_paid_by
+      LEFT JOIN (
+        SELECT 
+          subscription_id,
+          SUM(total_amount) AS total_paid
+        FROM chit_collections_payments
+        WHERE payment_type = 'INSTALLMENT' AND subscription_id IS NOT NULL
+        GROUP BY subscription_id
+      ) pay ON pay.subscription_id = s.id
+      WHERE s.id = ?`,
+      [id]
+    );
 
     if (rows.length === 0) {
       return res.status(404).json({
@@ -352,7 +305,6 @@ ORDER BY s.id DESC
     });
   } catch (error) {
     console.error(error);
-
     res.status(500).json({
       success: false,
       message: "Server error",

@@ -739,6 +739,7 @@ export const updateCustomerSubscription = async (req, res) => {
       duration,
       reference_mode,
       agent_staff_id,
+      maturity_date,
     } = req.body;
 
     /* =========================
@@ -780,19 +781,49 @@ export const updateCustomerSubscription = async (req, res) => {
     ========================= */
 
     if (hasPayments) {
+      let updateMaturityDate = oldSub.maturity_date;
+      if (maturity_date) {
+        const parsedMaturity = new Date(maturity_date);
+        if (isNaN(parsedMaturity.getTime())) {
+          throw new Error("Invalid maturity_date format");
+        }
+        if (oldSub.end_date && parsedMaturity < new Date(oldSub.end_date)) {
+          throw new Error("Maturity date must be on or after subscription end date");
+        }
+        updateMaturityDate = parsedMaturity;
+      }
+
       await connection.query(
         `UPDATE chit_customer_subscriptions
-         SET nominee_name=?, nominee_phone=?, reference_mode=?, agent_staff_id=?, updated_by=?
+         SET nominee_name=?, nominee_phone=?, reference_mode=?, agent_staff_id=?, maturity_date=?, updated_by=?
          WHERE id=?`,
         [
           nominee_name || null,
           nominee_phone || null,
           reference_mode,
           reference_mode === "OFFICE" ? null : agent_staff_id,
+          updateMaturityDate,
           userId,
           id,
         ]
       );
+
+      await AuditLog({
+        connection,
+        table: "chit_customer_subscriptions",
+        recordId: id,
+        action: "UPDATE",
+        oldData: oldSub,
+        newData: {
+          nominee_name,
+          nominee_phone,
+          reference_mode,
+          agent_staff_id,
+          maturity_date: updateMaturityDate,
+        },
+        userId,
+        remarks: remarks || "Limited subscription update",
+      });
 
       await connection.commit();
 
@@ -925,10 +956,27 @@ export const updateCustomerSubscription = async (req, res) => {
        1️⃣1️⃣ UPDATE SUBSCRIPTION
     ========================= */
 
+    let finalMaturityDate;
+    if (maturity_date) {
+      const parsedMaturity = new Date(maturity_date);
+      if (isNaN(parsedMaturity.getTime())) {
+        throw new Error("Invalid maturity_date format");
+      }
+      if (parsedMaturity < calculatedEnd) {
+        throw new Error("Maturity date must be on or after subscription end date");
+      }
+      finalMaturityDate = parsedMaturity;
+    } else if (oldSub.maturity_date && new Date(oldSub.maturity_date) >= calculatedEnd) {
+      finalMaturityDate = new Date(oldSub.maturity_date);
+    } else {
+      finalMaturityDate = new Date(calculatedEnd);
+      finalMaturityDate.setDate(finalMaturityDate.getDate() + 3);
+    }
+
     await connection.query(
       `UPDATE chit_customer_subscriptions
        SET nominee_name=?, nominee_phone=?, installment_amount=?, investment_amount=?,
-           start_date=?, duration=?, end_date=?, reference_mode=?, agent_staff_id=?, updated_by=?
+           start_date=?, duration=?, end_date=?, maturity_date=?, reference_mode=?, agent_staff_id=?, updated_by=?
        WHERE id=?`,
       [
         nominee_name || null,
@@ -938,6 +986,7 @@ export const updateCustomerSubscription = async (req, res) => {
         start,
         duration,
         calculatedEnd,
+        finalMaturityDate,
         reference_mode,
         reference_mode === "OFFICE" ? null : agent_staff_id,
         userId,
@@ -960,6 +1009,7 @@ export const updateCustomerSubscription = async (req, res) => {
         investment_amount,
         duration,
         end_date: calculatedEnd,
+        maturity_date: finalMaturityDate,
       },
       userId,
       remarks: remarks || "Smart diff subscription update",

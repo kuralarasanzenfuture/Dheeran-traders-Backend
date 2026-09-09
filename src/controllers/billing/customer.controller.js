@@ -59,7 +59,9 @@ export const createCustomer = async (req, res, next) => {
     // Phone format validation
     if (!/^[0-9]{10,15}$/.test(phone)) {
       await connection.rollback();
-      return res.status(400).json({ message: "Invalid phone number format (10-15 digits)" });
+      return res
+        .status(400)
+        .json({ message: "Invalid phone number format (10-15 digits)" });
     }
 
     // Email format validation
@@ -71,7 +73,7 @@ export const createCustomer = async (req, res, next) => {
     // Check duplicate phone
     const [phoneExists] = await connection.query(
       "SELECT id FROM customers WHERE phone = ?",
-      [phone]
+      [phone],
     );
     if (phoneExists.length) {
       await connection.rollback();
@@ -84,7 +86,7 @@ export const createCustomer = async (req, res, next) => {
     if (email) {
       const [emailExists] = await connection.query(
         "SELECT id FROM customers WHERE email = ?",
-        [email]
+        [email],
       );
       if (emailExists.length) {
         await connection.rollback();
@@ -111,12 +113,16 @@ export const createCustomer = async (req, res, next) => {
 
       if (isNaN(parsedLat) || parsedLat < -90 || parsedLat > 90) {
         await connection.rollback();
-        return res.status(400).json({ message: "Latitude must be a valid number between -90 and 90" });
+        return res.status(400).json({
+          message: "Latitude must be a valid number between -90 and 90",
+        });
       }
 
       if (isNaN(parsedLng) || parsedLng < -180 || parsedLng > 180) {
         await connection.rollback();
-        return res.status(400).json({ message: "Longitude must be a valid number between -180 and 180" });
+        return res.status(400).json({
+          message: "Longitude must be a valid number between -180 and 180",
+        });
       }
 
       locationUpdatedAt = new Date();
@@ -164,7 +170,7 @@ export const createCustomer = async (req, res, next) => {
         google_maps_url,
         locationUpdatedAt,
         userId,
-      ]
+      ],
     );
 
     const customerId = result.insertId;
@@ -172,7 +178,7 @@ export const createCustomer = async (req, res, next) => {
     // Fetch newly created record
     const [[newCustomer]] = await connection.query(
       "SELECT * FROM customers WHERE id = ?",
-      [customerId]
+      [customerId],
     );
 
     // Audit Log entry
@@ -268,7 +274,7 @@ export const getCustomers = async (req, res) => {
         searchPattern,
         searchPattern,
         searchPattern,
-        searchPattern
+        searchPattern,
       );
     }
 
@@ -329,7 +335,7 @@ export const getCustomerById = async (req, res) => {
       WHERE c.id = ?
       GROUP BY c.id
       `,
-      [id]
+      [id],
     );
 
     if (!customer) {
@@ -372,7 +378,7 @@ export const updateCustomer = async (req, res) => {
     // Get existing record
     const [[oldData]] = await connection.query(
       "SELECT * FROM customers WHERE id = ?",
-      [id]
+      [id],
     );
 
     if (!oldData) {
@@ -418,11 +424,16 @@ export const updateCustomer = async (req, res) => {
 
     if (Object.keys(data).length === 0) {
       await connection.rollback();
-      return res.status(400).json({ message: "No valid fields provided to update" });
+      return res
+        .status(400)
+        .json({ message: "No valid fields provided to update" });
     }
 
     // Validation
-    if (data.first_name !== undefined && (!data.first_name || data.first_name === "")) {
+    if (
+      data.first_name !== undefined &&
+      (!data.first_name || data.first_name === "")
+    ) {
       await connection.rollback();
       return res.status(400).json({ message: "First name cannot be empty" });
     }
@@ -430,16 +441,20 @@ export const updateCustomer = async (req, res) => {
     if (data.phone) {
       if (!/^[0-9]{10,15}$/.test(data.phone)) {
         await connection.rollback();
-        return res.status(400).json({ message: "Invalid phone number format (10-15 digits)" });
+        return res
+          .status(400)
+          .json({ message: "Invalid phone number format (10-15 digits)" });
       }
 
       const [phoneExists] = await connection.query(
         "SELECT id FROM customers WHERE phone = ? AND id != ?",
-        [data.phone, id]
+        [data.phone, id],
       );
       if (phoneExists.length) {
         await connection.rollback();
-        return res.status(409).json({ message: `Phone number '${data.phone}' already in use` });
+        return res
+          .status(409)
+          .json({ message: `Phone number '${data.phone}' already in use` });
       }
     }
 
@@ -451,11 +466,13 @@ export const updateCustomer = async (req, res) => {
 
       const [emailExists] = await connection.query(
         "SELECT id FROM customers WHERE email = ? AND id != ?",
-        [data.email, id]
+        [data.email, id],
       );
       if (emailExists.length) {
         await connection.rollback();
-        return res.status(409).json({ message: `Email '${data.email}' already in use` });
+        return res
+          .status(409)
+          .json({ message: `Email '${data.email}' already in use` });
       }
     }
 
@@ -479,7 +496,12 @@ export const updateCustomer = async (req, res) => {
     }
 
     // Handle coordinates update if passed
-    if (data.latitude !== undefined && data.latitude !== null && data.longitude !== undefined && data.longitude !== null) {
+    if (
+      data.latitude !== undefined &&
+      data.latitude !== null &&
+      data.longitude !== undefined &&
+      data.longitude !== null
+    ) {
       const parsedLat = parseFloat(data.latitude);
       const parsedLng = parseFloat(data.longitude);
       if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
@@ -499,7 +521,7 @@ export const updateCustomer = async (req, res) => {
 
     const [[newData]] = await connection.query(
       "SELECT * FROM customers WHERE id = ?",
-      [id]
+      [id],
     );
 
     // Audit Log entry
@@ -560,10 +582,16 @@ export const updateCustomerLocation = async (req, res) => {
     }
 
     // Coordinates required for location update
-    if (latitude === undefined || latitude === null || longitude === undefined || longitude === null) {
+    if (
+      latitude === undefined ||
+      latitude === null ||
+      longitude === undefined ||
+      longitude === null
+    ) {
       await connection.rollback();
       return res.status(400).json({
-        message: "Both latitude and longitude are required to update customer location",
+        message:
+          "Both latitude and longitude are required to update customer location",
       });
     }
 
@@ -572,12 +600,16 @@ export const updateCustomerLocation = async (req, res) => {
 
     if (isNaN(parsedLat) || parsedLat < -90 || parsedLat > 90) {
       await connection.rollback();
-      return res.status(400).json({ message: "Latitude must be a valid number between -90 and 90" });
+      return res.status(400).json({
+        message: "Latitude must be a valid number between -90 and 90",
+      });
     }
 
     if (isNaN(parsedLng) || parsedLng < -180 || parsedLng > 180) {
       await connection.rollback();
-      return res.status(400).json({ message: "Longitude must be a valid number between -180 and 180" });
+      return res.status(400).json({
+        message: "Longitude must be a valid number between -180 and 180",
+      });
     }
 
     // Auto-generate Google Maps URL if not provided
@@ -590,7 +622,7 @@ export const updateCustomerLocation = async (req, res) => {
     // Verify customer exists
     const [[oldData]] = await connection.query(
       "SELECT * FROM customers WHERE id = ?",
-      [id]
+      [id],
     );
 
     if (!oldData) {
@@ -613,7 +645,7 @@ export const updateCustomerLocation = async (req, res) => {
 
     const [[newData]] = await connection.query(
       "SELECT * FROM customers WHERE id = ?",
-      [id]
+      [id],
     );
 
     // Audit Log for location update
@@ -686,7 +718,7 @@ export const deleteCustomer = async (req, res) => {
 
     const [[oldData]] = await connection.query(
       "SELECT * FROM customers WHERE id = ?",
-      [id]
+      [id],
     );
 
     if (!oldData) {
@@ -697,7 +729,7 @@ export const deleteCustomer = async (req, res) => {
     // Safety check: Prevent delete if customer has billing records
     const [[hasBilling]] = await connection.query(
       "SELECT COUNT(*) as count FROM customerBilling WHERE customer_id = ?",
-      [id]
+      [id],
     );
 
     if (hasBilling.count > 0) {
@@ -708,10 +740,12 @@ export const deleteCustomer = async (req, res) => {
     }
 
     // Safety check: Prevent delete if customer has assigned bills
-    const [[hasAssignedBills]] = await connection.query(
-      "SELECT COUNT(*) as count FROM assigned_bill_customers WHERE customer_id = ?",
-      [id]
-    ).catch(() => [[{ count: 0 }]]); // Handle table if not present
+    const [[hasAssignedBills]] = await connection
+      .query(
+        "SELECT COUNT(*) as count FROM assigned_bill_customers WHERE customer_id = ?",
+        [id],
+      )
+      .catch(() => [[{ count: 0 }]]); // Handle table if not present
 
     if (hasAssignedBills?.count > 0) {
       await connection.rollback();

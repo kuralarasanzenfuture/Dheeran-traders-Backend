@@ -654,6 +654,7 @@ export const createCustomerSubscription = async (req, res) => {
       duration,
       reference_mode,
       agent_staff_id,
+      maturity_date,
     } = req.body;
 
     /* ========================= REQUIRED ========================= */
@@ -664,7 +665,6 @@ export const createCustomerSubscription = async (req, res) => {
       !plan_id ||
       !installment_amount ||
       !start_date ||
-      !duration ||
       !reference_mode
     ) {
       throw new Error("Missing required fields");
@@ -676,7 +676,6 @@ export const createCustomerSubscription = async (req, res) => {
     batch_id = Number(batch_id);
     plan_id = Number(plan_id);
     installment_amount = Number(installment_amount);
-    duration = Number(duration);
 
     if (isNaN(customer_id) || isNaN(batch_id) || isNaN(plan_id)) {
       throw new Error("Invalid IDs");
@@ -684,10 +683,6 @@ export const createCustomerSubscription = async (req, res) => {
 
     if (isNaN(installment_amount) || installment_amount <= 0) {
       throw new Error("Invalid installment_amount");
-    }
-
-    if (isNaN(duration) || duration <= 0) {
-      throw new Error("Invalid duration");
     }
 
     const start = new Date(start_date);
@@ -716,7 +711,7 @@ export const createCustomerSubscription = async (req, res) => {
     /* ========================= PLAN + BATCH ========================= */
 
     const [[plan]] = await connection.query(
-      `SELECT total_installments, collection_type ,duration_days
+      `SELECT total_installments, collection_type, duration_days
        FROM plans WHERE id=?`,
       [plan_id]
     );
@@ -733,10 +728,8 @@ export const createCustomerSubscription = async (req, res) => {
     const totalInstallments = Number(plan.total_installments);
     const collectionType = plan.collection_type;
 
-    /* ✅ STRICT RULE */
-    if (duration !== plan.duration_days) {
-      throw new Error("Duration must match plan installments");
-    }
+    /* ✅ AUTO-RESOLVE DURATION DIRECTLY FROM PLAN */
+    duration = Number(plan.duration_days) || totalInstallments;
 
     /* ========================= DATE VALIDATION ========================= */
 
@@ -785,6 +778,24 @@ export const createCustomerSubscription = async (req, res) => {
       }
     }
 
+    /* ========================= MATURITY DATE ========================= */
+
+    let finalMaturityDate;
+    if (maturity_date) {
+      const parsedMaturity = new Date(maturity_date);
+      if (isNaN(parsedMaturity.getTime())) {
+        throw new Error("Invalid maturity_date format");
+      }
+      if (parsedMaturity < calculatedEnd) {
+        throw new Error("Maturity date must be on or after subscription end date");
+      }
+      finalMaturityDate = parsedMaturity;
+    } else {
+      // Default to 3 days after calculatedEnd if omitted
+      finalMaturityDate = new Date(calculatedEnd);
+      finalMaturityDate.setDate(finalMaturityDate.getDate() + 3);
+    }
+
     /* ========================= INSERT ========================= */
 
     const [result] = await connection.query(
@@ -793,11 +804,11 @@ export const createCustomerSubscription = async (req, res) => {
         customer_id, nominee_name, nominee_phone,
         batch_id, plan_id,
         installment_amount, investment_amount,
-        start_date, duration, end_date,
+        start_date, duration, end_date, maturity_date,
         reference_mode, agent_staff_id,
         created_by
       )
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         customer_id,
         nominee_name || null,
@@ -809,6 +820,7 @@ export const createCustomerSubscription = async (req, res) => {
         start,
         duration,
         calculatedEnd,
+        finalMaturityDate,
         reference_mode,
         agent_staff_id,
         userId,
@@ -863,6 +875,7 @@ export const createCustomerSubscription = async (req, res) => {
         investment_amount,
         start_date: start,
         end_date: calculatedEnd,
+        maturity_date: finalMaturityDate,
         reference_mode,
       },
       userId,

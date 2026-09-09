@@ -122,6 +122,16 @@ export const getCustomerSubscriptions = async (req, res) => {
         s.start_date,
         s.duration,
         s.end_date,
+        s.maturity_date,
+
+        s.is_maturity_paid,
+        s.maturity_paid_date,
+        s.maturity_paid_amount,
+        s.maturity_paid_by,
+        s.maturity_payment_mode,
+        s.maturity_remarks,
+
+        maturity_user.username AS maturity_paid_by_name,
 
         s.reference_mode,
         s.agent_staff_id,
@@ -147,6 +157,9 @@ export const getCustomerSubscriptions = async (req, res) => {
 
       LEFT JOIN plans p 
         ON p.id = s.plan_id
+
+      LEFT JOIN users_roles maturity_user
+        ON maturity_user.id = s.maturity_paid_by
 
       /* ✅ Batch Stats */
       LEFT JOIN (
@@ -287,6 +300,16 @@ export const getCustomerSubscriptionById = async (req, res) => {
   s.start_date,
   s.duration,
   s.end_date,
+  s.maturity_date,
+
+  s.is_maturity_paid,
+  s.maturity_paid_date,
+  s.maturity_paid_amount,
+  s.maturity_paid_by,
+  s.maturity_payment_mode,
+  s.maturity_remarks,
+
+  maturity_user.username AS maturity_paid_by_name,
 
   s.reference_mode,
   s.agent_staff_id,
@@ -303,6 +326,9 @@ LEFT JOIN batches b
 
 LEFT JOIN plans p 
   ON p.id = s.plan_id
+
+LEFT JOIN users_roles maturity_user
+  ON maturity_user.id = s.maturity_paid_by
 
 ORDER BY s.id DESC
     `);
@@ -358,6 +384,10 @@ export const getCustomerFullDetails = async (req, res) => {
 
         s.start_date,
         s.end_date,
+        s.maturity_date,
+        s.is_maturity_paid,
+        s.maturity_paid_date,
+        s.maturity_paid_amount,
 
         s.nominee_name,
         s.nominee_phone,

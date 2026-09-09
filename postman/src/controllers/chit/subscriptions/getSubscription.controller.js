@@ -117,11 +117,24 @@ export const getCustomerSubscriptions = async (req, res) => {
         p.collection_type,
         p.total_installments,
 
+        s.chit_quantity,
         s.installment_amount,
+        s.total_installment_amount,
         s.investment_amount,
+        s.total_investment_amount,
         s.start_date,
         s.duration,
         s.end_date,
+        s.maturity_date,
+
+        s.is_maturity_paid,
+        s.maturity_paid_date,
+        s.maturity_paid_amount,
+        s.maturity_paid_by,
+        s.maturity_payment_mode,
+        s.maturity_remarks,
+
+        maturity_user.username AS maturity_paid_by_name,
 
         s.reference_mode,
         s.agent_staff_id,
@@ -135,7 +148,7 @@ export const getCustomerSubscriptions = async (req, res) => {
         COALESCE(pay.total_paid, 0) AS amount_paid,
 
         /* 🔥 PENDING */
-        (s.investment_amount - COALESCE(pay.total_paid, 0)) AS pending_amount
+        (COALESCE(s.total_investment_amount, s.investment_amount) - COALESCE(pay.total_paid, 0)) AS pending_amount
 
       FROM chit_customer_subscriptions s
 
@@ -147,6 +160,9 @@ export const getCustomerSubscriptions = async (req, res) => {
 
       LEFT JOIN plans p 
         ON p.id = s.plan_id
+
+      LEFT JOIN users_roles maturity_user
+        ON maturity_user.id = s.maturity_paid_by
 
       /* ✅ Batch Stats */
       LEFT JOIN (
@@ -282,11 +298,24 @@ export const getCustomerSubscriptionById = async (req, res) => {
   p.collection_type,
   p.total_installments,
 
+  s.chit_quantity,
   s.installment_amount,
+  s.total_installment_amount,
   s.investment_amount,
+  s.total_investment_amount,
   s.start_date,
   s.duration,
   s.end_date,
+  s.maturity_date,
+
+  s.is_maturity_paid,
+  s.maturity_paid_date,
+  s.maturity_paid_amount,
+  s.maturity_paid_by,
+  s.maturity_payment_mode,
+  s.maturity_remarks,
+
+  maturity_user.username AS maturity_paid_by_name,
 
   s.reference_mode,
   s.agent_staff_id,
@@ -303,6 +332,9 @@ LEFT JOIN batches b
 
 LEFT JOIN plans p 
   ON p.id = s.plan_id
+
+LEFT JOIN users_roles maturity_user
+  ON maturity_user.id = s.maturity_paid_by
 
 ORDER BY s.id DESC
     `);
@@ -358,11 +390,19 @@ export const getCustomerFullDetails = async (req, res) => {
 
         s.start_date,
         s.end_date,
+        s.maturity_date,
+        s.is_maturity_paid,
+        s.maturity_paid_date,
+        s.maturity_paid_amount,
 
         s.nominee_name,
         s.nominee_phone,
 
+        s.chit_quantity,
+        s.installment_amount,
+        s.total_installment_amount,
         s.investment_amount,
+        s.total_investment_amount,
 
         a.name as agent_name,
         a.phone as agent_phone,
@@ -394,7 +434,7 @@ export const getCustomerFullDetails = async (req, res) => {
     /* TOTAL INVESTMENT */
 
     const [investment] = await db.query(
-      `SELECT SUM(investment_amount) as total_investment
+      `SELECT SUM(COALESCE(total_investment_amount, investment_amount)) as total_investment
        FROM chit_customer_subscriptions
        WHERE customer_id=?`,
       [id],
@@ -577,7 +617,7 @@ export const getPlanSummary = async (req, res) => {
         COUNT(s.id) AS total_subscriptions,
         COUNT(DISTINCT s.customer_id) AS total_customers,
 
-        SUM(s.investment_amount) AS total_investment
+        SUM(COALESCE(s.total_investment_amount, s.investment_amount)) AS total_investment
 
       FROM plans p
       LEFT JOIN chit_customer_subscriptions s 
@@ -605,8 +645,11 @@ export const getBatchDetails = async (req, res) => {
         c.phone,
 
         p.plan_name,
-        s.investment_amount,
+        s.chit_quantity,
         s.installment_amount,
+        s.total_installment_amount,
+        s.investment_amount,
+        s.total_investment_amount,
         s.start_date,
         s.end_date
 

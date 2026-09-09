@@ -491,14 +491,29 @@ export const getPaymentById = async (req, res) => {
           plan_name:
             subscription.plan_name,
 
+          chit_quantity:
+            Number(
+              subscription.chit_quantity || 1,
+            ),
+
           installment_amount:
             Number(
               subscription.installment_amount,
             ),
 
+          total_installment_amount:
+            Number(
+              subscription.total_installment_amount || subscription.installment_amount,
+            ),
+
           investment_amount:
             Number(
               subscription.investment_amount,
+            ),
+
+          total_investment_amount:
+            Number(
+              subscription.total_investment_amount || subscription.investment_amount,
             ),
 
           start_date:

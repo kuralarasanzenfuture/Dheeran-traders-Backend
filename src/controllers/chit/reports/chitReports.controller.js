@@ -12,7 +12,7 @@ export const getBatchReport = async (req, res) => {
 
                 COUNT(DISTINCT s.id) AS total_members,
 
-                COALESCE(SUM(s.investment_amount), 0) AS total_investment,
+                COALESCE(SUM(COALESCE(s.total_investment_amount, s.investment_amount)), 0) AS total_investment,
 
                 COALESCE(SUM(pay.total_amount), 0) AS total_collected,
 
@@ -92,7 +92,11 @@ export const getAgentStaffReport = async (req, res) => {
                 c.phone AS customer_phone,
 
                 s.id AS subscription_id,
-                s.investment_amount
+                s.chit_quantity,
+                s.installment_amount,
+                s.total_installment_amount,
+                s.investment_amount,
+                COALESCE(s.total_investment_amount, s.investment_amount) AS total_investment_amount
 
             FROM chit_agent_and_staff a
 
@@ -130,12 +134,16 @@ export const getAgentStaffReport = async (req, res) => {
           customer_id: row.customer_id,
           customer_name: row.customer_name,
           mobile: row.customer_phone,
+          chit_quantity: row.chit_quantity || 1,
+          installment_amount: row.installment_amount,
+          total_installment_amount: row.total_installment_amount,
           investment_amount: row.investment_amount,
+          total_investment_amount: row.total_investment_amount || row.investment_amount,
         });
 
         result[row.agent_staff_id].total_referrals += 1;
         result[row.agent_staff_id].total_chit_value += Number(
-          row.investment_amount || 0,
+          row.total_investment_amount || row.investment_amount || 0,
         );
       }
     });
@@ -165,7 +173,11 @@ export const getCustomerReport = async (req, res) => {
                 c.phone,
 
                 s.id AS subscription_id,
+                s.chit_quantity,
+                s.installment_amount,
+                s.total_installment_amount,
                 s.investment_amount,
+                s.total_investment_amount,
                 s.start_date,
                 s.end_date,
 
@@ -211,12 +223,16 @@ export const getCustomerReport = async (req, res) => {
           plan_name: row.plan_name,
           start_date: row.start_date,
           end_date: row.end_date,
+          chit_quantity: row.chit_quantity || 1,
+          installment_amount: row.installment_amount,
+          total_installment_amount: row.total_installment_amount,
           investment_amount: row.investment_amount,
+          total_investment_amount: row.total_investment_amount || row.investment_amount,
         });
 
         result[row.customer_id].total_subscriptions += 1;
         result[row.customer_id].total_investment += Number(
-          row.investment_amount || 0,
+          row.total_investment_amount || row.investment_amount || 0,
         );
       }
     });
@@ -247,7 +263,11 @@ export const getPlanReport = async (req, res) => {
                 p.total_installments,
 
                 s.id AS subscription_id,
+                s.chit_quantity,
+                s.installment_amount,
+                s.total_installment_amount,
                 s.investment_amount,
+                s.total_investment_amount,
                 s.start_date,
                 s.end_date,
 
@@ -298,12 +318,16 @@ export const getPlanReport = async (req, res) => {
           batch_name: row.batch_name,
           start_date: row.start_date,
           end_date: row.end_date,
+          chit_quantity: row.chit_quantity || 1,
+          installment_amount: row.installment_amount,
+          total_installment_amount: row.total_installment_amount,
           investment_amount: row.investment_amount,
+          total_investment_amount: row.total_investment_amount || row.investment_amount,
         });
 
         result[row.plan_id].total_subscriptions += 1;
         result[row.plan_id].total_investment += Number(
-          row.investment_amount || 0,
+          row.total_investment_amount || row.investment_amount || 0,
         );
       }
     });

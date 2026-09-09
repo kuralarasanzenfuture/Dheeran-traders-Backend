@@ -734,11 +734,15 @@ export const updateCustomerSubscription = async (req, res) => {
     let {
       nominee_name,
       nominee_phone,
+      chit_quantity,
+      base_installment_amount,
       installment_amount,
+      total_installment_amount,
       start_date,
       duration,
       reference_mode,
       agent_staff_id,
+      maturity_date,
     } = req.body;
 
     /* =========================
@@ -771,28 +775,89 @@ export const updateCustomerSubscription = async (req, res) => {
        3️⃣ NORMALIZE
     ========================= */
 
-    installment_amount = Number(installment_amount);
     duration = Number(duration);
     reference_mode = reference_mode?.toUpperCase()?.trim();
+
+    if (chit_quantity !== undefined && chit_quantity !== null && chit_quantity !== "") {
+      chit_quantity = Number(chit_quantity);
+      if (isNaN(chit_quantity) || !Number.isInteger(chit_quantity) || chit_quantity <= 0) {
+        throw new Error("Invalid chit_quantity. Must be a positive integer");
+      }
+    } else {
+      chit_quantity = oldSub.chit_quantity || 1;
+    }
+
+    // Resolve base installment amount (per single chit)
+    if (base_installment_amount !== undefined && base_installment_amount !== null && base_installment_amount !== "") {
+      installment_amount = Number(base_installment_amount);
+    } else if (
+      total_installment_amount !== undefined &&
+      total_installment_amount !== null &&
+      chit_quantity > 1 &&
+      (!installment_amount || Number(installment_amount) === Number(total_installment_amount))
+    ) {
+      installment_amount = Number(total_installment_amount) / chit_quantity;
+    } else if (installment_amount !== undefined && installment_amount !== null && installment_amount !== "") {
+      installment_amount = Number(installment_amount);
+    } else {
+      installment_amount = Number(oldSub.installment_amount);
+    }
 
     /* =========================
        4️⃣ RESTRICTED UPDATE
     ========================= */
 
     if (hasPayments) {
+      if (
+        chit_quantity !== undefined &&
+        chit_quantity !== null &&
+        Number(chit_quantity) !== Number(oldSub.chit_quantity || 1)
+      ) {
+        throw new Error("Cannot modify chit_quantity after payments have been made");
+      }
+      let updateMaturityDate = oldSub.maturity_date;
+      if (maturity_date) {
+        const parsedMaturity = new Date(maturity_date);
+        if (isNaN(parsedMaturity.getTime())) {
+          throw new Error("Invalid maturity_date format");
+        }
+        if (oldSub.end_date && parsedMaturity < new Date(oldSub.end_date)) {
+          throw new Error("Maturity date must be on or after subscription end date");
+        }
+        updateMaturityDate = parsedMaturity;
+      }
+
       await connection.query(
         `UPDATE chit_customer_subscriptions
-         SET nominee_name=?, nominee_phone=?, reference_mode=?, agent_staff_id=?, updated_by=?
+         SET nominee_name=?, nominee_phone=?, reference_mode=?, agent_staff_id=?, maturity_date=?, updated_by=?
          WHERE id=?`,
         [
           nominee_name || null,
           nominee_phone || null,
           reference_mode,
           reference_mode === "OFFICE" ? null : agent_staff_id,
+          updateMaturityDate,
           userId,
           id,
         ]
       );
+
+      await AuditLog({
+        connection,
+        table: "chit_customer_subscriptions",
+        recordId: id,
+        action: "UPDATE",
+        oldData: oldSub,
+        newData: {
+          nominee_name,
+          nominee_phone,
+          reference_mode,
+          agent_staff_id,
+          maturity_date: updateMaturityDate,
+        },
+        userId,
+        remarks: remarks || "Limited subscription update",
+      });
 
       await connection.commit();
 
@@ -819,13 +884,18 @@ export const updateCustomerSubscription = async (req, res) => {
        6️⃣ AUTO INVESTMENT CALC
     ========================= */
 
+    total_installment_amount = installment_amount * chit_quantity;
+
     let investment_amount;
+    let total_investment_amount;
 
     if (collectionType === "SINGLE") {
       investment_amount = installment_amount;
+      total_investment_amount = total_installment_amount;
       duration = 1;
     } else {
       investment_amount = installment_amount * totalInstallments;
+      total_investment_amount = total_installment_amount * totalInstallments;
       duration = totalInstallments;
     }
 
@@ -842,7 +912,7 @@ export const updateCustomerSubscription = async (req, res) => {
       newInstallments.push({
         installment_number: i,
         due_date: new Date(dueDate),
-        installment_amount,
+        installment_amount: total_installment_amount,
       });
 
       if (collectionType === "DAILY") {
@@ -925,19 +995,42 @@ export const updateCustomerSubscription = async (req, res) => {
        1️⃣1️⃣ UPDATE SUBSCRIPTION
     ========================= */
 
+    let finalMaturityDate;
+    if (maturity_date) {
+      const parsedMaturity = new Date(maturity_date);
+      if (isNaN(parsedMaturity.getTime())) {
+        throw new Error("Invalid maturity_date format");
+      }
+      if (parsedMaturity < calculatedEnd) {
+        throw new Error("Maturity date must be on or after subscription end date");
+      }
+      finalMaturityDate = parsedMaturity;
+    } else if (oldSub.maturity_date && new Date(oldSub.maturity_date) >= calculatedEnd) {
+      finalMaturityDate = new Date(oldSub.maturity_date);
+    } else {
+      finalMaturityDate = new Date(calculatedEnd);
+      finalMaturityDate.setDate(finalMaturityDate.getDate() + 3);
+    }
+
     await connection.query(
       `UPDATE chit_customer_subscriptions
-       SET nominee_name=?, nominee_phone=?, installment_amount=?, investment_amount=?,
-           start_date=?, duration=?, end_date=?, reference_mode=?, agent_staff_id=?, updated_by=?
+       SET nominee_name=?, nominee_phone=?, chit_quantity=?,
+           installment_amount=?, total_installment_amount=?,
+           investment_amount=?, total_investment_amount=?,
+           start_date=?, duration=?, end_date=?, maturity_date=?, reference_mode=?, agent_staff_id=?, updated_by=?
        WHERE id=?`,
       [
         nominee_name || null,
         nominee_phone || null,
+        chit_quantity,
         installment_amount,
+        total_installment_amount,
         investment_amount,
+        total_investment_amount,
         start,
         duration,
         calculatedEnd,
+        finalMaturityDate,
         reference_mode,
         reference_mode === "OFFICE" ? null : agent_staff_id,
         userId,
@@ -956,10 +1049,14 @@ export const updateCustomerSubscription = async (req, res) => {
       action: "UPDATE",
       oldData: oldSub,
       newData: {
+        chit_quantity,
         installment_amount,
+        total_installment_amount,
         investment_amount,
+        total_investment_amount,
         duration,
         end_date: calculatedEnd,
+        maturity_date: finalMaturityDate,
       },
       userId,
       remarks: remarks || "Smart diff subscription update",

@@ -649,7 +649,10 @@ export const createCustomerSubscription = async (req, res) => {
       nominee_phone,
       batch_id,
       plan_id,
+      chit_quantity = 1,
+      base_installment_amount,
       installment_amount,
+      total_installment_amount,
       start_date,
       duration,
       reference_mode,
@@ -675,7 +678,24 @@ export const createCustomerSubscription = async (req, res) => {
     customer_id = Number(customer_id);
     batch_id = Number(batch_id);
     plan_id = Number(plan_id);
-    installment_amount = Number(installment_amount);
+    chit_quantity =
+      chit_quantity !== undefined && chit_quantity !== null && chit_quantity !== ""
+        ? Number(chit_quantity)
+        : 1;
+
+    // Resolve base installment amount (per single chit)
+    if (base_installment_amount !== undefined && base_installment_amount !== null && base_installment_amount !== "") {
+      installment_amount = Number(base_installment_amount);
+    } else if (
+      total_installment_amount !== undefined &&
+      total_installment_amount !== null &&
+      chit_quantity > 1 &&
+      (!installment_amount || Number(installment_amount) === Number(total_installment_amount))
+    ) {
+      installment_amount = Number(total_installment_amount) / chit_quantity;
+    } else {
+      installment_amount = Number(installment_amount);
+    }
 
     if (isNaN(customer_id) || isNaN(batch_id) || isNaN(plan_id)) {
       throw new Error("Invalid IDs");
@@ -683,6 +703,10 @@ export const createCustomerSubscription = async (req, res) => {
 
     if (isNaN(installment_amount) || installment_amount <= 0) {
       throw new Error("Invalid installment_amount");
+    }
+
+    if (isNaN(chit_quantity) || !Number.isInteger(chit_quantity) || chit_quantity <= 0) {
+      throw new Error("Invalid chit_quantity. Must be a positive integer");
     }
 
     const start = new Date(start_date);
@@ -742,12 +766,17 @@ export const createCustomerSubscription = async (req, res) => {
 
     /* ========================= AUTO CALC INVESTMENT ========================= */
 
+    total_installment_amount = installment_amount * chit_quantity;
+
     let investment_amount;
+    let total_investment_amount;
 
     if (collectionType === "SINGLE") {
       investment_amount = installment_amount;
+      total_investment_amount = total_installment_amount;
     } else {
       investment_amount = totalInstallments * installment_amount;
+      total_investment_amount = totalInstallments * total_installment_amount;
     }
 
     /* ========================= AGENT VALIDATION ========================= */
@@ -803,20 +832,25 @@ export const createCustomerSubscription = async (req, res) => {
       (
         customer_id, nominee_name, nominee_phone,
         batch_id, plan_id,
-        installment_amount, investment_amount,
+        chit_quantity,
+        installment_amount, total_installment_amount,
+        investment_amount, total_investment_amount,
         start_date, duration, end_date, maturity_date,
         reference_mode, agent_staff_id,
         created_by
       )
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         customer_id,
         nominee_name || null,
         nominee_phone || null,
         batch_id,
         plan_id,
+        chit_quantity,
         installment_amount,
+        total_installment_amount,
         investment_amount,
+        total_investment_amount,
         start,
         duration,
         calculatedEnd,
@@ -836,7 +870,7 @@ export const createCustomerSubscription = async (req, res) => {
       startDate: start,
       totalInstallments,
       collectionType,
-      installmentAmount: installment_amount,
+      installmentAmount: total_installment_amount,
     });
 
     await connection.query(
@@ -871,8 +905,11 @@ export const createCustomerSubscription = async (req, res) => {
         customer_id,
         batch_id,
         plan_id,
+        chit_quantity,
         installment_amount,
+        total_installment_amount,
         investment_amount,
+        total_investment_amount,
         start_date: start,
         end_date: calculatedEnd,
         maturity_date: finalMaturityDate,

@@ -16,8 +16,13 @@ export const createCustomerSubcriptionTables = async (db) => {
         batch_id INT NOT NULL,
         plan_id INT NOT NULL,
 
+        chit_quantity INT NOT NULL DEFAULT 1,
+
         installment_amount DECIMAL(12,2) NOT NULL,
+        total_installment_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+
         investment_amount DECIMAL(12,2) NOT NULL,
+        total_investment_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
 
         -- =========================
         -- SUBSCRIPTION PERIOD
@@ -109,8 +114,11 @@ export const createCustomerSubcriptionTables = async (db) => {
         -- =========================
         -- DATA VALIDATIONS
         -- =========================
-        CHECK (investment_amount > 0),
+        CHECK (chit_quantity > 0),
         CHECK (installment_amount > 0),
+        CHECK (total_installment_amount >= 0),
+        CHECK (investment_amount > 0),
+        CHECK (total_investment_amount >= 0),
         CHECK (duration > 0),
         CHECK (end_date >= start_date),
         CHECK (maturity_paid_amount >= 0)
@@ -120,6 +128,9 @@ export const createCustomerSubcriptionTables = async (db) => {
 
   // Safe check to add missing columns to pre-existing chit_customer_subscriptions tables
   const requiredColumns = [
+    { name: "chit_quantity", def: "INT NOT NULL DEFAULT 1" },
+    { name: "total_installment_amount", def: "DECIMAL(12,2) NOT NULL DEFAULT 0.00" },
+    { name: "total_investment_amount", def: "DECIMAL(12,2) NOT NULL DEFAULT 0.00" },
     { name: "maturity_date", def: "DATE NULL" },
     { name: "is_maturity_paid", def: "BOOLEAN NOT NULL DEFAULT FALSE" },
     { name: "maturity_paid_date", def: "DATE NULL" },
@@ -146,6 +157,27 @@ export const createCustomerSubcriptionTables = async (db) => {
     } catch (err) {
       console.error(`Migration notice for chit_customer_subscriptions.${col.name}:`, err.message);
     }
+  }
+
+  // Populate total_installment_amount and total_investment_amount for existing records if missing
+  try {
+    await db.query(`
+      UPDATE chit_customer_subscriptions 
+      SET 
+        total_installment_amount = CASE 
+          WHEN total_installment_amount = 0 OR total_installment_amount IS NULL 
+          THEN installment_amount * COALESCE(chit_quantity, 1) 
+          ELSE total_installment_amount 
+        END,
+        total_investment_amount = CASE 
+          WHEN total_investment_amount = 0 OR total_investment_amount IS NULL 
+          THEN investment_amount * COALESCE(chit_quantity, 1) 
+          ELSE total_investment_amount 
+        END
+      WHERE total_installment_amount = 0 OR total_investment_amount = 0
+    `);
+  } catch (err) {
+    // Ignore if table is empty or column not ready
   }
 
   // Populate maturity_date for existing records where it's NULL (fallback to end_date)

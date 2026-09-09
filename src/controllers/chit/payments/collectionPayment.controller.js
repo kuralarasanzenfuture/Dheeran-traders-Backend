@@ -1432,7 +1432,7 @@ export const collectPaymentAutoAllocate = async (req, res) => {
 
     // 🔒 Lock subscription
     const [subRows] = await connection.query(
-      `SELECT customer_id, investment_amount AS total_amount 
+      `SELECT customer_id, COALESCE(total_investment_amount, investment_amount) AS total_amount 
        FROM chit_customer_subscriptions
        WHERE id = ?
        FOR UPDATE`,

@@ -4,26 +4,20 @@ const admin = "ADMIN";
 
 export const getTodayDueSummary = async (req, res) => {
   try {
-    // const [rows] = await db.query(`
-    //   SELECT
-    //     COUNT(i.id) AS total_installments,
-    //     SUM(i.installment_amount) AS total_due_amount
-
-    //   FROM chit_customer_installments i
-
-    //   WHERE DATE(i.due_date) = CURDATE()
-    // `);
-
     const [rows] = await db.query(`
-  SELECT 
-    COUNT(i.id) AS total_installments,
-    SUM(i.installment_amount) AS total_due_amount
-
-  FROM chit_customer_installments i
-
-  WHERE i.due_date >= CURDATE()
-    AND i.due_date < CURDATE() + INTERVAL 1 DAY
-`);
+      SELECT 
+        COUNT(i.id) AS total_installments,
+        SUM(i.installment_amount) AS total_due_amount,
+        COALESCE(SUM(p.total_paid), 0) AS total_paid_amount,
+        COALESCE(SUM(CASE WHEN IFNULL(p.total_paid, 0) >= i.installment_amount THEN 0 ELSE (i.installment_amount - IFNULL(p.total_paid, 0)) END), 0) AS total_pending_amount
+      FROM chit_customer_installments i
+      LEFT JOIN (
+        SELECT installment_id, SUM(allocated_amount) AS total_paid
+        FROM chit_payment_allocations
+        GROUP BY installment_id
+      ) p ON p.installment_id = i.id
+      WHERE DATE(i.due_date) = CURDATE()
+    `);
 
     return res.json({
       success: true,
@@ -43,37 +37,38 @@ export const getTodayDueList = async (req, res) => {
       SELECT 
         i.id AS installment_id,
         i.installment_number,
-        i.due_date,
+        DATE_FORMAT(i.due_date, '%Y-%m-%d') AS due_date,
         i.installment_amount,
-
+        IFNULL(p.total_paid, 0) AS paid_amount,
+        (i.installment_amount - IFNULL(p.total_paid, 0)) AS pending_amount,
+        CASE 
+          WHEN IFNULL(p.total_paid, 0) >= i.installment_amount THEN 'PAID'
+          WHEN DATE(i.due_date) < CURDATE() THEN 'OVERDUE'
+          ELSE 'PENDING'
+        END AS status,
         s.id AS subscription_id,
-
         c.id AS customer_id,
         c.name AS customer_name,
         c.phone,
-
         b.id AS batch_id,
         b.batch_name,
-
-        p.id AS plan_id,
-        p.plan_name
-
+        p2.id AS plan_id,
+        p2.plan_name
       FROM chit_customer_installments i
-
       JOIN chit_customer_subscriptions s 
         ON s.id = i.subscription_id
-
       JOIN chit_customers c 
         ON c.id = s.customer_id
-
       JOIN batches b 
         ON b.id = s.batch_id
-
-      JOIN plans p 
-        ON p.id = s.plan_id
-
+      JOIN plans p2 
+        ON p2.id = s.plan_id
+      LEFT JOIN (
+        SELECT installment_id, SUM(allocated_amount) AS total_paid
+        FROM chit_payment_allocations
+        GROUP BY installment_id
+      ) p ON p.installment_id = i.id
       WHERE DATE(i.due_date) = CURDATE()
-
       ORDER BY i.due_date ASC
     `);
 
@@ -95,24 +90,39 @@ export const getOverdueInstallments = async (req, res) => {
       SELECT 
         i.id AS installment_id,
         i.installment_number,
-        i.due_date,
+        DATE_FORMAT(i.due_date, '%Y-%m-%d') AS due_date,
         i.installment_amount,
-
+        IFNULL(p.total_paid, 0) AS paid_amount,
+        (i.installment_amount - IFNULL(p.total_paid, 0)) AS pending_amount,
+        c.id AS customer_id,
         c.name AS customer_name,
         c.phone,
-
-        DATEDIFF(CURDATE(), i.due_date) AS days_overdue
-
+        s.id AS subscription_id,
+        b.id AS batch_id,
+        b.batch_name,
+        p2.id AS plan_id,
+        p2.plan_name,
+        DATEDIFF(CURDATE(), i.due_date) AS days_overdue,
+        CASE 
+          WHEN IFNULL(p.total_paid, 0) >= i.installment_amount THEN 'PAID'
+          ELSE 'OVERDUE'
+        END AS status
       FROM chit_customer_installments i
-
       JOIN chit_customer_subscriptions s 
         ON s.id = i.subscription_id
-
       JOIN chit_customers c 
         ON c.id = s.customer_id
-
+      JOIN batches b 
+        ON b.id = s.batch_id
+      JOIN plans p2 
+        ON p2.id = s.plan_id
+      LEFT JOIN (
+        SELECT installment_id, SUM(allocated_amount) AS total_paid
+        FROM chit_payment_allocations
+        GROUP BY installment_id
+      ) p ON p.installment_id = i.id
       WHERE i.due_date < CURDATE()
-
+        AND (i.installment_amount - IFNULL(p.total_paid, 0)) > 0
       ORDER BY i.due_date ASC
     `);
 

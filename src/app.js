@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { attachDb } from "./middlewares/dbMiddleware.js";
 import routes from "./routes/indexRoutes.js";
+import databaseApiRoutes from "./database-api-routes/index.js";
 
 // Middlewares
 import {
@@ -80,6 +81,7 @@ app.use(attachDb);
 // app.use(requestLogger);
 
 app.use("/api", routes);
+app.use("/database-api", databaseApiRoutes);
 
 // ------------------------------------------------------------------
 // Health Check (optional but recommended)

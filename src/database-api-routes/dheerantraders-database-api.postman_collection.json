@@ -1,0 +1,817 @@
+{
+  "info": {
+    "_postman_id": "9b12e345-789a-4bcd-ef01-234567890abc",
+    "name": "Dheeran Traders - Chit Database Management APIs",
+    "description": "Ready-to-import Postman collection for Chit Database Maintenance, Status Checking, Data Clearing/Truncating, Category Wipes, Table Dropping, and Full Database Reset.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Status & Verification",
+      "item": [
+        {
+          "name": "Get Chit Database Status & Table Record Counts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.tables).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "status"
+              ]
+            },
+            "description": "Returns status, existence, and row count of all chit tables in MySQL."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Status (Root Alias)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/database-api/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Clear All Data (Truncate & Reset IDs)",
+      "item": [
+        {
+          "name": "Clear All Chit Data (Wipe All & Reset Auto-Increment)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"All tables cleared\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.cleared_tables).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true,\n  \"preserve_masters\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/clear-all-data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "clear-all-data"
+              ]
+            },
+            "description": "Wipes all rows across all chit tables and resets AUTO_INCREMENT counters to 1. Preserves table structures."
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Transactional Data Only (Preserve Masters: Plans, Batches, Staff)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Masters preserved confirmation\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.preserve_masters).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true,\n  \"preserve_masters\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/clear-all-data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "clear-all-data"
+              ]
+            },
+            "description": "Wipes customer, subscription, installment, allocation, and payment rows while preserving plans, batches, and staff."
+          },
+          "response": []
+        },
+        {
+          "name": "Clear All Data via Query Param (?confirm=true)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/clear-all-data?confirm=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "clear-all-data"
+              ],
+              "query": [
+                {
+                  "key": "confirm",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Clear All Data (DELETE Method)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/clear-all-data?confirm=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "clear-all-data"
+              ],
+              "query": [
+                {
+                  "key": "confirm",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Clear Specific Categories",
+      "item": [
+        {
+          "name": "Clear Payments & Allocations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true,\n  \"category\": \"payments\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/clear-category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "clear-category"
+              ]
+            },
+            "description": "Clears chit_payment_allocations, chit_collections_payments, and chit_collections."
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Installments Ledger",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true,\n  \"category\": \"installments\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/clear-category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "clear-category"
+              ]
+            },
+            "description": "Clears allocations and chit_customer_installments."
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Subscriptions & Dues",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true,\n  \"category\": \"subscriptions\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/clear-category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "clear-category"
+              ]
+            },
+            "description": "Clears subscriptions along with child installments and payment receipts."
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Customers & Subscriptions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true,\n  \"category\": \"customers\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/clear-category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "clear-category"
+              ]
+            },
+            "description": "Clears chit_customers, customer assignments, and all customer subscriptions/payments."
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Collector Customer Assignments",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true,\n  \"category\": \"assignments\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/clear-category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "clear-category"
+              ]
+            },
+            "description": "Clears user_chit_customer_assignments table."
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Master Configurations (Plans, Batches, Staff)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true,\n  \"category\": \"masters\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/clear-category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "clear-category"
+              ]
+            },
+            "description": "Clears plans, plan rules, batches, batch plans, and staff/agent masters."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Drop Chit Tables",
+      "item": [
+        {
+          "name": "Drop All Chit Tables (POST with Body)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Dropped tables reported\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.tables).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/drop-tables",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "drop-tables"
+              ]
+            },
+            "description": "Safely drops all chit tables from MySQL with foreign keys disabled."
+          },
+          "response": []
+        },
+        {
+          "name": "Drop All Chit Tables (DELETE with Query ?confirm=true)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/drop-tables?confirm=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "drop-tables"
+              ],
+              "query": [
+                {
+                  "key": "confirm",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Drop Tables (Legacy Route /drop-chit-tables)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/database-api/drop-chit-tables",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "drop-chit-tables"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Re-initialize Tables",
+      "item": [
+        {
+          "name": "Re-initialize / Create All Chit Tables",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Tables created\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.created_tables).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/reinit-tables",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "reinit-tables"
+              ]
+            },
+            "description": "Executes table creation scripts for all missing/dropped chit tables."
+          },
+          "response": []
+        },
+        {
+          "name": "Reinit Tables (Root Alias)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/database-api/reinit-tables",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "reinit-tables"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Full Reset (Drop & Re-create Fresh)",
+      "item": [
+        {
+          "name": "Complete Chit Database Reset (Drop + Fresh Re-create)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Reset successful\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.dropped_tables).to.be.an(\"array\");",
+                  "    pm.expect(jsonData.reinitialized_tables).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/reset-database",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "reset-database"
+              ]
+            },
+            "description": "Performs an atomic full reset: drops all existing chit tables and re-creates clean fresh tables ready for use."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Safety & Validation Tests",
+      "item": [
+        {
+          "name": "Clear Without Confirmation (Expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Expect 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Error message indicates confirmation required\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(false);",
+                  "    pm.expect(jsonData.message).to.include(\"Confirmation required\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/clear-all-data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "clear-all-data"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Invalid Category (Expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Expect 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Error message indicates invalid category\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(false);",
+                  "    pm.expect(jsonData.message).to.include(\"Invalid category\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirm\": true,\n  \"category\": \"invalid_category_xyz\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/database-api/chit/clear-category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "database-api",
+                "chit",
+                "clear-category"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

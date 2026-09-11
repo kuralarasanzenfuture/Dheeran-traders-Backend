@@ -166,42 +166,100 @@ export const getAgentStaffReport = async (req, res) => {
 
 export const getCustomerReport = async (req, res) => {
   try {
+    const {
+      search,
+      batch_id,
+      batch_name,
+      plan_id,
+      plan_name,
+      from_date,
+      to_date,
+    } = req.query;
+
+    const whereConditions = [];
+    const params = [];
+
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      whereConditions.push(
+        `(c.name LIKE ? OR c.phone LIKE ? OR p.plan_name LIKE ? OR b.batch_name LIKE ?)`
+      );
+      params.push(term, term, term, term);
+    }
+
+    if (batch_id) {
+      whereConditions.push("b.id = ?");
+      params.push(batch_id);
+    } else if (batch_name) {
+      whereConditions.push("b.batch_name = ?");
+      params.push(batch_name);
+    }
+
+    if (plan_id) {
+      whereConditions.push("p.id = ?");
+      params.push(plan_id);
+    } else if (plan_name) {
+      whereConditions.push("p.plan_name = ?");
+      params.push(plan_name);
+    }
+
+    if (from_date) {
+      whereConditions.push("s.start_date >= ?");
+      params.push(from_date);
+    }
+
+    if (to_date) {
+      whereConditions.push("s.start_date <= ?");
+      params.push(to_date);
+    }
+
+    const whereClause = whereConditions.length > 0
+      ? `WHERE ${whereConditions.join(" AND ")}`
+      : "";
+
     const query = `
-            SELECT 
-                c.id AS customer_id,
-                c.name AS customer_name,
-                c.phone,
+      SELECT 
+        c.id AS customer_id,
+        c.name AS customer_name,
+        c.phone,
+        c.address,
 
-                s.id AS subscription_id,
-                s.chit_quantity,
-                s.installment_amount,
-                s.total_installment_amount,
-                s.investment_amount,
-                s.total_investment_amount,
-                s.start_date,
-                s.end_date,
+        s.id AS subscription_id,
+        s.chit_quantity,
+        s.installment_amount,
+        s.total_installment_amount,
+        s.investment_amount,
+        s.total_investment_amount,
+        s.start_date,
+        s.end_date,
 
-                b.batch_name,
-                p.plan_name
+        b.id AS batch_id,
+        b.batch_name,
+        p.id AS plan_id,
+        p.plan_name
 
-            FROM chit_customers c
+      FROM chit_customers c
 
-            LEFT JOIN chit_customer_subscriptions s 
-                ON s.customer_id = c.id
+      LEFT JOIN chit_customer_subscriptions s 
+        ON s.customer_id = c.id
 
-            LEFT JOIN batches b 
-                ON b.id = s.batch_id
+      LEFT JOIN batches b 
+        ON b.id = s.batch_id
 
-            LEFT JOIN plans p 
-                ON p.id = s.plan_id
+      LEFT JOIN plans p 
+        ON p.id = s.plan_id
 
-            ORDER BY c.id DESC
-        `;
+      ${whereClause}
 
-    const [rows] = await db.query(query);
+      ORDER BY c.id DESC
+    `;
+
+    const [rows] = await db.query(query, params);
 
     // ✅ Grouping
     const result = {};
+    let totalSubs = 0;
+    let totalInv = 0;
 
     rows.forEach((row) => {
       if (!result[row.customer_id]) {
@@ -209,6 +267,7 @@ export const getCustomerReport = async (req, res) => {
           customer_id: row.customer_id,
           name: row.customer_name,
           mobile: row.phone,
+          address: row.address,
           total_subscriptions: 0,
           total_investment: 0,
           subscriptions: [],
@@ -217,30 +276,47 @@ export const getCustomerReport = async (req, res) => {
 
       // If subscription exists
       if (row.subscription_id) {
+        const subInvestment = Number(
+          row.total_investment_amount || row.investment_amount || 0
+        );
+
         result[row.customer_id].subscriptions.push({
           subscription_id: row.subscription_id,
+          batch_id: row.batch_id,
           batch_name: row.batch_name,
+          plan_id: row.plan_id,
           plan_name: row.plan_name,
           start_date: row.start_date,
           end_date: row.end_date,
           chit_quantity: row.chit_quantity || 1,
-          installment_amount: row.installment_amount,
-          total_installment_amount: row.total_installment_amount,
-          investment_amount: row.investment_amount,
-          total_investment_amount: row.total_investment_amount || row.investment_amount,
+          installment_amount: Number(row.installment_amount || 0),
+          total_installment_amount: Number(
+            row.total_installment_amount || row.installment_amount || 0
+          ),
+          investment_amount: Number(row.investment_amount || 0),
+          total_investment_amount: subInvestment,
         });
 
         result[row.customer_id].total_subscriptions += 1;
-        result[row.customer_id].total_investment += Number(
-          row.total_investment_amount || row.investment_amount || 0,
-        );
+        result[row.customer_id].total_investment += subInvestment;
+
+        totalSubs += 1;
+        totalInv += subInvestment;
       }
     });
+
+    const customersArray = Object.values(result);
 
     return res.status(200).json({
       success: true,
       message: "Customer report fetched successfully",
-      data: Object.values(result),
+      count: customersArray.length,
+      summary: {
+        total_customers: customersArray.length,
+        total_subscriptions: totalSubs,
+        total_investment: totalInv,
+      },
+      data: customersArray,
     });
   } catch (error) {
     console.error("Customer Report Error:", error);
@@ -560,33 +636,89 @@ export const getAssignedCustomerReport = async (req, res) => {
 
 export const getCollectionReportDateRange = async (req, res) => {
   try {
-    const { from_date, to_date } = req.query;
+    const {
+      from_date,
+      to_date,
+      search,
+      user_id,
+      collector_id,
+      customer_id,
+      batch_id,
+      plan_id,
+      payment_mode,
+    } = req.query;
 
     if (!from_date || !to_date) {
       return res.status(400).json({
         success: false,
-        message: "from_date and to_date are required"
+        message: "from_date and to_date are required",
       });
     }
 
-    // ✅ Convert to full datetime range
     const fromDateTime = `${from_date} 00:00:00`;
     const toDateTime = `${to_date} 23:59:59`;
 
-    const [rows] = await db.query(`
+    const whereConditions = [
+      "cp.payment_datetime >= ?",
+      "cp.payment_datetime <= ?",
+    ];
+    const params = [fromDateTime, toDateTime];
+
+    const colId = user_id || collector_id;
+    if (colId) {
+      whereConditions.push("cp.collected_by = ?");
+      params.push(colId);
+    }
+
+    if (customer_id) {
+      whereConditions.push("c.id = ?");
+      params.push(customer_id);
+    }
+
+    if (batch_id) {
+      whereConditions.push("b.id = ?");
+      params.push(batch_id);
+    }
+
+    if (plan_id) {
+      whereConditions.push("p.id = ?");
+      params.push(plan_id);
+    }
+
+    if (payment_mode) {
+      const mode = payment_mode.toLowerCase();
+      if (mode === "cash") whereConditions.push("cp.pay_cash > 0");
+      else if (mode === "upi") whereConditions.push("cp.pay_upi > 0");
+      else if (mode === "cheque") whereConditions.push("cp.pay_cheque > 0");
+    }
+
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      whereConditions.push(
+        `(c.name LIKE ? OR c.phone LIKE ? OR u.username LIKE ? OR b.batch_name LIKE ? OR p.plan_name LIKE ? OR cp.pay_upi_reference LIKE ?)`
+      );
+      params.push(term, term, term, term, term, term);
+    }
+
+    const [rows] = await db.query(
+      `
       SELECT
         c.id AS customer_id,
         c.name AS customer_name,
         c.phone,
         c.address,
 
+        u.id AS collector_id,
         u.username AS collector_name,
         u.email AS collector_email,
         u.phone AS collector_phone,
 
+        b.id AS batch_id,
         b.batch_name,
+        p.id AS plan_id,
         p.plan_name,
 
+        i.id AS installment_id,
         i.installment_number,
         DATE_FORMAT(i.due_date, '%Y-%m-%d') AS due_date,
 
@@ -602,194 +734,7 @@ export const getCollectionReportDateRange = async (req, res) => {
 
         (i.installment_amount - COALESCE(SUM(pa.allocated_amount), 0)) AS pending_amount,
 
-       -- MAX(DATE(cp.payment_datetime)) AS paid_date
-       DATE_FORMAT(MAX(cp.payment_datetime), '%Y-%m-%d') AS paid_date
-
-      FROM chit_payment_allocations pa
-
-      JOIN chit_collections_payments cp 
-        ON cp.id = pa.payment_id
-
-      JOIN chit_customer_installments i 
-        ON i.id = pa.installment_id
-
-      JOIN chit_customer_subscriptions s 
-        ON s.id = i.subscription_id
-
-      JOIN chit_customers c 
-        ON c.id = s.customer_id
-
-      JOIN batches b 
-        ON b.id = s.batch_id
-
-      JOIN plans p 
-        ON p.id = s.plan_id
-
-      LEFT JOIN users_roles u 
-        ON u.id = cp.collected_by
-
-      -- ✅ RANGE FILTER (INDEX FRIENDLY)
-      WHERE cp.payment_datetime >= ?
-      AND cp.payment_datetime <= ?
-
-      GROUP BY 
-        i.id,
-        c.id,
-        u.username,
-        b.batch_name,
-        p.plan_name
-
-      ORDER BY c.id, i.due_date ASC
-    `, [fromDateTime, toDateTime]);
-
-    const formatted = rows.map(row => ({
-      customer_id: row.customer_id,
-      customer_name: row.customer_name,
-      phone: row.phone,
-      address: row.address,
-      collector_name: row.collector_name,
-
-      batch_name: row.batch_name,
-      plan_name: row.plan_name,
-
-      installment_number: row.installment_number,
-      due_date: row.due_date,
-
-      installment_amount: Number(row.installment_amount || 0),
-
-      total_paid: Number(row.total_paid || 0),
-      pending_amount: Number(row.pending_amount || 0),
-
-      cash_amount: Number(row.cash_amount || 0),
-      upi_amount: Number(row.upi_amount || 0),
-      cheque_amount: Number(row.cheque_amount || 0),
-
-      upi_references: row.upi_references
-        ? row.upi_references.split(",")
-        : [],
-
-      paid_date: row.paid_date
-    }));
-
-// tree
-const customersMap = new Map();
-
-for (const row of rows) {
-  const custId = row.customer_id;
-
-  if (!customersMap.has(custId)) {
-    customersMap.set(custId, {
-      customer_id: custId,
-      customer_name: row.customer_name,
-      phone: row.phone,
-      address: row.address,
-
-      summary: {
-        total_amount: 0,
-        total_paid: 0,
-        total_pending: 0,
-        total_cash: 0,
-        total_upi: 0,
-        total_cheque: 0
-      },
-
-      collections: []
-    });
-  }
-
-  const customer = customersMap.get(custId);
-
-  const installment = {
-    collector_name: row.collector_name,
-    collector_email: row.collector_email,
-    collector_phone: row.collector_phone,
-
-    batch_name: row.batch_name,
-    plan_name: row.plan_name,
-
-    installment_number: row.installment_number,
-    due_date: row.due_date,
-    paid_date: row.paid_date,
-
-    installment_amount: Number(row.installment_amount || 0),
-
-    total_paid: Number(row.total_paid || 0),
-    pending_amount: Number(row.pending_amount || 0),
-
-    cash_amount: Number(row.cash_amount || 0),
-    upi_amount: Number(row.upi_amount || 0),
-    cheque_amount: Number(row.cheque_amount || 0),
-
-    upi_references: row.upi_references
-      ? row.upi_references.split(",")
-      : []
-  };
-
-  customer.collections.push(installment);
-
-  // 🔥 Summary Calculation
-  customer.summary.total_amount += installment.installment_amount;
-  customer.summary.total_paid += installment.total_paid;
-  customer.summary.total_pending += installment.pending_amount;
-
-  customer.summary.total_cash += installment.cash_amount;
-  customer.summary.total_upi += installment.upi_amount;
-  customer.summary.total_cheque += installment.cheque_amount;
-}
-
-const result = Array.from(customersMap.values());
-
-
-    return res.json({
-      success: true,
-      from_date,
-      to_date,
-      count: formatted.length,
-    //   data: formatted,
-      data: result
-    });
-
-  } catch (err) {
-    console.error("Collection Report Error:", err);
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
-};
-
-export const getCollectionReport = async (req, res) => {
-  try {
-
-    const [rows] = await db.query(`
-      SELECT
-        c.id AS customer_id,
-        c.name AS customer_name,
-        c.phone,
-        c.address,
-
-        u.username AS collector_name,
-        u.email AS collector_email,
-        u.phone AS collector_phone,
-
-        b.batch_name,
-        p.plan_name,
-
-        i.installment_number,
-        DATE_FORMAT(i.due_date, '%Y-%m-%d') AS due_date,
-
-        COALESCE(SUM(pa.allocated_amount), 0) AS total_paid,
-
-        COALESCE(SUM((cp.pay_cash * pa.allocated_amount) / NULLIF(cp.total_amount,0)), 0) AS cash_amount,
-        COALESCE(SUM((cp.pay_upi * pa.allocated_amount) / NULLIF(cp.total_amount,0)), 0) AS upi_amount,
-        COALESCE(SUM((cp.pay_cheque * pa.allocated_amount) / NULLIF(cp.total_amount,0)), 0) AS cheque_amount,
-
-        GROUP_CONCAT(DISTINCT cp.pay_upi_reference) AS upi_references,
-
-        i.installment_amount,
-
-        (i.installment_amount - COALESCE(SUM(pa.allocated_amount), 0)) AS pending_amount,
-
+        DATE_FORMAT(MAX(cp.payment_datetime), '%Y-%m-%d %H:%i:%s') AS paid_datetime,
         DATE_FORMAT(MAX(cp.payment_datetime), '%Y-%m-%d') AS paid_date
 
       FROM chit_payment_allocations pa
@@ -815,18 +760,37 @@ export const getCollectionReport = async (req, res) => {
       LEFT JOIN users_roles u 
         ON u.id = cp.collected_by
 
+      WHERE ${whereConditions.join(" AND ")}
+
       GROUP BY 
         i.id,
         c.id,
+        u.id,
         u.username,
+        u.email,
+        u.phone,
+        b.id,
         b.batch_name,
+        p.id,
         p.plan_name
 
       ORDER BY c.id, i.due_date ASC
-    `);
+    `,
+      params
+    );
 
-    // 🔹 TREE FORMAT
+    // Tree grouping
     const customersMap = new Map();
+    const overallSummary = {
+      total_amount: 0,
+      total_paid: 0,
+      total_pending: 0,
+      total_cash: 0,
+      total_upi: 0,
+      total_cheque: 0,
+      total_customers: 0,
+      total_collections: rows.length,
+    };
 
     for (const row of rows) {
       const custId = row.customer_id;
@@ -844,29 +808,32 @@ export const getCollectionReport = async (req, res) => {
             total_pending: 0,
             total_cash: 0,
             total_upi: 0,
-            total_cheque: 0
+            total_cheque: 0,
           },
 
-          collections: []
+          collections: [],
         });
       }
 
       const customer = customersMap.get(custId);
 
       const installment = {
+        collector_id: row.collector_id,
         collector_name: row.collector_name,
         collector_email: row.collector_email,
         collector_phone: row.collector_phone,
 
+        batch_id: row.batch_id,
         batch_name: row.batch_name,
+        plan_id: row.plan_id,
         plan_name: row.plan_name,
 
         installment_number: row.installment_number,
         due_date: row.due_date,
         paid_date: row.paid_date,
+        paid_datetime: row.paid_datetime,
 
         installment_amount: Number(row.installment_amount || 0),
-
         total_paid: Number(row.total_paid || 0),
         pending_amount: Number(row.pending_amount || 0),
 
@@ -874,36 +841,1195 @@ export const getCollectionReport = async (req, res) => {
         upi_amount: Number(row.upi_amount || 0),
         cheque_amount: Number(row.cheque_amount || 0),
 
-        upi_references: row.upi_references
-          ? row.upi_references.split(",")
-          : []
+        upi_references: row.upi_references ? row.upi_references.split(",") : [],
       };
 
       customer.collections.push(installment);
 
-      // 🔥 Summary
+      // Customer Summary
       customer.summary.total_amount += installment.installment_amount;
       customer.summary.total_paid += installment.total_paid;
       customer.summary.total_pending += installment.pending_amount;
-
       customer.summary.total_cash += installment.cash_amount;
       customer.summary.total_upi += installment.upi_amount;
       customer.summary.total_cheque += installment.cheque_amount;
+
+      // Overall Summary
+      overallSummary.total_amount += installment.installment_amount;
+      overallSummary.total_paid += installment.total_paid;
+      overallSummary.total_pending += installment.pending_amount;
+      overallSummary.total_cash += installment.cash_amount;
+      overallSummary.total_upi += installment.upi_amount;
+      overallSummary.total_cheque += installment.cheque_amount;
     }
 
     const result = Array.from(customersMap.values());
+    overallSummary.total_customers = result.length;
 
     return res.json({
       success: true,
+      from_date,
+      to_date,
       count: rows.length,
-      data: result
+      summary: overallSummary,
+      data: result,
     });
+  } catch (err) {
+    console.error("Collection Report Date Range Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 
+export const getCollectionReport = async (req, res) => {
+  try {
+    const {
+      search,
+      user_id,
+      collector_id,
+      customer_id,
+      batch_id,
+      batch_name,
+      plan_id,
+      plan_name,
+      payment_mode,
+      from_date,
+      to_date,
+      date,
+      status,
+      page,
+      limit,
+    } = req.query;
+
+    const whereConditions = [];
+    const params = [];
+
+    const colId = user_id || collector_id;
+    if (colId) {
+      whereConditions.push("cp.collected_by = ?");
+      params.push(colId);
+    }
+
+    if (customer_id) {
+      whereConditions.push("c.id = ?");
+      params.push(customer_id);
+    }
+
+    if (batch_id) {
+      whereConditions.push("b.id = ?");
+      params.push(batch_id);
+    } else if (batch_name) {
+      whereConditions.push("b.batch_name = ?");
+      params.push(batch_name);
+    }
+
+    if (plan_id) {
+      whereConditions.push("p.id = ?");
+      params.push(plan_id);
+    } else if (plan_name) {
+      whereConditions.push("p.plan_name = ?");
+      params.push(plan_name);
+    }
+
+    if (date) {
+      if (date.toLowerCase() === "today") {
+        whereConditions.push("DATE(cp.payment_datetime) = CURDATE()");
+      } else {
+        whereConditions.push("DATE(cp.payment_datetime) = ?");
+        params.push(date);
+      }
+    } else {
+      if (from_date) {
+        whereConditions.push("cp.payment_datetime >= ?");
+        params.push(`${from_date} 00:00:00`);
+      }
+      if (to_date) {
+        whereConditions.push("cp.payment_datetime <= ?");
+        params.push(`${to_date} 23:59:59`);
+      }
+    }
+
+    if (payment_mode) {
+      const mode = payment_mode.toLowerCase();
+      if (mode === "cash") whereConditions.push("cp.pay_cash > 0");
+      else if (mode === "upi") whereConditions.push("cp.pay_upi > 0");
+      else if (mode === "cheque") whereConditions.push("cp.pay_cheque > 0");
+    }
+
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      whereConditions.push(
+        `(c.name LIKE ? OR c.phone LIKE ? OR u.username LIKE ? OR b.batch_name LIKE ? OR p.plan_name LIKE ? OR cp.pay_upi_reference LIKE ?)`
+      );
+      params.push(term, term, term, term, term, term);
+    }
+
+    const whereClause = whereConditions.length > 0
+      ? `WHERE ${whereConditions.join(" AND ")}`
+      : "";
+
+    const [rows] = await db.query(
+      `
+      SELECT
+        c.id AS customer_id,
+        c.name AS customer_name,
+        c.phone,
+        c.address,
+
+        u.id AS collector_id,
+        u.username AS collector_name,
+        u.email AS collector_email,
+        u.phone AS collector_phone,
+
+        b.id AS batch_id,
+        b.batch_name,
+        p.id AS plan_id,
+        p.plan_name,
+
+        i.id AS installment_id,
+        i.installment_number,
+        DATE_FORMAT(i.due_date, '%Y-%m-%d') AS due_date,
+
+        COALESCE(SUM(pa.allocated_amount), 0) AS total_paid,
+
+        COALESCE(SUM((cp.pay_cash * pa.allocated_amount) / NULLIF(cp.total_amount,0)), 0) AS cash_amount,
+        COALESCE(SUM((cp.pay_upi * pa.allocated_amount) / NULLIF(cp.total_amount,0)), 0) AS upi_amount,
+        COALESCE(SUM((cp.pay_cheque * pa.allocated_amount) / NULLIF(cp.total_amount,0)), 0) AS cheque_amount,
+
+        GROUP_CONCAT(DISTINCT cp.pay_upi_reference) AS upi_references,
+
+        i.installment_amount,
+
+        (i.installment_amount - COALESCE(SUM(pa.allocated_amount), 0)) AS pending_amount,
+
+        DATE_FORMAT(MAX(cp.payment_datetime), '%Y-%m-%d %H:%i:%s') AS paid_datetime,
+        DATE_FORMAT(MAX(cp.payment_datetime), '%Y-%m-%d') AS paid_date
+
+      FROM chit_payment_allocations pa
+
+      JOIN chit_collections_payments cp 
+        ON cp.id = pa.payment_id
+
+      JOIN chit_customer_installments i 
+        ON i.id = pa.installment_id
+
+      JOIN chit_customer_subscriptions s 
+        ON s.id = i.subscription_id
+
+      JOIN chit_customers c 
+        ON c.id = s.customer_id
+
+      JOIN batches b 
+        ON b.id = s.batch_id
+
+      JOIN plans p 
+        ON p.id = s.plan_id
+
+      LEFT JOIN users_roles u 
+        ON u.id = cp.collected_by
+
+      ${whereClause}
+
+      GROUP BY 
+        i.id,
+        c.id,
+        u.id,
+        u.username,
+        u.email,
+        u.phone,
+        b.id,
+        b.batch_name,
+        p.id,
+        p.plan_name
+
+      ORDER BY c.id, i.due_date ASC
+    `,
+      params
+    );
+
+    // 🔹 Filter by status if requested
+    let filteredRows = rows;
+    if (status) {
+      const s = status.toUpperCase();
+      filteredRows = rows.filter((r) => {
+        const pending = Number(r.pending_amount || 0);
+        const paid = Number(r.total_paid || 0);
+        if (s === "PAID") return pending <= 0;
+        if (s === "PARTIAL") return paid > 0 && pending > 0;
+        if (s === "PENDING") return paid === 0;
+        if (s === "OVERDUE") {
+          return pending > 0 && new Date(r.due_date) < new Date();
+        }
+        return true;
+      });
+    }
+
+    // 🔹 TREE FORMAT (Matches Frontend CollectionReport.jsx expectations)
+    const customersMap = new Map();
+    const overallSummary = {
+      total_amount: 0,
+      total_paid: 0,
+      total_pending: 0,
+      total_cash: 0,
+      total_upi: 0,
+      total_cheque: 0,
+      total_customers: 0,
+      total_collections: filteredRows.length,
+    };
+
+    for (const row of filteredRows) {
+      const custId = row.customer_id;
+
+      if (!customersMap.has(custId)) {
+        customersMap.set(custId, {
+          customer_id: custId,
+          customer_name: row.customer_name,
+          phone: row.phone,
+          address: row.address,
+
+          summary: {
+            total_amount: 0,
+            total_paid: 0,
+            total_pending: 0,
+            total_cash: 0,
+            total_upi: 0,
+            total_cheque: 0,
+          },
+
+          collections: [],
+        });
+      }
+
+      const customer = customersMap.get(custId);
+
+      const installment = {
+        collector_id: row.collector_id,
+        collector_name: row.collector_name,
+        collector_email: row.collector_email,
+        collector_phone: row.collector_phone,
+
+        batch_id: row.batch_id,
+        batch_name: row.batch_name,
+        plan_id: row.plan_id,
+        plan_name: row.plan_name,
+
+        installment_number: row.installment_number,
+        due_date: row.due_date,
+        paid_date: row.paid_date,
+        paid_datetime: row.paid_datetime,
+
+        installment_amount: Number(row.installment_amount || 0),
+        total_paid: Number(row.total_paid || 0),
+        pending_amount: Number(row.pending_amount || 0),
+
+        cash_amount: Number(row.cash_amount || 0),
+        upi_amount: Number(row.upi_amount || 0),
+        cheque_amount: Number(row.cheque_amount || 0),
+
+        upi_references: row.upi_references ? row.upi_references.split(",") : [],
+      };
+
+      customer.collections.push(installment);
+
+      // Customer Summary
+      customer.summary.total_amount += installment.installment_amount;
+      customer.summary.total_paid += installment.total_paid;
+      customer.summary.total_pending += installment.pending_amount;
+      customer.summary.total_cash += installment.cash_amount;
+      customer.summary.total_upi += installment.upi_amount;
+      customer.summary.total_cheque += installment.cheque_amount;
+
+      // Overall Summary
+      overallSummary.total_amount += installment.installment_amount;
+      overallSummary.total_paid += installment.total_paid;
+      overallSummary.total_pending += installment.pending_amount;
+      overallSummary.total_cash += installment.cash_amount;
+      overallSummary.total_upi += installment.upi_amount;
+      overallSummary.total_cheque += installment.cheque_amount;
+    }
+
+    let result = Array.from(customersMap.values());
+    overallSummary.total_customers = result.length;
+
+    // Optional pagination
+    let pagination = null;
+    if (page && limit) {
+      const pageNum = parseInt(page, 10) || 1;
+      const limitNum = parseInt(limit, 10) || 10;
+      const total = result.length;
+      const totalPages = Math.ceil(total / limitNum);
+      const startIdx = (pageNum - 1) * limitNum;
+      result = result.slice(startIdx, startIdx + limitNum);
+
+      pagination = {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+      };
+    }
+
+    return res.json({
+      success: true,
+      count: filteredRows.length,
+      summary: overallSummary,
+      data: result,
+      ...(pagination ? { pagination } : {}),
+    });
   } catch (err) {
     console.error("Collection Report Error:", err);
     return res.status(500).json({
       success: false,
-      message: err.message
+      message: err.message,
+    });
+  }
+};
+
+/**
+ * 👤 USER COLLECTION REPORT (With Filters, Search, and Realtime Summary)
+ * Returns collections grouped by User / Collector or flat list
+ */
+export const getUserCollectionReport = async (req, res) => {
+  try {
+    const {
+      search,
+      user_id,
+      collector_id,
+      customer_id,
+      batch_id,
+      plan_id,
+      payment_mode,
+      from_date,
+      to_date,
+      date,
+      format, // 'grouped' (default) or 'flat'
+      page,
+      limit,
+    } = req.query;
+
+    const whereConditions = [];
+    const params = [];
+
+    const colId = user_id || collector_id;
+    if (colId) {
+      whereConditions.push("cp.collected_by = ?");
+      params.push(colId);
+    }
+
+    if (customer_id) {
+      whereConditions.push("cp.customer_id = ?");
+      params.push(customer_id);
+    }
+
+    if (batch_id) {
+      whereConditions.push("s.batch_id = ?");
+      params.push(batch_id);
+    }
+
+    if (plan_id) {
+      whereConditions.push("s.plan_id = ?");
+      params.push(plan_id);
+    }
+
+    if (payment_mode) {
+      const mode = payment_mode.toLowerCase();
+      if (mode === "cash") whereConditions.push("cp.pay_cash > 0");
+      else if (mode === "upi") whereConditions.push("cp.pay_upi > 0");
+      else if (mode === "cheque") whereConditions.push("cp.pay_cheque > 0");
+    }
+
+    if (date) {
+      if (date.toLowerCase() === "today") {
+        whereConditions.push("DATE(cp.payment_datetime) = CURDATE()");
+      } else {
+        whereConditions.push("DATE(cp.payment_datetime) = ?");
+        params.push(date);
+      }
+    } else {
+      if (from_date) {
+        whereConditions.push("cp.payment_datetime >= ?");
+        params.push(`${from_date} 00:00:00`);
+      }
+      if (to_date) {
+        whereConditions.push("cp.payment_datetime <= ?");
+        params.push(`${to_date} 23:59:59`);
+      }
+    }
+
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      whereConditions.push(
+        `(c.name LIKE ? OR c.phone LIKE ? OR u.username LIKE ? OR b.batch_name LIKE ? OR p.plan_name LIKE ? OR cp.pay_upi_reference LIKE ? OR cp.remarks LIKE ?)`
+      );
+      params.push(term, term, term, term, term, term, term);
+    }
+
+    const whereClause = whereConditions.length > 0
+      ? `WHERE ${whereConditions.join(" AND ")}`
+      : "";
+
+    const query = `
+      SELECT
+        u.id AS user_id,
+        COALESCE(u.username, 'Direct / Office') AS collector_name,
+        u.email AS collector_email,
+        u.phone AS collector_phone,
+
+        cp.id AS payment_id,
+        cp.payment_type,
+        DATE_FORMAT(cp.payment_datetime, '%Y-%m-%d %H:%i:%s') AS payment_datetime,
+        DATE_FORMAT(cp.payment_datetime, '%Y-%m-%d') AS payment_date,
+        cp.total_amount,
+        cp.pay_cash,
+        cp.pay_upi,
+        cp.pay_cheque,
+        cp.pay_upi_reference,
+        cp.remarks,
+
+        c.id AS customer_id,
+        c.name AS customer_name,
+        c.phone AS customer_phone,
+        c.address AS customer_address,
+
+        s.id AS subscription_id,
+        b.id AS batch_id,
+        b.batch_name,
+        p.id AS plan_id,
+        p.plan_name,
+
+        inst.installment_numbers,
+        inst.installments_count
+
+      FROM chit_collections_payments cp
+
+      LEFT JOIN users_roles u 
+        ON u.id = cp.collected_by
+
+      LEFT JOIN chit_customers c 
+        ON c.id = cp.customer_id
+
+      LEFT JOIN chit_customer_subscriptions s 
+        ON s.id = cp.subscription_id
+
+      LEFT JOIN batches b 
+        ON b.id = s.batch_id
+
+      LEFT JOIN plans p 
+        ON p.id = s.plan_id
+
+      LEFT JOIN (
+        SELECT 
+          pa.payment_id,
+          GROUP_CONCAT(DISTINCT i.installment_number ORDER BY i.installment_number ASC) AS installment_numbers,
+          COUNT(DISTINCT pa.installment_id) AS installments_count
+        FROM chit_payment_allocations pa
+        JOIN chit_customer_installments i 
+          ON i.id = pa.installment_id
+        GROUP BY pa.payment_id
+      ) inst ON inst.payment_id = cp.id
+
+      ${whereClause}
+
+      ORDER BY u.id DESC, cp.payment_datetime DESC
+    `;
+
+    const [rows] = await db.query(query, params);
+
+    // Overall Realtime Summary
+    const overallSummary = {
+      total_collected: 0,
+      today_collected: 0,
+      total_cash: 0,
+      total_upi: 0,
+      total_cheque: 0,
+      total_transactions: rows.length,
+      total_customers: 0,
+      total_collectors: 0,
+    };
+
+    const distinctCustomers = new Set();
+    const distinctCollectors = new Set();
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    for (const row of rows) {
+      const amount = Number(row.total_amount || 0);
+      const cash = Number(row.pay_cash || 0);
+      const upi = Number(row.pay_upi || 0);
+      const cheque = Number(row.pay_cheque || 0);
+
+      overallSummary.total_collected += amount;
+      overallSummary.total_cash += cash;
+      overallSummary.total_upi += upi;
+      overallSummary.total_cheque += cheque;
+
+      if (row.payment_date === todayStr) {
+        overallSummary.today_collected += amount;
+      }
+
+      if (row.customer_id) distinctCustomers.add(row.customer_id);
+      if (row.user_id) distinctCollectors.add(row.user_id);
+    }
+
+    overallSummary.total_customers = distinctCustomers.size;
+    overallSummary.total_collectors = distinctCollectors.size;
+
+    // Handle Flat Format if explicitly requested
+    if (format === "flat") {
+      let flatData = rows.map((r) => ({
+        payment_id: r.payment_id,
+        user_id: r.user_id,
+        collector_name: r.collector_name,
+        collector_phone: r.collector_phone,
+        customer_id: r.customer_id,
+        customer_name: r.customer_name,
+        customer_phone: r.customer_phone,
+        customer_address: r.customer_address,
+        batch_id: r.batch_id,
+        batch_name: r.batch_name,
+        plan_id: r.plan_id,
+        plan_name: r.plan_name,
+        installment_numbers: r.installment_numbers
+          ? r.installment_numbers.split(",")
+          : [],
+        total_amount: Number(r.total_amount || 0),
+        pay_cash: Number(r.pay_cash || 0),
+        pay_upi: Number(r.pay_upi || 0),
+        pay_cheque: Number(r.pay_cheque || 0),
+        pay_upi_reference: r.pay_upi_reference,
+        payment_type: r.payment_type,
+        payment_datetime: r.payment_datetime,
+        payment_date: r.payment_date,
+        remarks: r.remarks,
+      }));
+
+      let pagination = null;
+      if (page && limit) {
+        const pageNum = parseInt(page, 10) || 1;
+        const limitNum = parseInt(limit, 10) || 10;
+        const total = flatData.length;
+        const totalPages = Math.ceil(total / limitNum);
+        const startIdx = (pageNum - 1) * limitNum;
+        flatData = flatData.slice(startIdx, startIdx + limitNum);
+
+        pagination = {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages,
+        };
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "User collections fetched successfully (flat format)",
+        summary: overallSummary,
+        count: flatData.length,
+        data: flatData,
+        ...(pagination ? { pagination } : {}),
+      });
+    }
+
+    // Default: Group by Collector User
+    const collectorsMap = new Map();
+
+    for (const row of rows) {
+      const colId = row.user_id || 0;
+
+      if (!collectorsMap.has(colId)) {
+        collectorsMap.set(colId, {
+          user_id: row.user_id,
+          collector_name: row.collector_name,
+          collector_email: row.collector_email,
+          collector_phone: row.collector_phone,
+
+          summary: {
+            total_collected: 0,
+            today_collected: 0,
+            total_cash: 0,
+            total_upi: 0,
+            total_cheque: 0,
+            transactions_count: 0,
+            unique_customers: new Set(),
+          },
+
+          collections: [],
+        });
+      }
+
+      const collector = collectorsMap.get(colId);
+      const amount = Number(row.total_amount || 0);
+      const cash = Number(row.pay_cash || 0);
+      const upi = Number(row.pay_upi || 0);
+      const cheque = Number(row.pay_cheque || 0);
+
+      collector.summary.total_collected += amount;
+      collector.summary.total_cash += cash;
+      collector.summary.total_upi += upi;
+      collector.summary.total_cheque += cheque;
+      collector.summary.transactions_count += 1;
+
+      if (row.payment_date === todayStr) {
+        collector.summary.today_collected += amount;
+      }
+
+      if (row.customer_id) {
+        collector.summary.unique_customers.add(row.customer_id);
+      }
+
+      collector.collections.push({
+        payment_id: row.payment_id,
+        payment_datetime: row.payment_datetime,
+        payment_date: row.payment_date,
+        payment_type: row.payment_type,
+        total_amount: amount,
+        pay_cash: cash,
+        pay_upi: upi,
+        pay_cheque: cheque,
+        pay_upi_reference: row.pay_upi_reference,
+        remarks: row.remarks,
+
+        customer_id: row.customer_id,
+        customer_name: row.customer_name,
+        customer_phone: row.customer_phone,
+        customer_address: row.customer_address,
+
+        subscription_id: row.subscription_id,
+        batch_id: row.batch_id,
+        batch_name: row.batch_name,
+        plan_id: row.plan_id,
+        plan_name: row.plan_name,
+
+        installment_numbers: row.installment_numbers
+          ? row.installment_numbers.split(",")
+          : [],
+      });
+    }
+
+    let result = Array.from(collectorsMap.values()).map((c) => ({
+      ...c,
+      summary: {
+        total_collected: c.summary.total_collected,
+        today_collected: c.summary.today_collected,
+        total_cash: c.summary.total_cash,
+        total_upi: c.summary.total_upi,
+        total_cheque: c.summary.total_cheque,
+        transactions_count: c.summary.transactions_count,
+        customers_count: c.summary.unique_customers.size,
+      },
+    }));
+
+    // Optional pagination on grouped collectors
+    let pagination = null;
+    if (page && limit) {
+      const pageNum = parseInt(page, 10) || 1;
+      const limitNum = parseInt(limit, 10) || 10;
+      const total = result.length;
+      const totalPages = Math.ceil(total / limitNum);
+      const startIdx = (pageNum - 1) * limitNum;
+      result = result.slice(startIdx, startIdx + limitNum);
+
+      pagination = {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+      };
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "User collection report fetched successfully",
+      summary: overallSummary,
+      count: result.length,
+      data: result,
+      ...(pagination ? { pagination } : {}),
+    });
+  } catch (err) {
+    console.error("User Collection Report Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+/**
+ * 📊 USER COLLECTION SUMMARY (Ultra-Fast Real-Time KPI Cards & Rankings)
+ */
+export const getUserCollectionSummary = async (req, res) => {
+  try {
+    const { user_id, collector_id, from_date, to_date } = req.query;
+
+    const whereConditions = [];
+    const params = [];
+
+    const colId = user_id || collector_id;
+    if (colId) {
+      whereConditions.push("cp.collected_by = ?");
+      params.push(colId);
+    }
+
+    if (from_date) {
+      whereConditions.push("cp.payment_datetime >= ?");
+      params.push(`${from_date} 00:00:00`);
+    }
+
+    if (to_date) {
+      whereConditions.push("cp.payment_datetime <= ?");
+      params.push(`${to_date} 23:59:59`);
+    }
+
+    const whereClause = whereConditions.length > 0
+      ? `WHERE ${whereConditions.join(" AND ")}`
+      : "";
+
+    // 1️⃣ Aggregate KPI totals in a single round-trip
+    const [summaryRows] = await db.query(
+      `
+      SELECT
+        COUNT(cp.id) AS total_transactions,
+        COALESCE(SUM(cp.total_amount), 0) AS total_collected,
+        COALESCE(SUM(CASE WHEN DATE(cp.payment_datetime) = CURDATE() THEN cp.total_amount ELSE 0 END), 0) AS today_collected,
+        COALESCE(SUM(CASE WHEN YEARWEEK(cp.payment_datetime, 1) = YEARWEEK(CURDATE(), 1) THEN cp.total_amount ELSE 0 END), 0) AS this_week_collected,
+        COALESCE(SUM(CASE WHEN YEAR(cp.payment_datetime) = YEAR(CURDATE()) AND MONTH(cp.payment_datetime) = MONTH(CURDATE()) THEN cp.total_amount ELSE 0 END), 0) AS this_month_collected,
+        COALESCE(SUM(cp.pay_cash), 0) AS total_cash,
+        COALESCE(SUM(cp.pay_upi), 0) AS total_upi,
+        COALESCE(SUM(cp.pay_cheque), 0) AS total_cheque,
+        COUNT(DISTINCT cp.customer_id) AS total_customers,
+        COUNT(DISTINCT cp.collected_by) AS active_collectors
+      FROM chit_collections_payments cp
+      ${whereClause}
+    `,
+      params
+    );
+
+    const summary = summaryRows[0] || {};
+    const totalColl = Number(summary.total_collected || 0);
+    const cash = Number(summary.total_cash || 0);
+    const upi = Number(summary.total_upi || 0);
+    const cheque = Number(summary.total_cheque || 0);
+
+    // 2️⃣ Collector Rankings / Leaderboard
+    const [rankings] = await db.query(
+      `
+      SELECT
+        u.id AS user_id,
+        COALESCE(u.username, 'Direct / Office') AS collector_name,
+        u.phone AS collector_phone,
+        COUNT(cp.id) AS collections_count,
+        COUNT(DISTINCT cp.customer_id) AS customers_count,
+        COALESCE(SUM(cp.total_amount), 0) AS total_collected,
+        COALESCE(SUM(CASE WHEN DATE(cp.payment_datetime) = CURDATE() THEN cp.total_amount ELSE 0 END), 0) AS today_collected,
+        COALESCE(SUM(cp.pay_cash), 0) AS cash_amount,
+        COALESCE(SUM(cp.pay_upi), 0) AS upi_amount,
+        COALESCE(SUM(cp.pay_cheque), 0) AS cheque_amount
+      FROM chit_collections_payments cp
+      LEFT JOIN users_roles u ON u.id = cp.collected_by
+      ${whereClause}
+      GROUP BY u.id, u.username, u.phone
+      ORDER BY total_collected DESC
+    `,
+      params
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "User collection summary fetched successfully",
+      summary: {
+        total_collected: totalColl,
+        today_collected: Number(summary.today_collected || 0),
+        this_week_collected: Number(summary.this_week_collected || 0),
+        this_month_collected: Number(summary.this_month_collected || 0),
+        total_cash: cash,
+        total_upi: upi,
+        total_cheque: cheque,
+        total_transactions: Number(summary.total_transactions || 0),
+        total_customers: Number(summary.total_customers || 0),
+        active_collectors: Number(summary.active_collectors || 0),
+      },
+      payment_modes: {
+        cash: {
+          amount: cash,
+          percentage: totalColl > 0 ? Number(((cash / totalColl) * 100).toFixed(2)) : 0,
+        },
+        upi: {
+          amount: upi,
+          percentage: totalColl > 0 ? Number(((upi / totalColl) * 100).toFixed(2)) : 0,
+        },
+        cheque: {
+          amount: cheque,
+          percentage: totalColl > 0 ? Number(((cheque / totalColl) * 100).toFixed(2)) : 0,
+        },
+      },
+      collector_rankings: rankings.map((r) => ({
+        user_id: r.user_id,
+        collector_name: r.collector_name,
+        collector_phone: r.collector_phone,
+        collections_count: Number(r.collections_count || 0),
+        customers_count: Number(r.customers_count || 0),
+        total_collected: Number(r.total_collected || 0),
+        today_collected: Number(r.today_collected || 0),
+        cash_amount: Number(r.cash_amount || 0),
+        upi_amount: Number(r.upi_amount || 0),
+        cheque_amount: Number(r.cheque_amount || 0),
+      })),
+    });
+  } catch (err) {
+    console.error("User Collection Summary Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+/**
+ * ⚡ REALTIME LIVE USER COLLECTION FEED (For Live Dashboards & Field Monitoring)
+ */
+export const getRealtimeUserCollection = async (req, res) => {
+  try {
+    const { user_id, limit: rawLimit, search, all } = req.query;
+    const limit = Math.min(parseInt(rawLimit, 10) || 20, 100);
+
+    const whereConditions = [];
+    const params = [];
+
+    if (user_id) {
+      whereConditions.push("cp.collected_by = ?");
+      params.push(user_id);
+    }
+
+    // Default to today unless explicitly requesting all
+    if (!all || all !== "true") {
+      whereConditions.push("DATE(cp.payment_datetime) = CURDATE()");
+    }
+
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      whereConditions.push(
+        `(c.name LIKE ? OR c.phone LIKE ? OR u.username LIKE ? OR cp.pay_upi_reference LIKE ?)`
+      );
+      params.push(term, term, term, term);
+    }
+
+    const whereClause = whereConditions.length > 0
+      ? `WHERE ${whereConditions.join(" AND ")}`
+      : "";
+
+    // 1️⃣ Today's realtime KPIs
+    const [kpiRows] = await db.query(`
+      SELECT
+        COUNT(cp.id) AS today_transactions,
+        COALESCE(SUM(cp.total_amount), 0) AS today_amount,
+        COALESCE(SUM(cp.pay_cash), 0) AS today_cash,
+        COALESCE(SUM(cp.pay_upi), 0) AS today_upi,
+        COALESCE(SUM(cp.pay_cheque), 0) AS today_cheque,
+        COUNT(DISTINCT cp.customer_id) AS today_customers,
+        COUNT(DISTINCT cp.collected_by) AS today_active_collectors
+      FROM chit_collections_payments cp
+      WHERE DATE(cp.payment_datetime) = CURDATE()
+    `);
+
+    // 2️⃣ Recent live collections
+    const [recentRows] = await db.query(
+      `
+      SELECT
+        cp.id AS payment_id,
+        cp.total_amount,
+        cp.pay_cash,
+        cp.pay_upi,
+        cp.pay_cheque,
+        cp.pay_upi_reference,
+        cp.payment_type,
+        DATE_FORMAT(cp.payment_datetime, '%Y-%m-%d %H:%i:%s') AS payment_datetime,
+        DATE_FORMAT(cp.payment_datetime, '%Y-%m-%d') AS payment_date,
+        cp.remarks,
+
+        u.id AS user_id,
+        COALESCE(u.username, 'Direct / Office') AS collector_name,
+        u.phone AS collector_phone,
+
+        c.id AS customer_id,
+        c.name AS customer_name,
+        c.phone AS customer_phone,
+
+        b.batch_name,
+        p.plan_name,
+
+        inst.installment_numbers
+
+      FROM chit_collections_payments cp
+      LEFT JOIN users_roles u ON u.id = cp.collected_by
+      LEFT JOIN chit_customers c ON c.id = cp.customer_id
+      LEFT JOIN chit_customer_subscriptions s ON s.id = cp.subscription_id
+      LEFT JOIN batches b ON b.id = s.batch_id
+      LEFT JOIN plans p ON p.id = s.plan_id
+      LEFT JOIN (
+        SELECT 
+          pa.payment_id,
+          GROUP_CONCAT(DISTINCT i.installment_number ORDER BY i.installment_number ASC) AS installment_numbers
+        FROM chit_payment_allocations pa
+        JOIN chit_customer_installments i ON i.id = pa.installment_id
+        GROUP BY pa.payment_id
+      ) inst ON inst.payment_id = cp.id
+
+      ${whereClause}
+
+      ORDER BY cp.payment_datetime DESC, cp.id DESC
+      LIMIT ?
+    `,
+      [...params, limit]
+    );
+
+    const kpi = kpiRows[0] || {};
+
+    return res.status(200).json({
+      success: true,
+      message: "Realtime user collection feed fetched successfully",
+      timestamp: new Date().toISOString(),
+      today_kpis: {
+        today_amount: Number(kpi.today_amount || 0),
+        today_cash: Number(kpi.today_cash || 0),
+        today_upi: Number(kpi.today_upi || 0),
+        today_cheque: Number(kpi.today_cheque || 0),
+        today_transactions: Number(kpi.today_transactions || 0),
+        today_customers: Number(kpi.today_customers || 0),
+        today_active_collectors: Number(kpi.today_active_collectors || 0),
+      },
+      count: recentRows.length,
+      data: recentRows.map((r) => ({
+        payment_id: r.payment_id,
+        total_amount: Number(r.total_amount || 0),
+        pay_cash: Number(r.pay_cash || 0),
+        pay_upi: Number(r.pay_upi || 0),
+        pay_cheque: Number(r.pay_cheque || 0),
+        pay_upi_reference: r.pay_upi_reference,
+        payment_type: r.payment_type,
+        payment_datetime: r.payment_datetime,
+        payment_date: r.payment_date,
+        remarks: r.remarks,
+        collector: {
+          user_id: r.user_id,
+          name: r.collector_name,
+          phone: r.collector_phone,
+        },
+        customer: {
+          customer_id: r.customer_id,
+          name: r.customer_name,
+          phone: r.customer_phone,
+        },
+        batch_name: r.batch_name,
+        plan_name: r.plan_name,
+        installment_numbers: r.installment_numbers
+          ? r.installment_numbers.split(",")
+          : [],
+      })),
+    });
+  } catch (err) {
+    console.error("Realtime User Collection Feed Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+/**
+ * 🔍 GET USER COLLECTION BY ID (Drilldown for Single Collector)
+ */
+export const getUserCollectionById = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const { from_date, to_date, date, search, page, limit } = req.query;
+
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        message: "user_id is required",
+      });
+    }
+
+    // 1️⃣ Fetch user profile
+    const [[collector]] = await db.query(
+      `
+      SELECT id AS user_id, username, email, phone, status, role_id
+      FROM users_roles
+      WHERE id = ?
+    `,
+      [user_id]
+    );
+
+    if (!collector) {
+      return res.status(404).json({
+        success: false,
+        message: "User / Collector not found",
+      });
+    }
+
+    const whereConditions = ["cp.collected_by = ?"];
+    const params = [user_id];
+
+    if (date) {
+      if (date.toLowerCase() === "today") {
+        whereConditions.push("DATE(cp.payment_datetime) = CURDATE()");
+      } else {
+        whereConditions.push("DATE(cp.payment_datetime) = ?");
+        params.push(date);
+      }
+    } else {
+      if (from_date) {
+        whereConditions.push("cp.payment_datetime >= ?");
+        params.push(`${from_date} 00:00:00`);
+      }
+      if (to_date) {
+        whereConditions.push("cp.payment_datetime <= ?");
+        params.push(`${to_date} 23:59:59`);
+      }
+    }
+
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      whereConditions.push(
+        `(c.name LIKE ? OR c.phone LIKE ? OR b.batch_name LIKE ? OR p.plan_name LIKE ? OR cp.pay_upi_reference LIKE ?)`
+      );
+      params.push(term, term, term, term, term);
+    }
+
+    const whereClause = `WHERE ${whereConditions.join(" AND ")}`;
+
+    const [collections] = await db.query(
+      `
+      SELECT
+        cp.id AS payment_id,
+        cp.payment_type,
+        DATE_FORMAT(cp.payment_datetime, '%Y-%m-%d %H:%i:%s') AS payment_datetime,
+        DATE_FORMAT(cp.payment_datetime, '%Y-%m-%d') AS payment_date,
+        cp.total_amount,
+        cp.pay_cash,
+        cp.pay_upi,
+        cp.pay_cheque,
+        cp.pay_upi_reference,
+        cp.remarks,
+
+        c.id AS customer_id,
+        c.name AS customer_name,
+        c.phone AS customer_phone,
+        c.address AS customer_address,
+
+        s.id AS subscription_id,
+        b.id AS batch_id,
+        b.batch_name,
+        p.id AS plan_id,
+        p.plan_name,
+
+        inst.installment_numbers
+
+      FROM chit_collections_payments cp
+      LEFT JOIN chit_customers c ON c.id = cp.customer_id
+      LEFT JOIN chit_customer_subscriptions s ON s.id = cp.subscription_id
+      LEFT JOIN batches b ON b.id = s.batch_id
+      LEFT JOIN plans p ON p.id = s.plan_id
+      LEFT JOIN (
+        SELECT 
+          pa.payment_id,
+          GROUP_CONCAT(DISTINCT i.installment_number ORDER BY i.installment_number ASC) AS installment_numbers
+        FROM chit_payment_allocations pa
+        JOIN chit_customer_installments i ON i.id = pa.installment_id
+        GROUP BY pa.payment_id
+      ) inst ON inst.payment_id = cp.id
+
+      ${whereClause}
+
+      ORDER BY cp.payment_datetime DESC, cp.id DESC
+    `,
+      params
+    );
+
+    const summary = {
+      total_collected: 0,
+      today_collected: 0,
+      total_cash: 0,
+      total_upi: 0,
+      total_cheque: 0,
+      transactions_count: collections.length,
+      customers_count: 0,
+    };
+
+    const distinctCust = new Set();
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    for (const c of collections) {
+      const amt = Number(c.total_amount || 0);
+      summary.total_collected += amt;
+      summary.total_cash += Number(c.pay_cash || 0);
+      summary.total_upi += Number(c.pay_upi || 0);
+      summary.total_cheque += Number(c.pay_cheque || 0);
+
+      if (c.payment_date === todayStr) {
+        summary.today_collected += amt;
+      }
+      if (c.customer_id) distinctCust.add(c.customer_id);
+    }
+    summary.customers_count = distinctCust.size;
+
+    let result = collections.map((c) => ({
+      payment_id: c.payment_id,
+      payment_datetime: c.payment_datetime,
+      payment_date: c.payment_date,
+      payment_type: c.payment_type,
+      total_amount: Number(c.total_amount || 0),
+      pay_cash: Number(c.pay_cash || 0),
+      pay_upi: Number(c.pay_upi || 0),
+      pay_cheque: Number(c.pay_cheque || 0),
+      pay_upi_reference: c.pay_upi_reference,
+      remarks: c.remarks,
+      customer_id: c.customer_id,
+      customer_name: c.customer_name,
+      customer_phone: c.customer_phone,
+      customer_address: c.customer_address,
+      subscription_id: c.subscription_id,
+      batch_id: c.batch_id,
+      batch_name: c.batch_name,
+      plan_id: c.plan_id,
+      plan_name: c.plan_name,
+      installment_numbers: c.installment_numbers
+        ? c.installment_numbers.split(",")
+        : [],
+    }));
+
+    let pagination = null;
+    if (page && limit) {
+      const pageNum = parseInt(page, 10) || 1;
+      const limitNum = parseInt(limit, 10) || 10;
+      const total = result.length;
+      const totalPages = Math.ceil(total / limitNum);
+      const startIdx = (pageNum - 1) * limitNum;
+      result = result.slice(startIdx, startIdx + limitNum);
+
+      pagination = {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+      };
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Collector collection details fetched successfully",
+      collector,
+      summary,
+      count: result.length,
+      data: result,
+      ...(pagination ? { pagination } : {}),
+    });
+  } catch (err) {
+    console.error("User Collection By Id Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message,
     });
   }
 };

@@ -74,14 +74,9 @@ const startServer = async () => {
       origin: "*",
     },
     transports: ["websocket", "polling"],
-    //Every 25 seconds, the server sends a ping packet to the client.
-    // Server ---> Ping ---> Mobile App -> This checks whether the connection is still alive.
-    pingInterval: 25000,
-    // After sending pings, if the server does not receive a response from the client within 60 seconds, Socket.IO considers the connection dead and triggers:
-    //     socket.on("disconnect", (reason) => {
-    //   console.log(reason);
-    // });
-    pingTimeout: 60000,
+    // Faster heartbeat = faster real-time offline detection.
+    pingInterval: 10000,
+    pingTimeout: 15000,
   });
 
   // Initialize socket logic

@@ -707,8 +707,13 @@ export const getAssignedPendingBills = async (req, res) => {
         c.phone,
         c.email,
         c.place,
+        c.district,
+        c.state,
         c.address,
-
+        c.latitude,
+        c.longitude,
+        c.google_maps_url,
+        c.location_updated_at,
 
         cb.grand_total,
         cb.advance_paid,

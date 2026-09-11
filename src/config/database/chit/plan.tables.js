@@ -21,7 +21,7 @@ export const createPlanTables = async (db) => {
 
   //   `);
 
-await db.query(`
+  await db.query(`
   CREATE TABLE IF NOT EXISTS plans (
     id INT AUTO_INCREMENT PRIMARY KEY,
 
@@ -48,13 +48,19 @@ await db.query(`
 );
   `);
 
+  //   await db.query(`
+  //     INSERT IGNORE INTO plans (plan_name, duration_days, collection_type, total_installments)
+  // VALUES
+  // ('100 Days Daily', 100, 'DAILY', 100),
+  // ('50 Days Plan', 50, 'SINGLE', 1),
+  // ('90 Days Plan', 90, 'SINGLE', 1),
+  // ('16 Weekly Chit', 112, 'WEEKLY', 16);
+  //     `);
 
   await db.query(`
     INSERT IGNORE INTO plans (plan_name, duration_days, collection_type, total_installments)
 VALUES 
-('100 Days Daily', 100, 'DAILY', 100),
-('50 Days Plan', 50, 'SINGLE', 1),
-('90 Days Plan', 90, 'SINGLE', 1),
-('16 Weekly Chit', 112, 'WEEKLY', 16);
+('100 Days (Daily Collection)', 100, 'DAILY', 100),
+('90 Days Plan (Single payment)', 90, 'SINGLE', 1)
     `);
 };

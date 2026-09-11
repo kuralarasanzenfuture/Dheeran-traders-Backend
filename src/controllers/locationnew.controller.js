@@ -111,6 +111,14 @@ export const updateLocation = async (req, res) => {
       [userId, latitude, longitude, speed, heading],
     );
 
+    // 🔥 Keep users_roles in sync
+    await db.query(
+      `UPDATE users_roles
+       SET is_online = 1, last_seen = NOW()
+       WHERE id = ?`,
+      [userId],
+    );
+
     return res.json({
       success: true,
       message: "Location updated successfully",

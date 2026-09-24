@@ -96,6 +96,7 @@ export const seedModules = async (db) => {
   const chitModules = [
     { name: "Dashboard", code: "CHIT_DASHBOARD" },
     { name: "Chit Plans", code: "CHIT_PLANS" },
+    { name: "Plan Amounts", code: "CHIT_PLAN_AMOUNTS" },
     { name: "Chit Customers", code: "CHIT_CUSTOMERS" },
     { name: "Chit Batches", code: "CHIT_BATCHES" },
     { name: "Agent / Staff", code: "CHIT_AGENT" },

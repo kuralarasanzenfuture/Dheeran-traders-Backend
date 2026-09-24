@@ -30,6 +30,7 @@ import areaRoutes from "./billing/areas.routes.js";
 
 // chit
 import planRoutes from "./chit/plan.routes.js";
+import planAmountRoutes from "./chit/planAmount.routes.js";
 import planRulesRoutes from "./chit/planRules.routes.js";
 import batchRoutes from "./chit/batch.routes.js";
 import batchPlanRoutes from "./chit/batchPlan.routes.js";
@@ -99,6 +100,7 @@ router.use("/areas", areaRoutes);
 
 // chit
 router.use("/plans", planRoutes);
+router.use("/plan-amounts", planAmountRoutes);
 router.use("/plan-rules", planRulesRoutes);
 router.use("/batches", batchRoutes);
 router.use("/batch-plans", batchPlanRoutes);

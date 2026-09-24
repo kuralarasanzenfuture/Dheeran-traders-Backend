@@ -269,6 +269,11 @@ export const MODULE_CONFIG = [
         actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
       },
       {
+        name: "Plan Amounts",
+        code: "CHIT_PLAN_AMOUNTS",
+        actions: ["VIEW", "CREATE", "EDIT", "DELETE"],
+      },
+      {
         name: "Chit Customers",
         code: "CHIT_CUSTOMERS",
         actions: ["VIEW", "CREATE", "EDIT", "DELETE"],

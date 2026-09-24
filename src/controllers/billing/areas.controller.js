@@ -142,6 +142,49 @@ export const getAreas = async (req, res) => {
 };
 
 /* =============================
+   GET AREA BY ID
+============================= */
+export const getAreaById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      throw new Error("area id is required");
+    }
+
+    const [rows] = await db.query(
+      `SELECT 
+        a.id,
+        a.name,
+        a.code,
+        a.status,
+        a.created_at,
+        u.username AS created_by_name
+      FROM areas a
+      LEFT JOIN users_roles u ON u.id = a.created_by
+      WHERE a.id = ?`,
+      [id]
+    );
+
+    if (!rows.length) {
+      throw new Error("Area not found");
+    }
+
+    return res.json({
+      success: true,
+      data: rows[0],
+    });
+
+  } catch (err) {
+    console.error(`Get area by id error: ${err.message}`);
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+/* =============================
    UPDATE AREA
 ============================= */
 // export const updateArea = async (req, res) => {

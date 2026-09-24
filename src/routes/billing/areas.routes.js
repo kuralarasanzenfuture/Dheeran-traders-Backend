@@ -2,6 +2,7 @@ import express from "express";
 import {
   createArea,
   getAreas,
+  getAreaById,
   updateArea,
   deleteArea
 } from "../../controllers/billing/areas.controller.js";
@@ -17,6 +18,9 @@ router.post("/", createArea);
 
 // GET ALL
 router.get("/", getAreas);
+
+// GET ONE
+router.get("/:id", getAreaById);
 
 // UPDATE
 router.put("/:id", updateArea);

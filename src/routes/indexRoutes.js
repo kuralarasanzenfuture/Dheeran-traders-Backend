@@ -46,6 +46,10 @@ import userCustomerAssignmentRoutes from "./chit/userCustomerAssignment.routes.j
 // reports
 import chitReportRoutes from "./chit/reports/chitReports.routes.js";
 
+// investment
+import investmentPlanRoutes from "./chit/investmentPlan.routes.js";
+import investmentPlanAmountRoutes from "./chit/investmentPlanAmount.routes.js";
+
 // terms
 import termsRoutes from "./terms/terms.routes.js";
 import auditRoutes from "./audits/auditsLog.routes.js";
@@ -112,6 +116,10 @@ router.use("/customer-subscriptions", chitCustomerSubscriptionsRoutes);
 router.use("/chit-payment", collectionPaymentRoutes);
 router.use("/installments", customerInstallmentRoutes);
 router.use("/chit-reports", chitReportRoutes);
+
+// investment
+router.use("/investment-plans", investmentPlanRoutes);
+router.use("/investment-plan-amounts", investmentPlanAmountRoutes);
 
 router.use("/locations", locationRoutes);
 

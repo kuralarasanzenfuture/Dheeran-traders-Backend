@@ -24,6 +24,7 @@ export const createCustomer = async (req, res, next) => {
       last_name,
       phone,
       email,
+      area_id,
       address,
       place,
       district,
@@ -55,6 +56,31 @@ export const createCustomer = async (req, res, next) => {
     state = state?.trim() || null;
     pincode = pincode?.trim() || null;
     country = country?.trim() || "India";
+
+    // Handle area_id & auto-fill place if place is empty
+    let parsedAreaId = null;
+    if (area_id !== undefined && area_id !== null && area_id !== "") {
+      parsedAreaId = parseInt(area_id, 10);
+      if (isNaN(parsedAreaId)) {
+        await connection.rollback();
+        return res.status(400).json({ message: "Invalid area_id format" });
+      }
+
+      const [areaRows] = await connection.query(
+        "SELECT id, name FROM areas WHERE id = ?",
+        [parsedAreaId],
+      );
+
+      if (!areaRows.length) {
+        await connection.rollback();
+        return res.status(400).json({ message: "Selected area does not exist" });
+      }
+
+      // Auto-fill place from area name if place was not provided or empty
+      if (!place || !place.trim()) {
+        place = areaRows[0].name;
+      }
+    }
 
     // Phone format validation
     if (!/^[0-9]{10,15}$/.test(phone)) {
@@ -142,6 +168,7 @@ export const createCustomer = async (req, res, next) => {
         last_name,
         phone,
         email,
+        area_id,
         address,
         place,
         district,
@@ -153,12 +180,13 @@ export const createCustomer = async (req, res, next) => {
         google_maps_url,
         location_updated_at,
         created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         first_name,
         last_name,
         phone,
         email,
+        parsedAreaId,
         address,
         place,
         district,
@@ -175,9 +203,12 @@ export const createCustomer = async (req, res, next) => {
 
     const customerId = result.insertId;
 
-    // Fetch newly created record
+    // Fetch newly created record with area info
     const [[newCustomer]] = await connection.query(
-      "SELECT * FROM customers WHERE id = ?",
+      `SELECT c.*, a.name AS area_name, a.code AS area_code
+       FROM customers c
+       LEFT JOIN areas a ON c.area_id = a.id
+       WHERE c.id = ?`,
       [customerId],
     );
 
@@ -219,7 +250,7 @@ export const createCustomer = async (req, res, next) => {
  */
 export const getCustomers = async (req, res) => {
   try {
-    const { search, place, district } = req.query;
+    const { search, place, district, area_id } = req.query;
 
     let query = `
       SELECT
@@ -228,6 +259,9 @@ export const getCustomers = async (req, res) => {
         c.last_name,
         c.phone,
         c.email,
+        c.area_id,
+        a.name AS area_name,
+        a.code AS area_code,
         c.address,
         c.place,
         c.district,
@@ -250,6 +284,7 @@ export const getCustomers = async (req, res) => {
         COALESCE(SUM(cb.balance_due), 0) AS pending_amount
 
       FROM customers c
+      LEFT JOIN areas a ON c.area_id = a.id
       LEFT JOIN users_roles creator ON c.created_by = creator.id
       LEFT JOIN users_roles updater ON c.updated_by = updater.id
       LEFT JOIN customerBilling cb ON c.id = cb.customer_id
@@ -265,7 +300,8 @@ export const getCustomers = async (req, res) => {
         c.phone LIKE ? OR
         c.email LIKE ? OR
         c.place LIKE ? OR
-        c.district LIKE ?
+        c.district LIKE ? OR
+        a.name LIKE ?
       )`);
       const searchPattern = `%${search.trim()}%`;
       params.push(
@@ -275,7 +311,13 @@ export const getCustomers = async (req, res) => {
         searchPattern,
         searchPattern,
         searchPattern,
+        searchPattern,
       );
+    }
+
+    if (area_id) {
+      conditions.push("c.area_id = ?");
+      params.push(area_id);
     }
 
     if (place) {
@@ -324,11 +366,14 @@ export const getCustomerById = async (req, res) => {
       `
       SELECT
         c.*,
+        a.name AS area_name,
+        a.code AS area_code,
         creator.username AS created_by_name,
         updater.username AS updated_by_name,
         COALESCE(SUM(cb.grand_total), 0) AS total,
         COALESCE(SUM(cb.balance_due), 0) AS pending_amount
       FROM customers c
+      LEFT JOIN areas a ON c.area_id = a.id
       LEFT JOIN users_roles creator ON c.created_by = creator.id
       LEFT JOIN users_roles updater ON c.updated_by = updater.id
       LEFT JOIN customerBilling cb ON c.id = cb.customer_id
@@ -392,6 +437,7 @@ export const updateCustomer = async (req, res) => {
       "last_name",
       "phone",
       "email",
+      "area_id",
       "address",
       "place",
       "district",
@@ -418,6 +464,35 @@ export const updateCustomer = async (req, res) => {
         // Allow empty string to set null for nullable fields
         if (data[key] === "" && key !== "first_name" && key !== "phone") {
           data[key] = null;
+        }
+      }
+    }
+
+    // Handle area_id & auto-fill place if not provided
+    if (data.area_id !== undefined) {
+      if (data.area_id === null || data.area_id === "") {
+        data.area_id = null;
+      } else {
+        const parsedAreaId = parseInt(data.area_id, 10);
+        if (isNaN(parsedAreaId)) {
+          await connection.rollback();
+          return res.status(400).json({ message: "Invalid area_id format" });
+        }
+
+        const [areaRows] = await connection.query(
+          "SELECT id, name FROM areas WHERE id = ?",
+          [parsedAreaId],
+        );
+        if (!areaRows.length) {
+          await connection.rollback();
+          return res.status(400).json({ message: "Selected area does not exist" });
+        }
+
+        data.area_id = parsedAreaId;
+
+        // Auto-fill place from area name if place was not given or empty
+        if (data.place === undefined || data.place === null || data.place === "") {
+          data.place = areaRows[0].name;
         }
       }
     }
@@ -520,7 +595,10 @@ export const updateCustomer = async (req, res) => {
     await connection.query("UPDATE customers SET ? WHERE id = ?", [data, id]);
 
     const [[newData]] = await connection.query(
-      "SELECT * FROM customers WHERE id = ?",
+      `SELECT c.*, a.name AS area_name, a.code AS area_code
+       FROM customers c
+       LEFT JOIN areas a ON c.area_id = a.id
+       WHERE c.id = ?`,
       [id],
     );
 

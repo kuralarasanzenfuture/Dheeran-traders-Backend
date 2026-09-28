@@ -36,6 +36,7 @@ import { createCompanyGstNumberTable } from "./database/billing/companygstNumber
 import { createOrderTables } from "./database/billing/order.tables.js";
 import { createUserBillAssignTable } from "./database/billing/userAssign.tables.js";
 import { createBillingAreasTable } from "./database/billing/areas.tables.js";
+import { createUserAreaAssignmentsTable } from "./database/users/user_area_assignments.tables.js";
 import { createTermsAndConditionsTable } from "./database/termsandconditions/termsAndConditions.tables.js";
 
 export const initDatabase = async () => {
@@ -77,6 +78,10 @@ export const initDatabase = async () => {
 
     await createVendorTables(db);
 
+    await createBillingAreasTable(db);
+
+    await createUserAreaAssignmentsTable(db);
+
     await createCustomerTables(db);
 
     await createEmployeeTables(db);
@@ -98,8 +103,6 @@ export const initDatabase = async () => {
     await createOrderTables(db);
 
     await createUserBillAssignTable(db);
-
-    await createBillingAreasTable(db);
 
     // chit tables
 

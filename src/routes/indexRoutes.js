@@ -27,6 +27,7 @@ import companygstNumberRoutes from "./billing/companygstNumber.routes.js";
 import orderRoutes from "./billing/order.routes.js";
 import assignedBillCustomerRoutes from "./billing/assignedBillCustomer.routes.js";
 import areaRoutes from "./billing/areas.routes.js";
+import userAreaAssignmentRoutes from "./users/userAreaAssignment.routes.js";
 
 // chit
 import planRoutes from "./chit/plan.routes.js";
@@ -97,6 +98,7 @@ router.use("/company-gst", companygstNumberRoutes);
 router.use("/orders", orderRoutes);
 router.use("/assigned-bill-customers", assignedBillCustomerRoutes);
 router.use("/areas", areaRoutes);
+router.use("/user-area-assignments", userAreaAssignmentRoutes);
 
 // chit
 router.use("/plans", planRoutes);

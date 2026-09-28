@@ -29,6 +29,11 @@ export const createCustomerSchema = Joi.object({
     "string.max": "Email cannot exceed 150 characters",
   }),
 
+  area_id: Joi.number().integer().positive().allow(null).optional().messages({
+    "number.base": "Area ID must be a valid number",
+    "number.integer": "Area ID must be an integer",
+  }),
+
   address: Joi.string().trim().max(255).allow(null, "").optional().messages({
     "string.max": "Address cannot exceed 255 characters",
   }),
@@ -101,6 +106,11 @@ export const updateCustomerSchema = Joi.object({
   email: Joi.string().trim().email().max(150).allow(null, "").optional().messages({
     "string.email": "Invalid email address format",
     "string.max": "Email cannot exceed 150 characters",
+  }),
+
+  area_id: Joi.number().integer().positive().allow(null, "").optional().messages({
+    "number.base": "Area ID must be a valid number",
+    "number.integer": "Area ID must be an integer",
   }),
 
   address: Joi.string().trim().max(255).allow(null, "").optional().messages({

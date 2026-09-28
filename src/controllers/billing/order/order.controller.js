@@ -462,7 +462,193 @@ export const createOrder = async (req, res) => {
 /* -- remove employee_id -- */
 export const getOrders = async (req, res) => {
   try {
-    const [rows] = await db.query(`
+    const {
+      search,
+      status,
+      customer_id,
+      customer_name,
+      phone,
+      area_id,
+      place,
+      created_by,
+      user_id,
+      from,
+      to,
+      startDate,
+      endDate,
+      fromDate,
+      toDate,
+      order_date,
+      expected_delivery_date,
+      expected_from,
+      expected_to,
+      delivery_date,
+      delivery_from,
+      delivery_to,
+      page,
+      limit,
+      sortBy = "id",
+      sortOrder = "DESC",
+    } = req.query;
+
+    const conditions = [];
+    const params = [];
+
+    // 1. Text Search across multiple fields
+    if (search && search.trim()) {
+      const searchPattern = `%${search.trim()}%`;
+      conditions.push(`(
+        o.order_number LIKE ? OR
+        o.customer_name LIKE ? OR
+        c.phone LIKE ? OR
+        c.email LIKE ? OR
+        c.place LIKE ? OR
+        c.address LIKE ? OR
+        o.remarks LIKE ? OR
+        uc.username LIKE ?
+      )`);
+      params.push(
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+      );
+    }
+
+    // 2. Status filter (supports single string, comma-separated string, or array)
+    if (status && status !== "ALL") {
+      let statuses = [];
+      if (Array.isArray(status)) {
+        statuses = status;
+      } else if (typeof status === "string") {
+        statuses = status.split(",").map((s) => s.trim()).filter(Boolean);
+      }
+      if (statuses.length === 1) {
+        conditions.push("o.status = ?");
+        params.push(statuses[0]);
+      } else if (statuses.length > 1) {
+        conditions.push(`o.status IN (${statuses.map(() => "?").join(",")})`);
+        params.push(...statuses);
+      }
+    }
+
+    // 3. Customer filters
+    if (customer_id) {
+      conditions.push("o.customer_id = ?");
+      params.push(customer_id);
+    }
+    if (customer_name && customer_name.trim()) {
+      conditions.push("o.customer_name LIKE ?");
+      params.push(`%${customer_name.trim()}%`);
+    }
+    if (phone && phone.trim()) {
+      conditions.push("c.phone LIKE ?");
+      params.push(`%${phone.trim()}%`);
+    }
+    if (area_id) {
+      conditions.push("c.area_id = ?");
+      params.push(area_id);
+    }
+    if (place && place.trim()) {
+      conditions.push("c.place LIKE ?");
+      params.push(`%${place.trim()}%`);
+    }
+
+    // 4. Creator / User filter
+    const creatorFilter = created_by || user_id;
+    if (creatorFilter) {
+      conditions.push("o.created_by = ?");
+      params.push(creatorFilter);
+    }
+
+    // 5. Order date filters
+    const startOrderDate = from || startDate || fromDate;
+    const endOrderDate = to || endDate || toDate;
+
+    if (order_date) {
+      conditions.push("o.order_date = ?");
+      params.push(order_date);
+    } else if (startOrderDate && endOrderDate) {
+      conditions.push("o.order_date BETWEEN ? AND ?");
+      params.push(startOrderDate, endOrderDate);
+    } else if (startOrderDate) {
+      conditions.push("o.order_date >= ?");
+      params.push(startOrderDate);
+    } else if (endOrderDate) {
+      conditions.push("o.order_date <= ?");
+      params.push(endOrderDate);
+    }
+
+    // 6. Expected Delivery date filters
+    const startExpected = expected_from || req.query.expectedFrom || req.query.expected_delivery_from;
+    const endExpected = expected_to || req.query.expectedTo || req.query.expected_delivery_to;
+
+    if (expected_delivery_date) {
+      conditions.push("o.expected_delivery_date = ?");
+      params.push(expected_delivery_date);
+    } else if (startExpected && endExpected) {
+      conditions.push("o.expected_delivery_date BETWEEN ? AND ?");
+      params.push(startExpected, endExpected);
+    } else if (startExpected) {
+      conditions.push("o.expected_delivery_date >= ?");
+      params.push(startExpected);
+    } else if (endExpected) {
+      conditions.push("o.expected_delivery_date <= ?");
+      params.push(endExpected);
+    }
+
+    // 7. Delivery date filters
+    const startDelivery = delivery_from || req.query.deliveryFrom;
+    const endDelivery = delivery_to || req.query.deliveryTo;
+
+    if (delivery_date) {
+      conditions.push("o.delivery_date = ?");
+      params.push(delivery_date);
+    } else if (startDelivery && endDelivery) {
+      conditions.push("o.delivery_date BETWEEN ? AND ?");
+      params.push(startDelivery, endDelivery);
+    } else if (startDelivery) {
+      conditions.push("o.delivery_date >= ?");
+      params.push(startDelivery);
+    } else if (endDelivery) {
+      conditions.push("o.delivery_date <= ?");
+      params.push(endDelivery);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+    // 8. Sorting whitelist
+    const allowedSortFields = {
+      id: "o.id",
+      order_number: "o.order_number",
+      order_date: "o.order_date",
+      expected_delivery_date: "o.expected_delivery_date",
+      delivery_date: "o.delivery_date",
+      status: "o.status",
+      created_at: "o.created_at",
+      customer_name: "o.customer_name",
+      total_amount: "total_amount",
+    };
+    const sortColumn = allowedSortFields[sortBy] || "o.id";
+    const sortDir = String(sortOrder).toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+    // 9. Count total matching rows
+    const countSql = `
+      SELECT COUNT(DISTINCT o.id) AS total
+      FROM customerOrders o
+      LEFT JOIN customers c ON o.customer_id = c.id
+      LEFT JOIN users_roles uc ON o.created_by = uc.id
+      ${whereClause}
+    `;
+    const [countRows] = await db.query(countSql, params);
+    const total = countRows[0]?.total || 0;
+
+    // 10. Main query
+    let querySql = `
       SELECT 
         o.id,
         o.order_number,
@@ -470,10 +656,14 @@ export const getOrders = async (req, res) => {
         /* 👤 CUSTOMER */
         o.customer_id,
         o.customer_name,
+        c.first_name AS customer_first_name,
+        c.last_name AS customer_last_name,
         c.phone AS customer_phone,
         c.email AS customer_email,
         c.place AS customer_place,
         c.address AS customer_address,
+        c.area_id,
+        a.name AS area_name,
 
         /* 📅 ORDER */
         o.order_date,
@@ -490,13 +680,22 @@ export const getOrders = async (req, res) => {
         uu.username AS updated_by_name,
 
         o.created_at,
-        o.updated_at
+        o.updated_at,
+
+        /* 💰 FINANCIALS & TOTALS */
+        COALESCE(SUM(op.total_amount), 0) AS total_amount,
+        COALESCE(SUM(op.quantity), 0) AS total_quantity,
+        COALESCE(SUM(op.billed_quantity), 0) AS billed_quantity,
+        COUNT(DISTINCT op.product_id) AS total_items
 
       FROM customerOrders o
 
-      /* 🔥 JOIN CUSTOMER */
+      /* 🔥 JOIN CUSTOMER & DETAILS */
       LEFT JOIN customers c 
         ON o.customer_id = c.id
+
+      LEFT JOIN areas a 
+        ON c.area_id = a.id
 
       LEFT JOIN users_roles uc 
         ON o.created_by = uc.id
@@ -504,11 +703,44 @@ export const getOrders = async (req, res) => {
       LEFT JOIN users_roles uu 
         ON o.updated_by = uu.id
 
-      ORDER BY o.id DESC
-    `);
+      LEFT JOIN customerOrderProducts op 
+        ON o.id = op.order_id
 
-    res.json({
+      ${whereClause}
+
+      GROUP BY o.id, c.id, a.name, uc.username, uu.username
+      ORDER BY ${sortColumn} ${sortDir}
+    `;
+
+    // 11. Pagination handling
+    const queryParams = [...params];
+    const isPaginationRequested = page !== undefined || (limit !== undefined && limit !== "all");
+
+    if (isPaginationRequested) {
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.max(1, parseInt(limit, 10) || 20);
+      const offset = (pageNum - 1) * limitNum;
+
+      querySql += ` LIMIT ? OFFSET ?`;
+      queryParams.push(limitNum, offset);
+
+      const [rows] = await db.query(querySql, queryParams);
+
+      return res.json({
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        currentPage: pageNum,
+        limit: limitNum,
+        count: rows.length,
+        data: rows,
+      });
+    }
+
+    const [rows] = await db.query(querySql, queryParams);
+
+    return res.json({
       count: rows.length,
+      total,
       data: rows,
     });
 
@@ -520,19 +752,169 @@ export const getOrders = async (req, res) => {
 
 export const getMyOrders = async (req, res) => {
   try {
-    const userId = req.user.id; // logged-in user id
+    const userId = req.user?.id; // logged-in user id
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized: User not authenticated" });
+    }
 
-    const [rows] = await db.query(
-      `
+    const {
+      search,
+      status,
+      customer_id,
+      customer_name,
+      phone,
+      area_id,
+      place,
+      from,
+      to,
+      startDate,
+      endDate,
+      fromDate,
+      toDate,
+      order_date,
+      expected_delivery_date,
+      delivery_date,
+      page,
+      limit,
+      sortBy = "id",
+      sortOrder = "DESC",
+    } = req.query;
+
+    const conditions = ["o.created_by = ?"];
+    const params = [userId];
+
+    // 1. Search
+    if (search && search.trim()) {
+      const searchPattern = `%${search.trim()}%`;
+      conditions.push(`(
+        o.order_number LIKE ? OR
+        o.customer_name LIKE ? OR
+        c.phone LIKE ? OR
+        c.email LIKE ? OR
+        c.place LIKE ? OR
+        c.address LIKE ? OR
+        o.remarks LIKE ?
+      )`);
+      params.push(
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+      );
+    }
+
+    // 2. Status
+    if (status && status !== "ALL") {
+      let statuses = [];
+      if (Array.isArray(status)) {
+        statuses = status;
+      } else if (typeof status === "string") {
+        statuses = status.split(",").map((s) => s.trim()).filter(Boolean);
+      }
+      if (statuses.length === 1) {
+        conditions.push("o.status = ?");
+        params.push(statuses[0]);
+      } else if (statuses.length > 1) {
+        conditions.push(`o.status IN (${statuses.map(() => "?").join(",")})`);
+        params.push(...statuses);
+      }
+    }
+
+    // 3. Customer filters
+    if (customer_id) {
+      conditions.push("o.customer_id = ?");
+      params.push(customer_id);
+    }
+    if (customer_name && customer_name.trim()) {
+      conditions.push("o.customer_name LIKE ?");
+      params.push(`%${customer_name.trim()}%`);
+    }
+    if (phone && phone.trim()) {
+      conditions.push("c.phone LIKE ?");
+      params.push(`%${phone.trim()}%`);
+    }
+    if (area_id) {
+      conditions.push("c.area_id = ?");
+      params.push(area_id);
+    }
+    if (place && place.trim()) {
+      conditions.push("c.place LIKE ?");
+      params.push(`%${place.trim()}%`);
+    }
+
+    // 4. Dates
+    const startOrderDate = from || startDate || fromDate;
+    const endOrderDate = to || endDate || toDate;
+
+    if (order_date) {
+      conditions.push("o.order_date = ?");
+      params.push(order_date);
+    } else if (startOrderDate && endOrderDate) {
+      conditions.push("o.order_date BETWEEN ? AND ?");
+      params.push(startOrderDate, endOrderDate);
+    } else if (startOrderDate) {
+      conditions.push("o.order_date >= ?");
+      params.push(startOrderDate);
+    } else if (endOrderDate) {
+      conditions.push("o.order_date <= ?");
+      params.push(endOrderDate);
+    }
+
+    if (expected_delivery_date) {
+      conditions.push("o.expected_delivery_date = ?");
+      params.push(expected_delivery_date);
+    }
+    if (delivery_date) {
+      conditions.push("o.delivery_date = ?");
+      params.push(delivery_date);
+    }
+
+    const whereClause = `WHERE ${conditions.join(" AND ")}`;
+
+    // 5. Sorting
+    const allowedSortFields = {
+      id: "o.id",
+      order_number: "o.order_number",
+      order_date: "o.order_date",
+      expected_delivery_date: "o.expected_delivery_date",
+      delivery_date: "o.delivery_date",
+      status: "o.status",
+      created_at: "o.created_at",
+      customer_name: "o.customer_name",
+      total_amount: "total_amount",
+    };
+    const sortColumn = allowedSortFields[sortBy] || "o.id";
+    const sortDir = String(sortOrder).toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+    // 6. Count
+    const countSql = `
+      SELECT COUNT(DISTINCT o.id) AS total
+      FROM customerOrders o
+      LEFT JOIN customers c ON o.customer_id = c.id
+      ${whereClause}
+    `;
+    const [countRows] = await db.query(countSql, params);
+    const total = countRows[0]?.total || 0;
+
+    // 7. Main query
+    let querySql = `
       SELECT 
         o.id,
         o.order_number,
         o.customer_id,
         o.customer_name,
+        c.first_name AS customer_first_name,
+        c.last_name AS customer_last_name,
         c.phone AS customer_phone,
         c.email AS customer_email,
         c.place AS customer_place,
         c.address AS customer_address,
+        c.area_id,
+        a.name AS area_name,
+
         o.order_date,
         o.expected_delivery_date,
         o.delivery_date,
@@ -546,7 +928,12 @@ export const getMyOrders = async (req, res) => {
         uu.username AS updated_by_name,
 
         o.created_at,
-        o.updated_at
+        o.updated_at,
+
+        COALESCE(SUM(op.total_amount), 0) AS total_amount,
+        COALESCE(SUM(op.quantity), 0) AS total_quantity,
+        COALESCE(SUM(op.billed_quantity), 0) AS billed_quantity,
+        COUNT(DISTINCT op.product_id) AS total_items
 
       FROM customerOrders o
 
@@ -559,15 +946,46 @@ export const getMyOrders = async (req, res) => {
       LEFT JOIN customers c 
         ON o.customer_id = c.id
 
-      WHERE o.created_by = ?
+      LEFT JOIN areas a 
+        ON c.area_id = a.id
 
-      ORDER BY o.id DESC
-    `,
-      [userId],
-    );
+      LEFT JOIN customerOrderProducts op 
+        ON o.id = op.order_id
 
-    res.json({
+      ${whereClause}
+
+      GROUP BY o.id, c.id, a.name, uc.username, uu.username
+      ORDER BY ${sortColumn} ${sortDir}
+    `;
+
+    const queryParams = [...params];
+    const isPaginationRequested = page !== undefined || (limit !== undefined && limit !== "all");
+
+    if (isPaginationRequested) {
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.max(1, parseInt(limit, 10) || 20);
+      const offset = (pageNum - 1) * limitNum;
+
+      querySql += ` LIMIT ? OFFSET ?`;
+      queryParams.push(limitNum, offset);
+
+      const [rows] = await db.query(querySql, queryParams);
+
+      return res.json({
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        currentPage: pageNum,
+        limit: limitNum,
+        count: rows.length,
+        data: rows,
+      });
+    }
+
+    const [rows] = await db.query(querySql, queryParams);
+
+    return res.json({
       count: rows.length,
+      total,
       data: rows,
     });
   } catch (err) {
@@ -896,6 +1314,10 @@ export const getMyOrders = async (req, res) => {
 export const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ message: "Invalid order ID format" });
+    }
 
     /* ✅ 1. ORDER + CUSTOMER + USER (CREATED/UPDATED) */
     const [[row]] = await db.query(
@@ -1647,7 +2069,59 @@ export const updateOrderStatus = async (req, res) => {
 
 export const getProductsWithAvailableStock = async (req, res) => {
   try {
-    const [rows] = await db.query(`
+    const {
+      search,
+      brand,
+      category,
+      in_stock_only,
+      page,
+      limit,
+      sortBy = "id",
+      sortOrder = "DESC",
+    } = req.query;
+
+    const conditions = [];
+    const params = [];
+
+    if (search && search.trim()) {
+      const searchPattern = `%${search.trim()}%`;
+      conditions.push(`(
+        p.product_name LIKE ? OR
+        p.brand LIKE ? OR
+        p.category LIKE ?
+      )`);
+      params.push(searchPattern, searchPattern, searchPattern);
+    }
+
+    if (brand && brand.trim()) {
+      conditions.push("p.brand = ?");
+      params.push(brand.trim());
+    }
+
+    if (category && category.trim()) {
+      conditions.push("p.category = ?");
+      params.push(category.trim());
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+    let havingClause = "";
+    if (in_stock_only === "true" || in_stock_only === true) {
+      havingClause = "HAVING available_stock > 0";
+    }
+
+    const allowedSortFields = {
+      id: "p.id",
+      product_name: "p.product_name",
+      price: "p.price",
+      stock: "actual_stock",
+      actual_stock: "actual_stock",
+      available_stock: "available_stock",
+    };
+    const sortColumn = allowedSortFields[sortBy] || "p.id";
+    const sortDir = String(sortOrder).toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+    let querySql = `
       SELECT 
         p.id,
         p.product_name,
@@ -1656,9 +2130,21 @@ export const getProductsWithAvailableStock = async (req, res) => {
         p.price,
         p.stock AS actual_stock,
 
-        COALESCE(SUM(op.quantity), 0) AS reserved_qty,
+        COALESCE(SUM(
+          CASE 
+            WHEN o.status IN ('PENDING', 'CONFIRMED') 
+            THEN GREATEST(0, op.quantity - COALESCE(op.billed_quantity, 0))
+            ELSE 0 
+          END
+        ), 0) AS reserved_qty,
 
-        (p.stock - COALESCE(SUM(op.quantity), 0)) AS available_stock
+        (p.stock - COALESCE(SUM(
+          CASE 
+            WHEN o.status IN ('PENDING', 'CONFIRMED') 
+            THEN GREATEST(0, op.quantity - COALESCE(op.billed_quantity, 0))
+            ELSE 0 
+          END
+        ), 0)) AS available_stock
 
       FROM products p
 
@@ -1667,13 +2153,48 @@ export const getProductsWithAvailableStock = async (req, res) => {
 
       LEFT JOIN customerOrders o 
         ON o.id = op.order_id
-        AND o.status IN ('PENDING','CONFIRMED')
 
-      GROUP BY p.id
-      ORDER BY p.id DESC
-    `);
+      ${whereClause}
 
-    res.json(rows);
+      GROUP BY p.id, p.product_name, p.brand, p.category, p.price, p.stock
+      ${havingClause}
+      ORDER BY ${sortColumn} ${sortDir}
+    `;
+
+    const isPaginationRequested = page !== undefined || (limit !== undefined && limit !== "all");
+
+    if (isPaginationRequested) {
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.max(1, parseInt(limit, 10) || 20);
+      const offset = (pageNum - 1) * limitNum;
+
+      // Count query wrapped
+      const countSql = `SELECT COUNT(*) AS total FROM (${querySql}) AS sub`;
+      const [countRows] = await db.query(countSql, params);
+      const total = countRows[0]?.total || 0;
+
+      querySql += ` LIMIT ? OFFSET ?`;
+      const queryParams = [...params, limitNum, offset];
+
+      const [rows] = await db.query(querySql, queryParams);
+
+      return res.json({
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        currentPage: pageNum,
+        limit: limitNum,
+        count: rows.length,
+        data: rows,
+      });
+    }
+
+    const [rows] = await db.query(querySql, params);
+
+    return res.json({
+      count: rows.length,
+      data: rows,
+    });
+
   } catch (err) {
     console.error("Stock fetch error:", err);
     res.status(500).json({ message: err.message });

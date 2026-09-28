@@ -122,40 +122,44 @@ export const createCustomerTables = async (db) => {
     -- CUSTOMER NAME
     -- =========================
     first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100),
+    last_name VARCHAR(100) NULL,
 
     -- =========================
-    -- CONTACT DETAILS
+    -- CONTACT
     -- =========================
     phone VARCHAR(20) NOT NULL,
-    email VARCHAR(150),
+    email VARCHAR(150) NULL,
+
+    -- =========================
+    -- AREA
+    -- =========================
+    area_id INT NULL,
 
     -- =========================
     -- ADDRESS
     -- =========================
-    address VARCHAR(255),
-
-    place VARCHAR(100),
-    district VARCHAR(100),
-    state VARCHAR(100),
-    pincode VARCHAR(10),
+    address VARCHAR(255) NULL,
+    place VARCHAR(100) NULL,
+    district VARCHAR(100) NULL,
+    state VARCHAR(100) NULL,
+    pincode VARCHAR(10) NULL,
     country VARCHAR(100) DEFAULT 'India',
 
     -- =========================
     -- GEO LOCATION
     -- =========================
-    latitude DECIMAL(10,8),
-    longitude DECIMAL(11,8),
+    latitude DECIMAL(10,8) NULL,
+    longitude DECIMAL(11,8) NULL,
 
-    google_maps_url VARCHAR(500),
+    google_maps_url VARCHAR(500) NULL,
 
     location_updated_at TIMESTAMP NULL,
 
     -- =========================
     -- AUDIT
     -- =========================
-    created_by INT,
-    updated_by INT,
+    created_by INT NULL,
+    updated_by INT NULL,
 
     -- =========================
     -- TIMESTAMPS
@@ -163,10 +167,10 @@ export const createCustomerTables = async (db) => {
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ON UPDATE CURRENT_TIMESTAMP,
+      ON UPDATE CURRENT_TIMESTAMP,
 
     -- =========================
-    -- CONSTRAINTS
+    -- UNIQUE
     -- =========================
     UNIQUE KEY uq_customers_phone (phone),
     UNIQUE KEY uq_customers_email (email),
@@ -176,34 +180,47 @@ export const createCustomerTables = async (db) => {
     -- =========================
     INDEX idx_phone (phone),
     INDEX idx_email (email),
+    INDEX idx_area_id (area_id),
     INDEX idx_place (place),
     INDEX idx_district (district),
     INDEX idx_state (state),
     INDEX idx_pincode (pincode),
+
     INDEX idx_created_by (created_by),
     INDEX idx_updated_by (updated_by),
-    INDEX idx_location (latitude, longitude),
+
+    INDEX idx_location (
+      latitude,
+      longitude
+    ),
 
     -- =========================
     -- FOREIGN KEYS
     -- =========================
+    CONSTRAINT fk_customers_area
+      FOREIGN KEY (area_id)
+      REFERENCES areas(id)
+      ON DELETE SET NULL
+      ON UPDATE CASCADE,
+
     CONSTRAINT fk_customers_created_by
-        FOREIGN KEY (created_by)
-        REFERENCES users_roles(id)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE,
+      FOREIGN KEY (created_by)
+      REFERENCES users_roles(id)
+      ON DELETE SET NULL
+      ON UPDATE CASCADE,
 
     CONSTRAINT fk_customers_updated_by
-        FOREIGN KEY (updated_by)
-        REFERENCES users_roles(id)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE
+      FOREIGN KEY (updated_by)
+      REFERENCES users_roles(id)
+      ON DELETE SET NULL
+      ON UPDATE CASCADE
 
-) ENGINE=InnoDB;
-    `);
+  ) ENGINE=InnoDB;
+`);
 
   // Safe check to add missing columns to pre-existing customers tables
   const requiredColumns = [
+    { name: "area_id", def: "INT NULL" },
     { name: "place", def: "VARCHAR(100) NULL" },
     { name: "district", def: "VARCHAR(100) NULL" },
     { name: "state", def: "VARCHAR(100) NULL" },
@@ -222,14 +239,52 @@ export const createCustomerTables = async (db) => {
       const [colExists] = await db.query(
         `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND COLUMN_NAME = ?`,
-        [col.name]
+        [col.name],
       );
       if (!colExists.length) {
-        await db.query(`ALTER TABLE customers ADD COLUMN ${col.name} ${col.def}`);
+        await db.query(
+          `ALTER TABLE customers ADD COLUMN ${col.name} ${col.def}`,
+        );
       }
     } catch (err) {
       console.error(`Migration notice for customers.${col.name}:`, err.message);
     }
   }
-};
 
+  // Safe check for area_id index
+  try {
+    const [idxExists] = await db.query(
+      `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND INDEX_NAME = 'idx_area_id'`,
+    );
+    if (!idxExists.length) {
+      await db.query(`ALTER TABLE customers ADD INDEX idx_area_id (area_id)`);
+    }
+  } catch (err) {
+    console.error("Migration notice for customers.idx_area_id:", err.message);
+  }
+
+  // Safe check for fk_customers_area foreign key constraint
+  try {
+    const [fkExists] = await db.query(
+      `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND CONSTRAINT_NAME = 'fk_customers_area'`,
+    );
+    if (!fkExists.length) {
+      const [areasTable] = await db.query(
+        `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'areas'`,
+      );
+      if (areasTable.length) {
+        await db.query(
+          `ALTER TABLE customers 
+           ADD CONSTRAINT fk_customers_area 
+           FOREIGN KEY (area_id) REFERENCES areas(id) 
+           ON DELETE SET NULL ON UPDATE CASCADE`,
+        );
+      }
+    }
+  } catch (err) {
+    console.error("Migration notice for customers.fk_customers_area:", err.message);
+  }
+};

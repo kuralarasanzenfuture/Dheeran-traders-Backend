@@ -73,9 +73,23 @@ const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 // GET ALL CUSTOMERS
 export const getChitCustomers = async (req, res) => {
   try {
-    const [rows] = await db.query(
-      `SELECT * FROM chit_customers ORDER BY id DESC`,
-    );
+    const { area_id } = req.query;
+
+    let query = `
+      SELECT c.*, a.name AS area_name, a.code AS area_code
+      FROM chit_customers c
+      LEFT JOIN areas a ON c.area_id = a.id
+    `;
+    const params = [];
+
+    if (area_id) {
+      query += ` WHERE c.area_id = ?`;
+      params.push(area_id);
+    }
+
+    query += ` ORDER BY c.id DESC`;
+
+    const [rows] = await db.query(query, params);
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -88,9 +102,13 @@ export const getChitCustomerById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const [rows] = await db.query(`SELECT * FROM chit_customers WHERE id = ?`, [
-      id,
-    ]);
+    const [rows] = await db.query(
+      `SELECT c.*, a.name AS area_name, a.code AS area_code
+       FROM chit_customers c
+       LEFT JOIN areas a ON c.area_id = a.id
+       WHERE c.id = ?`,
+      [id],
+    );
 
     if (!rows.length) {
       return res.status(404).json({ message: "Customer not found" });
@@ -197,6 +215,7 @@ export const createChitCustomer = async (req, res) => {
     let {
       name,
       phone,
+      area_id,
       place,
       aadhar,
       pan_number,
@@ -215,13 +234,39 @@ export const createChitCustomer = async (req, res) => {
 
     if (pan_number) pan_number = pan_number.trim().toUpperCase();
 
+    // Handle area_id & auto-fill place if place is empty
+    let parsedAreaId = null;
+    if (area_id !== undefined && area_id !== null && area_id !== "") {
+      parsedAreaId = parseInt(area_id, 10);
+      if (isNaN(parsedAreaId)) {
+        await connection.rollback();
+        return res.status(400).json({ message: "Invalid area_id format" });
+      }
+
+      const [areaRows] = await connection.query(
+        "SELECT id, name FROM areas WHERE id = ?",
+        [parsedAreaId],
+      );
+
+      if (!areaRows.length) {
+        await connection.rollback();
+        return res.status(400).json({ message: "Selected area does not exist" });
+      }
+
+      // Auto-fill place from area name if place was not provided or empty
+      if (!place || !place.trim()) {
+        place = areaRows[0].name;
+      }
+    }
+
     const [result] = await connection.query(
       `INSERT INTO chit_customers 
-      (name, phone, place, aadhar, pan_number, door_no, address, state, district, pincode, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (name, phone, area_id, place, aadhar, pan_number, door_no, address, state, district, pincode, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         name,
         phone,
+        parsedAreaId,
         place,
         aadhar,
         pan_number,
@@ -235,7 +280,10 @@ export const createChitCustomer = async (req, res) => {
     );
 
     const [newCustomer] = await connection.query(
-      `SELECT * FROM chit_customers WHERE id = ?`,
+      `SELECT c.*, a.name AS area_name, a.code AS area_code
+       FROM chit_customers c
+       LEFT JOIN areas a ON c.area_id = a.id
+       WHERE c.id = ?`,
       [result.insertId],
     );
 
@@ -259,7 +307,7 @@ export const createChitCustomer = async (req, res) => {
   } catch (err) {
     console.error(`chit customer create error: ${err}`);
     await connection.rollback();
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: err.message });
   } finally {
     connection.release();
   }
@@ -289,6 +337,7 @@ export const updateChitCustomer = async (req, res) => {
     let {
       name,
       phone,
+      area_id,
       place,
       aadhar,
       pan_number,
@@ -298,6 +347,33 @@ export const updateChitCustomer = async (req, res) => {
       district,
       pincode,
     } = req.body;
+
+    let parsedAreaId = oldData.area_id;
+    if (area_id !== undefined) {
+      if (area_id === null || area_id === "") {
+        parsedAreaId = null;
+      } else {
+        parsedAreaId = parseInt(area_id, 10);
+        if (isNaN(parsedAreaId)) {
+          await connection.rollback();
+          return res.status(400).json({ message: "Invalid area_id format" });
+        }
+
+        const [areaRows] = await connection.query(
+          "SELECT id, name FROM areas WHERE id = ?",
+          [parsedAreaId],
+        );
+        if (!areaRows.length) {
+          await connection.rollback();
+          return res.status(400).json({ message: "Selected area does not exist" });
+        }
+
+        // Auto-fill place from area name if place was not given or empty
+        if (place === undefined || place === null || place === "") {
+          place = areaRows[0].name;
+        }
+      }
+    }
 
     // fallback values
     name = name ?? oldData.name;
@@ -315,11 +391,12 @@ export const updateChitCustomer = async (req, res) => {
 
     await connection.query(
       `UPDATE chit_customers
-       SET name=?, phone=?, place=?, aadhar=?, pan_number=?, door_no=?, address=?, state=?, district=?, pincode=?, updated_by=?
+       SET name=?, phone=?, area_id=?, place=?, aadhar=?, pan_number=?, door_no=?, address=?, state=?, district=?, pincode=?, updated_by=?
        WHERE id=?`,
       [
         name,
         phone,
+        parsedAreaId,
         place,
         aadhar,
         pan_number,
@@ -334,7 +411,10 @@ export const updateChitCustomer = async (req, res) => {
     );
 
     const [newRows] = await connection.query(
-      `SELECT * FROM chit_customers WHERE id = ?`,
+      `SELECT c.*, a.name AS area_name, a.code AS area_code
+       FROM chit_customers c
+       LEFT JOIN areas a ON c.area_id = a.id
+       WHERE c.id = ?`,
       [id],
     );
 
@@ -361,7 +441,7 @@ export const updateChitCustomer = async (req, res) => {
   } catch (err) {
     console.error(`chit customer update error: ${err}`);
     await connection.rollback();
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: err.message });
   } finally {
     connection.release();
   }

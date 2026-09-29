@@ -49,6 +49,9 @@ import chitReportRoutes from "./chit/reports/chitReports.routes.js";
 // investment
 import investmentPlanRoutes from "./chit/investmentPlan.routes.js";
 import investmentPlanAmountRoutes from "./chit/investmentPlanAmount.routes.js";
+import investmentSubscriptionRoutes from "./chit/investmentSubscription.routes.js";
+import investmentScheduleRoutes from "./chit/investmentSchedule.routes.js";
+import investmentPaymentRoutes from "./chit/investmentPayment.routes.js";
 
 // terms
 import termsRoutes from "./terms/terms.routes.js";
@@ -120,6 +123,9 @@ router.use("/chit-reports", chitReportRoutes);
 // investment
 router.use("/investment-plans", investmentPlanRoutes);
 router.use("/investment-plan-amounts", investmentPlanAmountRoutes);
+router.use("/investment-subscriptions", investmentSubscriptionRoutes);
+router.use("/investment-schedules", investmentScheduleRoutes);
+router.use("/investment-payments", investmentPaymentRoutes);
 
 router.use("/locations", locationRoutes);
 

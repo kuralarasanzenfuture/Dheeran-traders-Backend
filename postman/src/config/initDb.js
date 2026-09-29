@@ -133,7 +133,7 @@ export const initDatabase = async () => {
 
     console.log("✅ Database & tables initialized successfully");
   } catch (error) {
-    console.error("❌ DB initialization failed:", error.message);
+    console.error("❌ DB initialization failed:", error.message || error.code || error);
     process.exit(1);
   }
 };

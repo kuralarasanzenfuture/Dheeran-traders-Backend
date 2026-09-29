@@ -3,6 +3,7 @@ import { AuditLog } from "../../../../services/audit.service.js";
 import {
   formatDateOnly,
   addDaysToDateStr,
+  getNextOrSameDayDate,
   generateFullInterestSchedule,
 } from "../../../../utils/generateInvestmentSchedule.js";
 
@@ -167,6 +168,15 @@ export const createInvestmentSubscription = async (req, res) => {
       cleanInterestStartDate = lockInEndDate;
     }
 
+    // 🔥 5.1 Align interest_start_date strictly to Plan's Payout Day (e.g. SATURDAY)
+    // If interest start date is not already on plan.payout_day, roll forward to the first occurrence on or after it
+    if (plan.payout_day) {
+      cleanInterestStartDate = getNextOrSameDayDate(
+        cleanInterestStartDate,
+        plan.payout_day
+      );
+    }
+
     // 6. Total Installments validation
     total_installments = Number(total_installments);
     if (isNaN(total_installments) || !Number.isInteger(total_installments) || total_installments <= 0) {
@@ -240,11 +250,12 @@ export const createInvestmentSubscription = async (req, res) => {
 
     const subscriptionId = subResult.insertId;
 
-    // 9. Generate FULL 52-week interest schedule upfront
-    const { schedules, valuesForInsert, interestEndDate } =
+    // 9. Generate FULL 52-week interest schedule upfront aligned to plan.payout_day
+    const { schedules, valuesForInsert, interestStartDate: finalScheduleStartDate, interestEndDate } =
       generateFullInterestSchedule({
         subscriptionId,
         interestStartDate: cleanInterestStartDate,
+        payoutDay: plan.payout_day,
         totalInstallments: total_installments,
         weeklyInterestAmount: finalInterestAmount,
         createdBy: userId,

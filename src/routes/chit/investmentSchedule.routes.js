@@ -5,6 +5,9 @@ import {
   updateScheduleInterestAmount,
   bulkUpdateScheduleStatus,
   getUpcomingDueSchedules,
+  getTodayDueSchedules,
+  getOverdueSchedules,
+  getUpcomingSchedules,
 } from "../../controllers/chit/investment/schedule/investmentSchedule.controller.js";
 import { verifyToken } from "../../middlewares/auth.middleware.js";
 
@@ -12,7 +15,10 @@ const router = express.Router();
 
 router.use(verifyToken);
 
-// Due schedules for weekly processing
+// Due schedules for weekly processing & filtering
+router.get("/due/today", (req, res, next) => getUpcomingDueSchedules(req, res, "today"));
+router.get("/due/overdue", (req, res, next) => getUpcomingDueSchedules(req, res, "overdue"));
+router.get("/due/upcoming", (req, res, next) => getUpcomingDueSchedules(req, res, "upcoming"));
 router.get("/due", getUpcomingDueSchedules);
 
 // Schedules by subscription ID

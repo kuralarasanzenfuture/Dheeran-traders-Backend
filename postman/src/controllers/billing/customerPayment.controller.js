@@ -134,18 +134,210 @@ export const getInvoiceWithPayments = async (req, res) => {
   }
 };
 
-// 📊 GET ALL PAYMENTS (For Daily Sales Report)
+// 📊 GET ALL PAYMENTS (With Filters and Customer Data)
 export const getAllPayments = async (req, res) => {
   try {
-    const [rows] = await db.query(
-      `SELECT *
-       FROM customerBillingPayment
-       ORDER BY payment_date`,
-    );
+    const {
+      customer_id,
+      billing_id,
+      invoice_number,
+      payment_date,
+      from_date,
+      to_date,
+      startDate,
+      endDate,
+      payment_mode,
+      payment_status,
+      created_by,
+      user_id,
+      search,
+      min_amount,
+      max_amount,
+      sort_by = "payment_date",
+      order = "DESC",
+      page,
+      limit,
+    } = req.query;
+
+    let query = `
+      SELECT
+        cbp.id,
+        cbp.billing_id,
+        cbp.payment_date,
+        cbp.cash_amount,
+        cbp.upi_amount,
+        cbp.cheque_amount,
+        cbp.total_amount,
+        cbp.reference_no,
+        cbp.remarks,
+        cbp.created_by,
+        cbp.created_at,
+        cbp.updated_at,
+
+        /* 📄 BILLING DATA */
+        cb.invoice_number,
+        cb.invoice_date,
+        cb.grand_total,
+        cb.balance_due,
+        cb.advance_paid,
+        cb.payment_status,
+        cb.status AS billing_status,
+
+        /* 👤 CUSTOMER DATA */
+        cb.customer_id,
+        cb.customer_name,
+        cb.phone_number,
+        cb.customer_gst_number,
+        c.email AS customer_email,
+        c.address AS customer_address,
+
+        /* 👤 COLLECTOR / STAFF */
+        u.username AS collected_by_username
+
+      FROM customerBillingPayment cbp
+      LEFT JOIN customerBilling cb ON cb.id = cbp.billing_id
+      LEFT JOIN customers c ON c.id = cb.customer_id
+      LEFT JOIN users_roles u ON u.id = cbp.created_by
+      WHERE 1=1
+    `;
+
+    const params = [];
+
+    if (customer_id) {
+      query += ` AND cb.customer_id = ?`;
+      params.push(Number(customer_id));
+    }
+
+    if (billing_id) {
+      query += ` AND cbp.billing_id = ?`;
+      params.push(Number(billing_id));
+    }
+
+    if (invoice_number) {
+      query += ` AND cb.invoice_number LIKE ?`;
+      params.push(`%${invoice_number.trim()}%`);
+    }
+
+    if (payment_date) {
+      query += ` AND cbp.payment_date = ?`;
+      params.push(payment_date);
+    }
+
+    const effectiveFromDate = from_date || startDate;
+    if (effectiveFromDate) {
+      query += ` AND cbp.payment_date >= ?`;
+      params.push(effectiveFromDate);
+    }
+
+    const effectiveToDate = to_date || endDate;
+    if (effectiveToDate) {
+      query += ` AND cbp.payment_date <= ?`;
+      params.push(effectiveToDate);
+    }
+
+    if (payment_mode) {
+      const mode = String(payment_mode).toUpperCase();
+      if (mode === "CASH") {
+        query += ` AND cbp.cash_amount > 0`;
+      } else if (mode === "UPI") {
+        query += ` AND cbp.upi_amount > 0`;
+      } else if (mode === "CHEQUE") {
+        query += ` AND cbp.cheque_amount > 0`;
+      }
+    }
+
+    if (payment_status) {
+      query += ` AND cb.payment_status = ?`;
+      params.push(String(payment_status).toUpperCase());
+    }
+
+    const effectiveUserId = created_by || user_id;
+    if (effectiveUserId) {
+      query += ` AND cbp.created_by = ?`;
+      params.push(Number(effectiveUserId));
+    }
+
+    if (min_amount) {
+      query += ` AND cbp.total_amount >= ?`;
+      params.push(Number(min_amount));
+    }
+
+    if (max_amount) {
+      query += ` AND cbp.total_amount <= ?`;
+      params.push(Number(max_amount));
+    }
+
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      query += ` AND (
+        cb.customer_name LIKE ? OR
+        cb.phone_number LIKE ? OR
+        cb.invoice_number LIKE ? OR
+        cbp.reference_no LIKE ? OR
+        cbp.remarks LIKE ? OR
+        c.email LIKE ? OR
+        c.address LIKE ?
+      )`;
+      params.push(term, term, term, term, term, term, term);
+    }
+
+    // Sorting
+    const allowedSortFields = {
+      id: "cbp.id",
+      payment_date: "cbp.payment_date",
+      total_amount: "cbp.total_amount",
+      created_at: "cbp.created_at",
+      customer_name: "cb.customer_name",
+      invoice_number: "cb.invoice_number",
+    };
+
+    const sortColumn = allowedSortFields[sort_by] || "cbp.payment_date";
+    const sortOrder = String(order).toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+    query += ` ORDER BY ${sortColumn} ${sortOrder}, cbp.id DESC`;
+
+    // Pagination
+    if (page && limit) {
+      const pageNum = Math.max(1, parseInt(page, 10));
+      const limitNum = Math.max(1, parseInt(limit, 10));
+      const offset = (pageNum - 1) * limitNum;
+
+      const whereClause = query.substring(
+        query.indexOf("WHERE 1=1"),
+        query.indexOf("ORDER BY")
+      );
+      const countQuery = `
+        SELECT COUNT(*) AS total
+        FROM customerBillingPayment cbp
+        LEFT JOIN customerBilling cb ON cb.id = cbp.billing_id
+        LEFT JOIN customers c ON c.id = cb.customer_id
+        LEFT JOIN users_roles u ON u.id = cbp.created_by
+        ${whereClause}
+      `;
+
+      const [countRows] = await db.query(countQuery, params);
+      const totalCount = countRows[0]?.total || 0;
+
+      query += ` LIMIT ? OFFSET ?`;
+      params.push(limitNum, offset);
+
+      const [rows] = await db.query(query, params);
+
+      return res.json({
+        success: true,
+        total: totalCount,
+        page: pageNum,
+        limit: limitNum,
+        total_pages: Math.ceil(totalCount / limitNum),
+        data: rows,
+      });
+    }
+
+    const [rows] = await db.query(query, params);
 
     res.json(rows);
   } catch (err) {
-    console.error(err);
+    console.error("getAllPayments error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -186,25 +378,101 @@ export const getMyPayments = async (req, res) => {
     //   [userId]
     // );
 
-    const [rows] = await db.query(
-      `
-  SELECT
-    cbp.*,
+    const {
+      from_date,
+      to_date,
+      startDate,
+      endDate,
+      payment_date,
+      payment_mode,
+      search,
+    } = req.query;
 
-    u.username   
+    let query = `
+      SELECT
+        cbp.id,
+        cbp.billing_id,
+        cbp.payment_date,
+        cbp.cash_amount,
+        cbp.upi_amount,
+        cbp.cheque_amount,
+        cbp.total_amount,
+        cbp.reference_no,
+        cbp.remarks,
+        cbp.created_by,
+        cbp.created_at,
+        cbp.updated_at,
 
-  FROM customerBillingPayment cbp
+        /* 📄 BILLING DATA */
+        cb.invoice_number,
+        cb.invoice_date,
+        cb.grand_total,
+        cb.balance_due,
+        cb.advance_paid,
+        cb.payment_status,
+        cb.status AS billing_status,
 
-  LEFT JOIN users_roles u
-    ON u.id = cbp.created_by
+        /* 👤 CUSTOMER DATA */
+        cb.customer_id,
+        cb.customer_name,
+        cb.phone_number,
+        cb.customer_gst_number,
+        c.email AS customer_email,
+        c.address AS customer_address,
 
-  WHERE cbp.created_by = ?
+        /* 👤 COLLECTOR / STAFF */
+        u.username AS collected_by_username
 
-  ORDER BY cbp.payment_date DESC,
-           cbp.id DESC
-  `,
-      [userId],
-    );
+      FROM customerBillingPayment cbp
+      LEFT JOIN customerBilling cb ON cb.id = cbp.billing_id
+      LEFT JOIN customers c ON c.id = cb.customer_id
+      LEFT JOIN users_roles u ON u.id = cbp.created_by
+      WHERE cbp.created_by = ?
+    `;
+
+    const params = [userId];
+
+    if (payment_date) {
+      query += ` AND cbp.payment_date = ?`;
+      params.push(payment_date);
+    }
+
+    const effectiveFrom = from_date || startDate;
+    if (effectiveFrom) {
+      query += ` AND cbp.payment_date >= ?`;
+      params.push(effectiveFrom);
+    }
+
+    const effectiveTo = to_date || endDate;
+    if (effectiveTo) {
+      query += ` AND cbp.payment_date <= ?`;
+      params.push(effectiveTo);
+    }
+
+    if (payment_mode) {
+      const mode = String(payment_mode).toUpperCase();
+      if (mode === "CASH") query += ` AND cbp.cash_amount > 0`;
+      else if (mode === "UPI") query += ` AND cbp.upi_amount > 0`;
+      else if (mode === "CHEQUE") query += ` AND cbp.cheque_amount > 0`;
+    }
+
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      query += ` AND (
+        cb.customer_name LIKE ? OR
+        cb.phone_number LIKE ? OR
+        cb.invoice_number LIKE ? OR
+        cbp.reference_no LIKE ? OR
+        cbp.remarks LIKE ? OR
+        c.email LIKE ? OR
+        c.address LIKE ?
+      )`;
+      params.push(term, term, term, term, term, term, term);
+    }
+
+    query += ` ORDER BY cbp.payment_date DESC, cbp.id DESC`;
+
+    const [rows] = await db.query(query, params);
 
     res.json(rows);
   } catch (err) {

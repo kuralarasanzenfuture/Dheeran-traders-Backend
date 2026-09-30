@@ -5,9 +5,6 @@ import {
   updateScheduleInterestAmount,
   bulkUpdateScheduleStatus,
   getUpcomingDueSchedules,
-  getTodayDueSchedules,
-  getOverdueSchedules,
-  getUpcomingSchedules,
 } from "../../controllers/chit/investment/schedule/investmentSchedule.controller.js";
 import { verifyToken } from "../../middlewares/auth.middleware.js";
 

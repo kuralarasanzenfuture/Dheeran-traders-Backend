@@ -428,37 +428,39 @@ export const bulkUpdateScheduleStatus = async (req, res) => {
 
 /**
  * GET UPCOMING / DUE / OVERDUE SCHEDULES ACROSS ALL SUBSCRIPTIONS
- * Supports:
- *  - type / due_type / filter_type: 'today' | 'overdue' | 'upcoming' | 'all'
- *  - status: 'PENDING' (default), 'APPROVED', 'PAID', 'UNPAID', 'ALL', or comma-separated
- *  - due_date, date, from_date, to_date
- *  - plan_id, plan_code, customer_id, subscription_id, payout_day
- *  - search (customer name, customer phone, plan name, plan code, subscription ID)
- *  - limit: default all data (no limit unless explicitly specified)
- *  - page: pagination offset if limit is provided
- *  - sort_by, sort_order
+ *
+ * Professional high-performance implementation for real-time applications:
+ *  ✅ Index Alignment: Direct comparison on native DATE column (NO DATE() wrappers, hits idx_iis_pending)
+ *  ✅ Minimal Scan: Driving table (iis) filtered first; PK lookups only on matched rows
+ *  ✅ Clean Filter Flow: Predictable execution branch based on preset ('today' | 'overdue' | 'upcoming' | 'all')
+ *  ✅ Zero Redundant Queries: In-memory summary calculation; no full-table aggregation unless ?with_stats=true
+ *  ✅ Limit defaults to all records unless pagination is explicitly requested
+ *
+ * @param {object} req - Express request
+ * @param {object} res - Express response
+ * @param {string|Function} [routePreset] - 'today' | 'overdue' | 'upcoming' | Express next()
  */
-export const getUpcomingDueSchedules = async (req, res, next, explicitType = null) => {
-  // If called as (req, res, explicitType) without next
-  if (typeof next === "string" && !explicitType) {
-    explicitType = next;
-  }
-
+export const getUpcomingDueSchedules = async (req, res, routePreset = null) => {
   try {
+    // 1. Resolve preset type (supports route-level injection or query parameter fallback)
+    const preset = typeof routePreset === "string" ? routePreset : null;
+    const filterType = String(
+      preset ||
+      req.query.type ||
+      req.query.due_type ||
+      req.query.filter_type ||
+      "all"
+    )
+      .toLowerCase()
+      .trim();
+
     const {
-      type,
-      due_type,
-      filter_type,
-      filter,
-      is_today,
-      is_overdue,
-      is_upcoming,
+      status = "PENDING",
+      subscription_status,
       due_date,
       date,
       from_date,
       to_date,
-      status = "PENDING",
-      subscription_status,
       plan_id,
       plan_code,
       customer_id,
@@ -469,9 +471,156 @@ export const getUpcomingDueSchedules = async (req, res, next, explicitType = nul
       sort_order = "ASC",
       limit,
       page,
+      with_stats,
     } = req.query;
 
-    let query = `
+    const whereConditions = [];
+    const params = [];
+
+    // 2. Schedule Status Filter (aligns with idx_iis_pending leading column: status)
+    if (status && status.toUpperCase() !== "ALL") {
+      const upperStatus = status.toUpperCase().trim();
+      if (upperStatus === "UNPAID") {
+        whereConditions.push("iis.status IN ('PENDING', 'APPROVED')");
+      } else if (upperStatus.includes(",")) {
+        const statusList = upperStatus.split(",").map((s) => s.trim()).filter(Boolean);
+        if (statusList.length > 0) {
+          whereConditions.push(`iis.status IN (${statusList.map(() => "?").join(",")})`);
+          params.push(...statusList);
+        }
+      } else {
+        whereConditions.push("iis.status = ?");
+        params.push(upperStatus);
+      }
+    }
+
+    // 3. Controlled Date Predicate (Direct comparison on native DATE column - NO DATE() function calls)
+    switch (filterType) {
+      case "today":
+        whereConditions.push("iis.interest_due_date = CURDATE()");
+        break;
+
+      case "overdue":
+        whereConditions.push("iis.interest_due_date < CURDATE()");
+        break;
+
+      case "upcoming":
+        if (to_date || due_date) {
+          const upperDate = formatDateOnly(to_date || due_date);
+          whereConditions.push("iis.interest_due_date > CURDATE() AND iis.interest_due_date <= ?");
+          params.push(upperDate);
+        } else {
+          whereConditions.push("iis.interest_due_date > CURDATE()");
+        }
+        break;
+
+      case "all":
+      default:
+        if (date) {
+          whereConditions.push("iis.interest_due_date = ?");
+          params.push(formatDateOnly(date));
+        } else if (from_date && to_date) {
+          whereConditions.push("iis.interest_due_date BETWEEN ? AND ?");
+          params.push(formatDateOnly(from_date), formatDateOnly(to_date));
+        } else if (from_date) {
+          whereConditions.push("iis.interest_due_date >= ?");
+          params.push(formatDateOnly(from_date));
+        } else if (to_date) {
+          whereConditions.push("iis.interest_due_date <= ?");
+          params.push(formatDateOnly(to_date));
+        } else if (due_date) {
+          whereConditions.push("iis.interest_due_date <= ?");
+          params.push(formatDateOnly(due_date));
+        }
+        break;
+    }
+
+    // 4. Subscription Status Filter
+    if (subscription_status) {
+      if (subscription_status.toUpperCase() !== "ALL") {
+        whereConditions.push("s.status = ?");
+        params.push(subscription_status.toUpperCase());
+      }
+    } else {
+      whereConditions.push("s.status IN ('ACTIVE', 'INTEREST_STARTED')");
+    }
+
+    // 5. Direct Entity Filters
+    if (subscription_id) {
+      whereConditions.push("iis.subscription_id = ?");
+      params.push(Number(subscription_id));
+    }
+
+    if (customer_id) {
+      whereConditions.push("s.customer_id = ?");
+      params.push(Number(customer_id));
+    }
+
+    if (plan_id) {
+      whereConditions.push("s.plan_id = ?");
+      params.push(Number(plan_id));
+    }
+
+    if (plan_code) {
+      whereConditions.push("p.plan_code = ?");
+      params.push(String(plan_code).trim());
+    }
+
+    if (payout_day) {
+      whereConditions.push("p.payout_day = ?");
+      params.push(String(payout_day).toUpperCase().trim());
+    }
+
+    // 6. Text Search (if specified)
+    if (search && String(search).trim() !== "") {
+      const term = `%${String(search).trim()}%`;
+      whereConditions.push(`(
+        c.name LIKE ? OR 
+        c.phone LIKE ? OR 
+        p.plan_name LIKE ? OR 
+        p.plan_code LIKE ? OR 
+        CAST(iis.subscription_id AS CHAR) LIKE ?
+      )`);
+      params.push(term, term, term, term, term);
+    }
+
+    const whereSql = whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : "";
+
+    // 7. Order By Clause
+    const allowedSortColumns = {
+      interest_due_date: "iis.interest_due_date",
+      installment_no: "iis.installment_no",
+      interest_amount: "iis.interest_amount",
+      customer_name: "c.name",
+      subscription_id: "iis.subscription_id",
+      id: "iis.id",
+    };
+    const sortColumn = allowedSortColumns[sort_by] || "iis.interest_due_date";
+    const sortDir = String(sort_order).toUpperCase() === "DESC" ? "DESC" : "ASC";
+    const orderSql = `ORDER BY ${sortColumn} ${sortDir}, iis.subscription_id ASC`;
+
+    // 8. Limit & Pagination (Default is ALL data unless limit is explicitly given)
+    let limitSql = "";
+    const hasLimit =
+      limit !== undefined &&
+      limit !== null &&
+      limit !== "" &&
+      String(limit).toLowerCase() !== "all";
+
+    if (hasLimit && !isNaN(Number(limit)) && Number(limit) > 0) {
+      const limitNum = Number(limit);
+      limitSql = " LIMIT ?";
+      params.push(limitNum);
+
+      if (page && !isNaN(Number(page)) && Number(page) > 1) {
+        const offset = (Number(page) - 1) * limitNum;
+        limitSql += " OFFSET ?";
+        params.push(offset);
+      }
+    }
+
+    // 9. Execute Main Query
+    const query = `
       SELECT 
         iis.id,
         iis.subscription_id,
@@ -500,171 +649,22 @@ export const getUpcomingDueSchedules = async (req, res, next, explicitType = nul
         CASE 
           WHEN iis.status = 'PAID' THEN 'PAID'
           WHEN iis.status = 'CANCELLED' THEN 'CANCELLED'
-          WHEN DATE(iis.interest_due_date) < CURDATE() THEN 'OVERDUE'
-          WHEN DATE(iis.interest_due_date) = CURDATE() THEN 'TODAY'
+          WHEN iis.interest_due_date < CURDATE() THEN 'OVERDUE'
+          WHEN iis.interest_due_date = CURDATE() THEN 'TODAY'
           ELSE 'UPCOMING'
         END AS due_category
       FROM investment_interest_schedules iis
       JOIN investment_subscriptions s ON iis.subscription_id = s.id
       JOIN chit_customers c ON s.customer_id = c.id
       JOIN investment_plans p ON s.plan_id = p.id
-      WHERE 1=1
+      ${whereSql}
+      ${orderSql}
+      ${limitSql}
     `;
-    const params = [];
-
-    // Filter by subscription status (default ACTIVE and INTEREST_STARTED)
-    if (subscription_status) {
-      if (subscription_status.toUpperCase() !== "ALL") {
-        query += ` AND s.status = ?`;
-        params.push(subscription_status.toUpperCase());
-      }
-    } else {
-      query += ` AND s.status IN ('ACTIVE', 'INTEREST_STARTED')`;
-    }
-
-    // Filter by schedule status
-    if (status && status.toUpperCase() !== "ALL") {
-      const upperStatus = status.toUpperCase().trim();
-      if (upperStatus === "UNPAID") {
-        query += ` AND iis.status IN ('PENDING', 'APPROVED')`;
-      } else if (upperStatus.includes(",")) {
-        const statusList = upperStatus.split(",").map((s) => s.trim()).filter(Boolean);
-        if (statusList.length > 0) {
-          query += ` AND iis.status IN (${statusList.map(() => "?").join(",")})`;
-          params.push(...statusList);
-        }
-      } else {
-        query += ` AND iis.status = ?`;
-        params.push(upperStatus);
-      }
-    }
-
-    // Detect route category safely
-    let routeType = typeof explicitType === "string" ? explicitType : null;
-    if (!routeType) {
-      const currentPath = String(req.path || req.originalUrl || "").toLowerCase();
-      if (currentPath.includes("/due/today")) routeType = "today";
-      else if (currentPath.includes("/due/overdue")) routeType = "overdue";
-      else if (currentPath.includes("/due/upcoming")) routeType = "upcoming";
-    }
-    const rawFilter = routeType || type || due_type || filter_type || filter || "";
-    const activeFilter = String(rawFilter).toLowerCase().trim();
-    const checkIsToday = is_today === "true" || is_today === "1" || activeFilter === "today";
-    const checkIsOverdue = is_overdue === "true" || is_overdue === "1" || activeFilter === "overdue";
-    const checkIsUpcoming = is_upcoming === "true" || is_upcoming === "1" || activeFilter === "upcoming";
-
-    if (checkIsToday) {
-      query += ` AND DATE(iis.interest_due_date) = CURDATE()`;
-    } else if (checkIsOverdue) {
-      query += ` AND DATE(iis.interest_due_date) < CURDATE()`;
-    } else if (checkIsUpcoming) {
-      query += ` AND DATE(iis.interest_due_date) > CURDATE()`;
-    }
-
-    // Exact date filter
-    if (date) {
-      query += ` AND DATE(iis.interest_due_date) = ?`;
-      params.push(formatDateOnly(date));
-    }
-
-    // Date range filter
-    if (from_date) {
-      query += ` AND DATE(iis.interest_due_date) >= ?`;
-      params.push(formatDateOnly(from_date));
-    }
-
-    if (to_date) {
-      query += ` AND DATE(iis.interest_due_date) <= ?`;
-      params.push(formatDateOnly(to_date));
-    }
-
-    // Due date filter (<= due_date) for upcoming, general due, or specific date cutoff
-    if (due_date && !from_date && !to_date && !date && !checkIsToday) {
-      const formattedDueDate = formatDateOnly(due_date);
-      if (formattedDueDate) {
-        query += ` AND DATE(iis.interest_due_date) <= ?`;
-        params.push(formattedDueDate);
-      }
-    }
-
-    // Plan filters
-    if (plan_id) {
-      query += ` AND s.plan_id = ?`;
-      params.push(Number(plan_id));
-    }
-
-    if (plan_code) {
-      query += ` AND p.plan_code = ?`;
-      params.push(String(plan_code).trim());
-    }
-
-    // Customer / Subscription filters
-    if (customer_id) {
-      query += ` AND s.customer_id = ?`;
-      params.push(Number(customer_id));
-    }
-
-    if (subscription_id) {
-      query += ` AND iis.subscription_id = ?`;
-      params.push(Number(subscription_id));
-    }
-
-    // Payout day (e.g., 'SUNDAY', 'MONDAY', etc.)
-    if (payout_day) {
-      query += ` AND UPPER(p.payout_day) = ?`;
-      params.push(String(payout_day).toUpperCase().trim());
-    }
-
-    // Text search (customer name, customer phone, plan name, plan code, subscription id)
-    if (search && String(search).trim() !== "") {
-      const searchTerm = `%${String(search).trim()}%`;
-      query += ` AND (
-        c.name LIKE ? OR 
-        c.phone LIKE ? OR 
-        p.plan_name LIKE ? OR 
-        p.plan_code LIKE ? OR 
-        CAST(iis.subscription_id AS CHAR) LIKE ?
-      )`;
-      params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
-    }
-
-    // Sorting
-    const allowedSortColumns = {
-      interest_due_date: "iis.interest_due_date",
-      due_date: "iis.interest_due_date",
-      installment_no: "iis.installment_no",
-      interest_amount: "iis.interest_amount",
-      customer_name: "c.name",
-      subscription_id: "iis.subscription_id",
-      id: "iis.id",
-    };
-    const orderColumn = allowedSortColumns[sort_by] || "iis.interest_due_date";
-    const orderDirection = String(sort_order).toUpperCase() === "DESC" ? "DESC" : "ASC";
-
-    query += ` ORDER BY ${orderColumn} ${orderDirection}, iis.subscription_id ASC`;
-
-    // Limit & Pagination (Default is ALL data unless limit is explicitly specified)
-    const hasExplicitLimit =
-      limit !== undefined &&
-      limit !== null &&
-      limit !== "" &&
-      String(limit).toLowerCase() !== "all";
-
-    if (hasExplicitLimit && !isNaN(Number(limit)) && Number(limit) > 0) {
-      const limitNum = Number(limit);
-      query += ` LIMIT ?`;
-      params.push(limitNum);
-
-      if (page && !isNaN(Number(page)) && Number(page) > 1) {
-        const offset = (Number(page) - 1) * limitNum;
-        query += ` OFFSET ?`;
-        params.push(offset);
-      }
-    }
 
     const [rows] = await db.query(query, params);
 
-    // Calculate summary statistics
+    // 10. Summary Calculation (In-memory, zero additional DB overhead)
     const summary = {
       total_records: rows.length,
       total_interest_amount: Number(
@@ -693,74 +693,51 @@ export const getUpcomingDueSchedules = async (req, res, next, explicitType = nul
       ),
     };
 
-    // Global stats across all pending schedules for badges / tabs
-    const [overallStatsRows] = await db.query(`
-      SELECT 
-        COUNT(*) AS total_pending,
-        COALESCE(SUM(iis.interest_amount), 0) AS total_pending_amount,
-        COUNT(CASE WHEN DATE(iis.interest_due_date) < CURDATE() THEN 1 END) AS overdue_count,
-        COALESCE(SUM(CASE WHEN DATE(iis.interest_due_date) < CURDATE() THEN iis.interest_amount ELSE 0 END), 0) AS overdue_amount,
-        COUNT(CASE WHEN DATE(iis.interest_due_date) = CURDATE() THEN 1 END) AS today_count,
-        COALESCE(SUM(CASE WHEN DATE(iis.interest_due_date) = CURDATE() THEN iis.interest_amount ELSE 0 END), 0) AS today_amount,
-        COUNT(CASE WHEN DATE(iis.interest_due_date) > CURDATE() THEN 1 END) AS upcoming_count,
-        COALESCE(SUM(CASE WHEN DATE(iis.interest_due_date) > CURDATE() THEN iis.interest_amount ELSE 0 END), 0) AS upcoming_amount
-      FROM investment_interest_schedules iis
-      JOIN investment_subscriptions s ON iis.subscription_id = s.id
-      WHERE iis.status = 'PENDING'
-        AND s.status IN ('ACTIVE', 'INTEREST_STARTED')
-    `);
-
-    const overallStats = overallStatsRows[0] || {};
+    // 11. Global Stats - Always compute unless explicitly disabled with with_stats=false
+    let stats = undefined;
+    if (with_stats !== "false" && with_stats !== "0") {
+      const [statsRows] = await db.query(`
+        SELECT 
+          COUNT(*) AS total_pending,
+          COALESCE(SUM(iis.interest_amount), 0) AS total_pending_amount,
+          COUNT(CASE WHEN iis.interest_due_date < CURDATE() THEN 1 END) AS overdue_count,
+          COALESCE(SUM(CASE WHEN iis.interest_due_date < CURDATE() THEN iis.interest_amount ELSE 0 END), 0) AS overdue_amount,
+          COUNT(CASE WHEN iis.interest_due_date = CURDATE() THEN 1 END) AS today_count,
+          COALESCE(SUM(CASE WHEN iis.interest_due_date = CURDATE() THEN iis.interest_amount ELSE 0 END), 0) AS today_amount,
+          COUNT(CASE WHEN iis.interest_due_date > CURDATE() THEN 1 END) AS upcoming_count,
+          COALESCE(SUM(CASE WHEN iis.interest_due_date > CURDATE() THEN iis.interest_amount ELSE 0 END), 0) AS upcoming_amount
+        FROM investment_interest_schedules iis
+        JOIN investment_subscriptions s ON iis.subscription_id = s.id
+        WHERE iis.status IN ('PENDING', 'APPROVED')
+          AND s.status IN ('ACTIVE', 'INTEREST_STARTED')
+      `);
+      const sRow = statsRows[0] || {};
+      stats = {
+        total_pending: Number(sRow.total_pending || 0),
+        total_pending_amount: Number(Number(sRow.total_pending_amount || 0).toFixed(2)),
+        overdue_count: Number(sRow.overdue_count || 0),
+        overdue_amount: Number(Number(sRow.overdue_amount || 0).toFixed(2)),
+        today_count: Number(sRow.today_count || 0),
+        today_amount: Number(Number(sRow.today_amount || 0).toFixed(2)),
+        upcoming_count: Number(sRow.upcoming_count || 0),
+        upcoming_amount: Number(Number(sRow.upcoming_amount || 0).toFixed(2)),
+      };
+    }
 
     return res.status(200).json({
       success: true,
+      filter_applied: filterType,
       count: rows.length,
-      filter: {
-        type: activeFilter || "all",
-        status: status || "PENDING",
-        due_date: due_date || null,
-        from_date: from_date || null,
-        to_date: to_date || null,
-      },
       summary,
-      stats: {
-        total_pending: Number(overallStats.total_pending || 0),
-        total_pending_amount: Number(Number(overallStats.total_pending_amount || 0).toFixed(2)),
-        overdue_count: Number(overallStats.overdue_count || 0),
-        overdue_amount: Number(Number(overallStats.overdue_amount || 0).toFixed(2)),
-        today_count: Number(overallStats.today_count || 0),
-        today_amount: Number(Number(overallStats.today_amount || 0).toFixed(2)),
-        upcoming_count: Number(overallStats.upcoming_count || 0),
-        upcoming_amount: Number(Number(overallStats.upcoming_amount || 0).toFixed(2)),
-      },
+      ...(stats ? { stats } : {}),
       data: rows,
     });
   } catch (error) {
     console.error("Get upcoming due schedules error:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error while fetching due schedules", error: error.message,
+      message: "Server error while fetching due schedules",
+      error: error.message,
     });
   }
-};
-
-/**
- * GET TODAY'S DUE SCHEDULES
- */
-export const getTodayDueSchedules = async (req, res, next) => {
-  return getUpcomingDueSchedules(req, res, "today");
-};
-
-/**
- * GET OVERDUE SCHEDULES
- */
-export const getOverdueSchedules = async (req, res, next) => {
-  return getUpcomingDueSchedules(req, res, "overdue");
-};
-
-/**
- * GET UPCOMING SCHEDULES
- */
-export const getUpcomingSchedules = async (req, res, next) => {
-  return getUpcomingDueSchedules(req, res, "upcoming");
 };

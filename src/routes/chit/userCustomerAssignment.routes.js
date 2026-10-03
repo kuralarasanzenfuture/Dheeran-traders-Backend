@@ -3,7 +3,7 @@ import {
   assignUserToCustomer,
   getMyCustomers,
   removeUserFromCustomer,
-  updateAssignment
+  updateAssignment,
 } from "../../controllers/chit/userCustomerAssignment.controller.js";
 
 import { verifyToken } from "../../middlewares/auth.middleware.js";
@@ -20,7 +20,6 @@ router.get("/my-customers", getMyCustomers);
 
 // UPDATE
 router.put("/:id", updateAssignment);
-
 
 // 🔐 Remove assignment
 // router.delete("/remove", removeUserFromCustomer);

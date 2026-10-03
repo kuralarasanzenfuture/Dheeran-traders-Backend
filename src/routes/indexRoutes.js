@@ -53,6 +53,13 @@ import investmentSubscriptionRoutes from "./chit/investmentSubscription.routes.j
 import investmentScheduleRoutes from "./chit/investmentSchedule.routes.js";
 import investmentPaymentRoutes from "./chit/investmentPayment.routes.js";
 
+// monthly investment
+import monthlyInvestmentPlanRoutes from "./chit/monthlyInvestmentPlan.routes.js";
+import monthlyInvestmentPlanAmountRoutes from "./chit/monthlyInvestmentPlanAmount.routes.js";
+import monthlyInvestmentSubscriptionRoutes from "./chit/monthlyInvestmentSubscription.routes.js";
+import monthlyInvestmentScheduleRoutes from "./chit/monthlyInvestmentSchedule.routes.js";
+import monthlyInvestmentPaymentRoutes from "./chit/monthlyInvestmentPayment.routes.js";
+
 // terms
 import termsRoutes from "./terms/terms.routes.js";
 import auditRoutes from "./audits/auditsLog.routes.js";
@@ -126,6 +133,13 @@ router.use("/investment-plan-amounts", investmentPlanAmountRoutes);
 router.use("/investment-subscriptions", investmentSubscriptionRoutes);
 router.use("/investment-schedules", investmentScheduleRoutes);
 router.use("/investment-payments", investmentPaymentRoutes);
+
+// monthly investment
+router.use("/monthly-investment-plans", monthlyInvestmentPlanRoutes);
+router.use("/monthly-investment-plan-amounts", monthlyInvestmentPlanAmountRoutes);
+router.use("/monthly-investment-subscriptions", monthlyInvestmentSubscriptionRoutes);
+router.use("/monthly-investment-schedules", monthlyInvestmentScheduleRoutes);
+router.use("/monthly-investment-payments", monthlyInvestmentPaymentRoutes);
 
 router.use("/locations", locationRoutes);
 

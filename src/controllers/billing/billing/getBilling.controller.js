@@ -767,6 +767,175 @@ export const getAssignedPendingBills = async (req, res) => {
   }
 };
 
+export const getAssignedAreaPendingBills = async (req, res) => {
+  try {
+    const user_id = req.user?.id;
+    if (!user_id) throw new Error("Unauthorized");
+
+    let role = req.user?.role;
+    if (!role) {
+      const [roleRows] = await db.query(
+        `SELECT r.role_name 
+         FROM users_roles u
+         JOIN role_based r ON r.id = u.role_id
+         WHERE u.id = ?`,
+        [user_id]
+      );
+      role = roleRows[0]?.role_name;
+    }
+    const isAdmin = String(role).toUpperCase() === "ADMIN";
+
+    const {
+      area_id,
+      search,
+      from,
+      to,
+      startDate,
+      endDate,
+      sort_by = "invoice_date",
+      sort_order = "ASC",
+    } = req.query;
+
+    let query = `
+      SELECT 
+        cb.id AS billing_id,
+        cb.invoice_number,
+        cb.invoice_date,
+
+        cb.customer_id,
+        c.first_name,
+        c.last_name,
+        TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))) AS customer_name,
+        c.phone,
+        c.email,
+        c.place,
+        c.district,
+        c.state,
+        c.address,
+        c.latitude,
+        c.longitude,
+        c.google_maps_url,
+        c.location_updated_at,
+
+        a.id AS area_id,
+        a.name AS area_name,
+        a.code AS area_code,
+        a.status AS area_status,
+
+        uaa.id AS area_assignment_id,
+        uaa.user_id AS assigned_user_id,
+
+        CASE 
+          WHEN EXISTS (
+            SELECT 1 FROM user_bill_customer_assignments ubca 
+            WHERE ubca.customer_id = c.id 
+              AND ubca.user_id = uaa.user_id 
+              AND ubca.is_active = TRUE
+          ) THEN TRUE 
+          ELSE FALSE 
+        END AS is_directly_assigned,
+
+        (
+          SELECT ubca.id FROM user_bill_customer_assignments ubca 
+          WHERE ubca.customer_id = c.id 
+            AND ubca.user_id = uaa.user_id 
+            AND ubca.is_active = TRUE 
+          LIMIT 1
+        ) AS direct_assignment_id,
+
+        cb.grand_total,
+        cb.advance_paid,
+        cb.balance_due,
+        cb.payment_status,
+        cb.status AS bill_status,
+
+        cb.created_at
+
+      FROM customerBilling cb
+      JOIN customers c ON c.id = cb.customer_id
+      JOIN areas a ON c.area_id = a.id
+      JOIN user_area_assignments uaa ON uaa.area_id = a.id
+    `;
+
+    let params = [];
+    const conditions = [
+      "c.area_id IS NOT NULL",
+      "uaa.is_active = TRUE",
+      "cb.balance_due > 0",
+      "cb.status = 'ACTIVE'",
+    ];
+
+    // User assignment to area
+    const targetUserId = isAdmin && req.query.user_id ? parseInt(req.query.user_id, 10) : (!isAdmin ? user_id : null);
+    if (targetUserId) {
+      conditions.push("uaa.user_id = ?");
+      params.push(targetUserId);
+    }
+
+    // Specific area filter
+    if (area_id) {
+      conditions.push("c.area_id = ?");
+      params.push(parseInt(area_id, 10));
+    }
+
+    // Date range filter
+    const fromDate = from || startDate;
+    const toDate = to || endDate;
+    if (fromDate && toDate) {
+      conditions.push("cb.invoice_date BETWEEN ? AND ?");
+      params.push(fromDate, toDate);
+    } else if (fromDate) {
+      conditions.push("cb.invoice_date >= ?");
+      params.push(fromDate);
+    } else if (toDate) {
+      conditions.push("cb.invoice_date <= ?");
+      params.push(toDate);
+    }
+
+    // Search filter
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      conditions.push(
+        "(c.first_name LIKE ? OR c.last_name LIKE ? OR c.phone LIKE ? OR c.place LIKE ? OR cb.invoice_number LIKE ? OR a.name LIKE ?)"
+      );
+      params.push(term, term, term, term, term, term);
+    }
+
+    query += ` WHERE ${conditions.join(" AND ")}`;
+    query += ` GROUP BY cb.id, c.id, a.id, uaa.user_id`;
+
+    // Sorting
+    const allowedSortFields = {
+      invoice_date: "cb.invoice_date",
+      invoice_number: "cb.invoice_number",
+      created_at: "cb.created_at",
+      balance_due: "cb.balance_due",
+      grand_total: "cb.grand_total",
+      customer_name: "c.first_name",
+      area_name: "a.name",
+    };
+    const sortCol = allowedSortFields[sort_by] || "cb.invoice_date";
+    const sortDir = String(sort_order).toUpperCase() === "DESC" ? "DESC" : "ASC";
+    query += ` ORDER BY ${sortCol} ${sortDir}`;
+
+    const [rows] = await db.query(query, params);
+
+    const totalPendingAmount = rows.reduce((sum, r) => sum + Number(r.balance_due || 0), 0);
+
+    return res.json({
+      success: true,
+      count: rows.length,
+      total_pending_amount: totalPendingAmount,
+      data: rows,
+    });
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
 export const getUserPaymentCollectionReport = async (req, res) => {
   try {
     const { from, to } = req.query;

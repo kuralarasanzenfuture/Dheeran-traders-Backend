@@ -39,6 +39,7 @@ import { createBillingAreasTable } from "./database/billing/areas.tables.js";
 import { createUserAreaAssignmentsTable } from "./database/users/user_area_assignments.tables.js";
 import { createTermsAndConditionsTable } from "./database/termsandconditions/termsAndConditions.tables.js";
 import { createInvestmentTables } from "./database/chit/investment.tables.js";
+import { monthlyInvestmentTables } from "./database/chit/monthly-investment.tables.js";
 
 export const initDatabase = async () => {
   try {
@@ -126,6 +127,7 @@ export const initDatabase = async () => {
     await createCollectionPaymentTables(db);
 
     await createInvestmentTables(db);
+    await monthlyInvestmentTables(db);
 
     await createLocationTable(db);
 

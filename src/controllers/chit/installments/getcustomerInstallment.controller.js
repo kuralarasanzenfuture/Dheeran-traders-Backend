@@ -1,4 +1,21 @@
 import db from "../../../config/db.js";
+import {
+  getAreaWiseAssignedCollections,
+  getAreaDueList,
+  getMyAssignedAreasCollectionsSummary,
+  getAreaWiseDueListTree,
+  getCollectorAssignmentScope,
+  buildInstallmentQueryFilters,
+} from "./areaAssignedInstallment.controller.js";
+
+export {
+  getAreaWiseAssignedCollections,
+  getAreaDueList,
+  getMyAssignedAreasCollectionsSummary,
+  getAreaWiseDueListTree,
+  getCollectorAssignmentScope,
+  buildInstallmentQueryFilters,
+};
 
 const admin = "ADMIN";
 
@@ -677,35 +694,41 @@ export const getCollectorDueList = async (req, res) => {
     const user_id = req.user?.id;
     if (!user_id) throw new Error("Unauthorized");
 
-    const { status = "all" } = req.query;
+    const {
+      status = "all",
+      type = "all",
+      date,
+      from,
+      to,
+      search,
+      area_id,
+      area_ids,
+      batch_id,
+      plan_id,
+      user_id: targetUserIdParam,
+      assignment_type = "all",
+      page,
+      limit,
+    } = req.query;
 
-    // 🔹 Get role
-    const [roleRow] = await db.query(
-      `SELECT r.role_name 
-       FROM users_roles u
-       JOIN role_based r ON r.id = u.role_id
-       WHERE u.id = ?`,
-      [user_id]
-    );
+    // 🔹 Scope: Admin sees all (or filtered collector), Collector sees both directly assigned & area-assigned customers
+    const { isAdmin, effectiveUserId, condition, params: scopeParams } =
+      await getCollectorAssignmentScope(db, user_id, targetUserIdParam, assignment_type);
 
-    const role = roleRow[0]?.role_name;
+    // 🔹 Build filters for area, search, date range, etc.
+    const { filterSql, filterParams } = buildInstallmentQueryFilters({
+      area_id,
+      area_ids,
+      batch_id,
+      plan_id,
+      date,
+      from,
+      to,
+      type,
+      search,
+    });
 
-    let condition = "";
-    let params = [];
-
-    // 🔹 Restrict collector
-    if (role !== "ADMIN") {
-      condition += `
-        AND s.customer_id IN (
-          SELECT customer_id 
-          FROM user_chit_customer_assignments
-          WHERE user_id = ? AND is_active = TRUE
-        )
-      `;
-      params.push(user_id);
-    }
-
-    // 🔥 MAIN QUERY
+    // 🔥 MAIN QUERY (WITH AREA & PAYMENT DETAILS)
     let baseQuery = `
       SELECT
         i.id AS installment_id,
@@ -715,20 +738,18 @@ export const getCollectorDueList = async (req, res) => {
 
         i.installment_amount,
 
-        IFNULL(p.total_paid,0) AS paid_amount,
+        IFNULL(p.total_paid, 0) AS paid_amount,
+        GREATEST(0, (i.installment_amount - IFNULL(p.total_paid, 0))) AS pending_amount,
 
-        (i.installment_amount - IFNULL(p.total_paid,0)) AS pending_amount,
-
-        IFNULL(p.total_upi,0) AS upi_amount,
-        IFNULL(p.total_cash,0) AS cash_amount,
-        IFNULL(p.total_cheque,0) AS cheque_amount,
+        IFNULL(p.total_upi, 0) AS upi_amount,
+        IFNULL(p.total_cash, 0) AS cash_amount,
+        IFNULL(p.total_cheque, 0) AS cheque_amount,
 
         IFNULL(p.upi_references, '') AS upi_references,
-
-        IFNULL(p.today_collection,0) AS today_collection,
+        IFNULL(p.today_collection, 0) AS today_collection,
 
         CASE 
-          WHEN IFNULL(p.total_paid,0) >= i.installment_amount THEN 'PAID'
+          WHEN IFNULL(p.total_paid, 0) >= i.installment_amount THEN 'PAID'
           WHEN DATE(i.due_date) < CURDATE() THEN 'OVERDUE'
           ELSE 'PENDING'
         END AS status,
@@ -736,14 +757,27 @@ export const getCollectorDueList = async (req, res) => {
         c.id AS customer_id,
         c.name AS customer_name,
         c.phone,
+        c.place,
+        c.door_no,
+        c.address,
+        c.state,
+        c.district,
+        c.pincode,
 
+        COALESCE(a.id, 0) AS area_id,
+        COALESCE(a.name, 'Unassigned Area') AS area_name,
+        COALESCE(a.code, 'NONE') AS area_code,
+
+        b.id AS batch_id,
         b.batch_name,
+        p2.id AS plan_id,
         p2.plan_name
 
       FROM chit_customer_installments i
 
       JOIN chit_customer_subscriptions s ON s.id = i.subscription_id
       JOIN chit_customers c ON c.id = s.customer_id
+      LEFT JOIN areas a ON a.id = c.area_id
       JOIN batches b ON b.id = s.batch_id
       JOIN plans p2 ON p2.id = s.plan_id
 
@@ -751,16 +785,11 @@ export const getCollectorDueList = async (req, res) => {
       LEFT JOIN (
         SELECT 
           pa.installment_id,
-
           SUM(pa.allocated_amount) AS total_paid,
-
-          SUM((cp.pay_upi * pa.allocated_amount) / NULLIF(cp.total_amount,0)) AS total_upi,
-          SUM((cp.pay_cash * pa.allocated_amount) / NULLIF(cp.total_amount,0)) AS total_cash,
-          SUM((cp.pay_cheque * pa.allocated_amount) / NULLIF(cp.total_amount,0)) AS total_cheque,
-
+          SUM((cp.pay_upi * pa.allocated_amount) / NULLIF(cp.total_amount, 0)) AS total_upi,
+          SUM((cp.pay_cash * pa.allocated_amount) / NULLIF(cp.total_amount, 0)) AS total_cash,
+          SUM((cp.pay_cheque * pa.allocated_amount) / NULLIF(cp.total_amount, 0)) AS total_cheque,
           GROUP_CONCAT(DISTINCT cp.pay_upi_reference) AS upi_references,
-
-          -- 🔥 TODAY COLLECTION
           SUM(
             CASE 
               WHEN DATE(cp.payment_datetime) = CURDATE() 
@@ -768,58 +797,62 @@ export const getCollectorDueList = async (req, res) => {
               ELSE 0 
             END
           ) AS today_collection
-
         FROM chit_payment_allocations pa
         JOIN chit_collections_payments cp 
           ON cp.id = pa.payment_id
-
         GROUP BY pa.installment_id
       ) p ON p.installment_id = i.id
 
       WHERE 1=1
       ${condition}
+      ${filterSql}
+      GROUP BY i.id, s.id, c.id, a.id, b.id, p2.id
     `;
 
+    const allParams = [...scopeParams, ...filterParams];
+
     // 🔹 Status filter
-    if (status !== "all") {
-      baseQuery += ` HAVING status = ? `;
-      params.push(status.toUpperCase());
+    const normalizedStatus = String(status).toUpperCase();
+    if (normalizedStatus === "PAID") {
+      baseQuery += ` HAVING status = 'PAID' `;
+    } else if (normalizedStatus === "PENDING") {
+      baseQuery += ` HAVING status = 'PENDING' `;
+    } else if (normalizedStatus === "OVERDUE") {
+      baseQuery += ` HAVING status = 'OVERDUE' `;
+    } else if (normalizedStatus === "TODAY") {
+      baseQuery += ` HAVING DATE(due_date) = CURDATE() AND status != 'PAID' `;
     }
 
     baseQuery += ` ORDER BY i.due_date ASC`;
 
-    const [rows] = await db.query(baseQuery, params);
+    const [rows] = await db.query(baseQuery, allParams);
 
     // 🔹 Format
-    const formattedRows = rows.map(row => ({
+    const formattedRows = rows.map((row) => ({
       ...row,
       upi_references: row.upi_references
         ? row.upi_references.split(",")
-        : []
+        : [],
     }));
 
     // 🔥 SUMMARY CALCULATION
     const summary = (() => {
       let total_amount = 0;
       let total_paid = 0;
-
       let pending_amount = 0;
       let overdue_amount = 0;
-
       let overdue_paid = 0;
       let overdue_pending = 0;
-
       let today_collection = 0;
 
-      formattedRows.forEach(r => {
-        const installmentAmount = Number(r.installment_amount);
-        const paid = Number(r.paid_amount);
-        const pending = Number(r.pending_amount);
+      formattedRows.forEach((r) => {
+        const installmentAmount = Number(r.installment_amount || 0);
+        const paid = Number(r.paid_amount || 0);
+        const pending = Number(r.pending_amount || 0);
         const todayPaid = Number(r.today_collection || 0);
 
         total_amount += installmentAmount;
         total_paid += paid;
-
         today_collection += todayPaid;
 
         if (r.status === "PENDING") {
@@ -828,7 +861,6 @@ export const getCollectorDueList = async (req, res) => {
 
         if (r.status === "OVERDUE") {
           overdue_amount += pending;
-
           overdue_paid += paid;
           overdue_pending += pending;
         }
@@ -836,53 +868,93 @@ export const getCollectorDueList = async (req, res) => {
 
       return {
         total: formattedRows.length,
+        paid_count: formattedRows.filter((r) => r.status === "PAID").length,
+        pending_count: formattedRows.filter((r) => r.status === "PENDING").length,
+        overdue_count: formattedRows.filter((r) => r.status === "OVERDUE").length,
 
-        paid_count: formattedRows.filter(r => r.status === "PAID").length,
-        pending_count: formattedRows.filter(r => r.status === "PENDING").length,
-        overdue_count: formattedRows.filter(r => r.status === "OVERDUE").length,
+        total_amount: Number(total_amount.toFixed(2)),
+        total_paid: Number(total_paid.toFixed(2)),
+        pending_amount: Number(pending_amount.toFixed(2)),
+        overdue_amount: Number(overdue_amount.toFixed(2)),
 
-        total_amount,
-        total_paid,
+        today_collection: Number(today_collection.toFixed(2)),
+        overdue_paid: Number(overdue_paid.toFixed(2)),
+        overdue_pending: Number(overdue_pending.toFixed(2)),
 
-        pending_amount,
-        overdue_amount,
+        overdue_percentage:
+          total_amount > 0
+            ? Number(((overdue_amount / total_amount) * 100).toFixed(2))
+            : 0,
 
-        // 🔥 NEW METRICS
-        today_collection,
-        overdue_paid,
-        overdue_pending,
+        recovery_rate:
+          total_amount > 0
+            ? Number(((total_paid / total_amount) * 100).toFixed(2))
+            : 0,
 
-        overdue_percentage: total_amount > 0
-          ? ((overdue_amount / total_amount) * 100).toFixed(2)
-          : 0,
-
-        recovery_rate: total_amount > 0
-          ? ((total_paid / total_amount) * 100).toFixed(2)
-          : 0,
-
-        total_upi: formattedRows.reduce((s, r) => s + Number(r.upi_amount), 0),
-        total_cash: formattedRows.reduce((s, r) => s + Number(r.cash_amount), 0),
-        total_cheque: formattedRows.reduce((s, r) => s + Number(r.cheque_amount), 0)
+        total_upi: Number(
+          formattedRows
+            .reduce((s, r) => s + Number(r.upi_amount || 0), 0)
+            .toFixed(2)
+        ),
+        total_cash: Number(
+          formattedRows
+            .reduce((s, r) => s + Number(r.cash_amount || 0), 0)
+            .toFixed(2)
+        ),
+        total_cheque: Number(
+          formattedRows
+            .reduce((s, r) => s + Number(r.cheque_amount || 0), 0)
+            .toFixed(2)
+        ),
       };
     })();
+
+    // 🔹 Optional pagination if limit query provided
+    let responseData = formattedRows;
+    let pagination = null;
+
+    if (limit && String(limit).toLowerCase() !== "all") {
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const pageLimit = Math.max(1, Math.min(200, parseInt(limit, 10) || 20));
+      const totalPages = Math.ceil(formattedRows.length / pageLimit) || 1;
+      const offset = (pageNum - 1) * pageLimit;
+
+      responseData = formattedRows.slice(offset, offset + pageLimit);
+      pagination = {
+        total_records: formattedRows.length,
+        current_page: pageNum,
+        limit: pageLimit,
+        total_pages: totalPages,
+        has_next_page: pageNum < totalPages,
+        has_prev_page: pageNum > 1,
+      };
+    }
 
     return res.json({
       success: true,
       filter: status,
+      filters_applied: {
+        status,
+        type,
+        date: date || null,
+        from: from || null,
+        to: to || null,
+        search: search || null,
+        area_id: area_id ? parseInt(area_id, 10) : null,
+        user_id: effectiveUserId,
+      },
       summary,
-      data: formattedRows
+      ...(pagination && { pagination }),
+      data: responseData,
     });
-
   } catch (err) {
     console.error("Collector Due List Error:", err);
-
     return res.status(500).json({
       success: false,
-      message: err.message
+      message: err.message,
     });
   }
 };
-
 
 // export const getCollectorDueListTree = async (req, res) => {
 //   try {
@@ -2425,35 +2497,41 @@ export const getCollectorDueListTree = async (req, res) => {
     const user_id = req.user?.id;
     if (!user_id) throw new Error("Unauthorized");
 
-    const { status = "all" } = req.query;
+    const {
+      status = "all",
+      area_id,
+      area_ids,
+      batch_id,
+      plan_id,
+      date,
+      from,
+      to,
+      type,
+      search,
+      user_id: targetUserIdParam,
+      assignment_type = "all",
+    } = req.query;
 
-    // 🔹 Role
-    const [roleRow] = await db.query(
-      `SELECT r.role_name 
-       FROM users_roles u
-       JOIN role_based r ON r.id = u.role_id
-       WHERE u.id = ?`,
-      [user_id]
-    );
+    // 🔹 Scope
+    const { isAdmin, effectiveUserId, condition, params: scopeParams } =
+      await getCollectorAssignmentScope(db, user_id, targetUserIdParam, assignment_type);
 
-    const role = roleRow[0]?.role_name;
+    // 🔹 Filters
+    const { filterSql, filterParams } = buildInstallmentQueryFilters({
+      area_id,
+      area_ids,
+      batch_id,
+      plan_id,
+      date,
+      from,
+      to,
+      type,
+      search,
+    });
 
-    let condition = "";
-    let params = [];
-
-    if (role !== "ADMIN") {
-      condition += `
-        AND s.customer_id IN (
-          SELECT customer_id 
-          FROM user_chit_customer_assignments
-          WHERE user_id = ? AND is_active = TRUE
-        )
-      `;
-      params.push(user_id);
-    }
-
-    // 🔥 RAW QUERY (optimized)
-    const [rows] = await db.query(`
+    // 🔥 RAW QUERY (optimized with areas)
+    const [rows] = await db.query(
+      `
       SELECT
         i.id AS installment_id,
         i.subscription_id,
@@ -2464,7 +2542,6 @@ export const getCollectorDueListTree = async (req, res) => {
         c.id AS customer_id,
         c.name AS customer_name,
         c.phone,
-        c.phone,
         c.place,
         c.aadhar,
         c.pan_number,
@@ -2474,6 +2551,9 @@ export const getCollectorDueListTree = async (req, res) => {
         c.district,
         c.pincode,
 
+        COALESCE(a.id, 0) AS area_id,
+        COALESCE(a.name, 'Unassigned Area') AS area_name,
+        COALESCE(a.code, 'NONE') AS area_code,
 
         b.batch_name,
         p2.plan_name,
@@ -2491,6 +2571,7 @@ export const getCollectorDueListTree = async (req, res) => {
       FROM chit_customer_installments i
       JOIN chit_customer_subscriptions s ON s.id = i.subscription_id
       JOIN chit_customers c ON c.id = s.customer_id
+      LEFT JOIN areas a ON a.id = c.area_id
       JOIN batches b ON b.id = s.batch_id
       JOIN plans p2 ON p2.id = s.plan_id
 
@@ -2502,9 +2583,12 @@ export const getCollectorDueListTree = async (req, res) => {
 
       WHERE 1=1
       ${condition}
+      ${filterSql}
 
       ORDER BY c.id, i.subscription_id, i.due_date, cp.payment_datetime
-    `, params);
+    `,
+      [...scopeParams, ...filterParams]
+    );
 
     // 🔥 FAST MAPS
     const customers = new Map();
@@ -2516,7 +2600,7 @@ export const getCollectorDueListTree = async (req, res) => {
       overdue_amount: 0,
       overdue_paid: 0,
       overdue_pending: 0,
-      today_collection: 0
+      today_collection: 0,
     };
 
     const today = new Date().toISOString().slice(0, 10);
@@ -2541,6 +2625,10 @@ export const getCollectorDueListTree = async (req, res) => {
           district: row.district,
           pincode: row.pincode,
 
+          area_id: row.area_id,
+          area_name: row.area_name,
+          area_code: row.area_code,
+
           summary: {
             total_subscriptions: 0,
             total_installments: 0,
@@ -2553,10 +2641,10 @@ export const getCollectorDueListTree = async (req, res) => {
             total_upi: 0,
             total_cash: 0,
             total_cheque: 0,
-            today_collection: 0
+            today_collection: 0,
           },
 
-          subscriptions: new Map()
+          subscriptions: new Map(),
         });
       }
 
@@ -2568,172 +2656,196 @@ export const getCollectorDueListTree = async (req, res) => {
           subscription_id: subId,
           batch_name: row.batch_name,
           plan_name: row.plan_name,
-
           summary: {
-            total_installments: 0,
+            total_amount: 0,
+            total_paid: 0,
+            total_pending: 0,
             paid: 0,
             pending: 0,
             overdue: 0,
-            total_amount: 0,
-            total_paid: 0,
-            total_pending: 0
           },
-
-          installments: new Map()
+          installments: new Map(),
         });
-
-        customer.summary.total_subscriptions++;
       }
 
-      const subscription = customer.subscriptions.get(subId);
+      const sub = customer.subscriptions.get(subId);
 
       // 🔹 INSTALLMENT
-      if (!subscription.installments.has(instId)) {
-        subscription.installments.set(instId, {
+      if (!sub.installments.has(instId)) {
+        sub.installments.set(instId, {
           installment_id: instId,
           installment_number: row.installment_number,
           due_date: row.due_date,
           installment_amount: Number(row.installment_amount),
-
           total_paid: 0,
           pending_amount: Number(row.installment_amount),
+          status: "PENDING",
 
           upi_amount: 0,
           cash_amount: 0,
           cheque_amount: 0,
-
           today_collection: 0,
-          status: "PENDING",
-          paid_date: null,
 
-          payments: []
+          payments: [],
         });
       }
 
-      const inst = subscription.installments.get(instId);
+      const inst = sub.installments.get(instId);
 
-      // 🔥 PAYMENT SPLIT
-      if (row.payment_id && row.allocated_amount) {
-        const allocated = Number(row.allocated_amount);
-        const ratio = row.total_amount || 1;
+      // 🔹 PAYMENT
+      if (row.payment_id) {
+        const alloc = Number(row.allocated_amount);
+        const tot = Number(row.total_amount) || 1;
 
-        const upi = (row.pay_upi * allocated) / ratio;
-        const cash = (row.pay_cash * allocated) / ratio;
-        const cheque = (row.pay_cheque * allocated) / ratio;
+        const upi = (Number(row.pay_upi) * alloc) / tot;
+        const cash = (Number(row.pay_cash) * alloc) / tot;
+        const cheque = (Number(row.pay_cheque) * alloc) / tot;
+
+        inst.total_paid += alloc;
+        inst.pending_amount = Math.max(0, inst.installment_amount - inst.total_paid);
+
+        inst.upi_amount += upi;
+        inst.cash_amount += cash;
+        inst.cheque_amount += cheque;
+
+        if (row.payment_datetime && row.payment_datetime.slice(0, 10) === today) {
+          inst.today_collection += alloc;
+          global.today_collection += alloc;
+        }
 
         inst.payments.push({
           payment_id: row.payment_id,
-          paid_date: row.payment_datetime,
-          allocated_amount: allocated,
-          upi_amount: Number(upi || 0),
-          cash_amount: Number(cash || 0),
-          cheque_amount: Number(cheque || 0),
-          upi_reference: row.pay_upi_reference
+          payment_datetime: row.payment_datetime,
+          allocated_amount: alloc,
+          pay_upi: Number(row.pay_upi),
+          pay_cash: Number(row.pay_cash),
+          pay_cheque: Number(row.pay_cheque),
+          pay_upi_reference: row.pay_upi_reference,
         });
-
-        inst.total_paid += allocated;
-        inst.upi_amount += upi || 0;
-        inst.cash_amount += cash || 0;
-        inst.cheque_amount += cheque || 0;
-
-        // ✅ FIXED DATE CHECK
-        if (row.payment_datetime && row.payment_datetime.substring(0, 10) === today) {
-          inst.today_collection += allocated;
-          customer.summary.today_collection += allocated;
-          global.today_collection += allocated;
-        }
-
-        inst.paid_date = row.payment_datetime;
       }
 
-      // 🔹 CALCULATE
-      inst.pending_amount = inst.installment_amount - inst.total_paid;
-
+      // 🔹 STATUS
       if (inst.total_paid >= inst.installment_amount) {
         inst.status = "PAID";
-      } else if (inst.due_date < today) {
+      } else if (new Date(inst.due_date) < new Date(today)) {
         inst.status = "OVERDUE";
       } else {
         inst.status = "PENDING";
       }
     }
 
-    // 🔥 FINAL SUMMARY (ONE LOOP ONLY)
-    for (const cust of customers.values()) {
-      for (const sub of cust.subscriptions.values()) {
-        for (const inst of sub.installments.values()) {
+    // 🔹 AGGREGATIONS + STATUS FILTER
+    const finalCustomers = new Map();
 
-          sub.summary.total_installments++;
-          sub.summary.total_amount += inst.installment_amount;
-          sub.summary.total_paid += inst.total_paid;
-          sub.summary.total_pending += inst.pending_amount;
+    for (const [custId, cust] of customers.entries()) {
+      let keepCustomer = false;
 
-          if (inst.status === "PAID") sub.summary.paid++;
-          else if (inst.status === "PENDING") sub.summary.pending++;
-          else sub.summary.overdue++;
+      for (const [subId, sub] of cust.subscriptions.entries()) {
+        let instList = Array.from(sub.installments.values());
 
-          cust.summary.total_installments++;
-          cust.summary.total_amount += inst.installment_amount;
-          cust.summary.total_paid += inst.total_paid;
-          cust.summary.total_pending += inst.pending_amount;
-
-          cust.summary.total_upi += inst.upi_amount;
-          cust.summary.total_cash += inst.cash_amount;
-          cust.summary.total_cheque += inst.cheque_amount;
-
-          if (inst.status === "PAID") cust.summary.paid++;
-          else if (inst.status === "PENDING") cust.summary.pending++;
-          else cust.summary.overdue++;
-
-          global.total_amount += inst.installment_amount;
-          global.total_paid += inst.total_paid;
-
-          if (inst.status === "PENDING") {
-            global.pending_amount += inst.pending_amount;
-          }
-
-          if (inst.status === "OVERDUE") {
-            global.overdue_amount += inst.pending_amount;
-            global.overdue_paid += inst.total_paid;
-            global.overdue_pending += inst.pending_amount;
-          }
+        // 🔹 Status filter
+        if (status !== "all") {
+          instList = instList.filter(
+            (i) => i.status.toLowerCase() === status.toLowerCase()
+          );
         }
+
+        if (instList.length > 0) {
+          keepCustomer = true;
+          sub.installments = new Map(instList.map((i) => [i.installment_id, i]));
+
+          for (const inst of instList) {
+            sub.summary.total_amount += inst.installment_amount;
+            sub.summary.total_paid += inst.total_paid;
+            sub.summary.total_pending += inst.pending_amount;
+
+            if (inst.status === "PAID") sub.summary.paid++;
+            else if (inst.status === "PENDING") sub.summary.pending++;
+            else sub.summary.overdue++;
+
+            cust.summary.total_installments++;
+            cust.summary.total_amount += inst.installment_amount;
+            cust.summary.total_paid += inst.total_paid;
+            cust.summary.total_pending += inst.pending_amount;
+
+            cust.summary.total_upi += inst.upi_amount;
+            cust.summary.total_cash += inst.cash_amount;
+            cust.summary.total_cheque += inst.cheque_amount;
+
+            if (inst.status === "PAID") cust.summary.paid++;
+            else if (inst.status === "PENDING") cust.summary.pending++;
+            else cust.summary.overdue++;
+
+            global.total_amount += inst.installment_amount;
+            global.total_paid += inst.total_paid;
+
+            if (inst.status === "PENDING") {
+              global.pending_amount += inst.pending_amount;
+            }
+
+            if (inst.status === "OVERDUE") {
+              global.overdue_amount += inst.pending_amount;
+              global.overdue_paid += inst.total_paid;
+              global.overdue_pending += inst.pending_amount;
+            }
+          }
+        } else {
+          cust.subscriptions.delete(subId);
+        }
+      }
+
+      if (keepCustomer) {
+        cust.summary.total_subscriptions = cust.subscriptions.size;
+        finalCustomers.set(custId, cust);
       }
     }
 
     // 🔥 METRICS
     global.overdue_percentage =
       global.total_amount > 0
-        ? ((global.overdue_amount / global.total_amount) * 100).toFixed(2)
+        ? Number(((global.overdue_amount / global.total_amount) * 100).toFixed(2))
         : 0;
 
     global.recovery_rate =
       global.total_amount > 0
-        ? ((global.total_paid / global.total_amount) * 100).toFixed(2)
+        ? Number(((global.total_paid / global.total_amount) * 100).toFixed(2))
         : 0;
 
+    global.total_amount = Number(global.total_amount.toFixed(2));
+    global.total_paid = Number(global.total_paid.toFixed(2));
+    global.pending_amount = Number(global.pending_amount.toFixed(2));
+    global.overdue_amount = Number(global.overdue_amount.toFixed(2));
+    global.today_collection = Number(global.today_collection.toFixed(2));
+
     // 🔹 FINAL FORMAT
-    const result = Array.from(customers.values()).map(c => ({
+    const result = Array.from(finalCustomers.values()).map((c) => ({
       ...c,
-      subscriptions: Array.from(c.subscriptions.values()).map(s => ({
+      subscriptions: Array.from(c.subscriptions.values()).map((s) => ({
         ...s,
-        installments: Array.from(s.installments.values())
-      }))
+        installments: Array.from(s.installments.values()),
+      })),
     }));
 
     return res.json({
       success: true,
       filter: status,
+      filters_applied: {
+        status,
+        area_id: area_id ? parseInt(area_id, 10) : null,
+        search: search || null,
+        date: date || null,
+        from: from || null,
+        to: to || null,
+      },
       count: result.length,
       summary: global,
-      data: result
+      data: result,
     });
-
   } catch (err) {
-    console.error(err);
+    console.error("Collector Due List Tree Error:", err);
     return res.status(400).json({
       success: false,
-      message: err.message
+      message: err.message,
     });
   }
 };
@@ -2743,74 +2855,48 @@ export const getCollectorDueListByDate = async (req, res) => {
     const user_id = req.user?.id;
     if (!user_id) throw new Error("Unauthorized");
 
-    const { type = "all" } = req.query;
+    let { type = "all", area_id, area_ids, search, user_id: queryUserId, batch_id, plan_id } = req.query;
+    const targetDate = req.params?.date;
 
-    // 🔹 Get role
-    const [roleRow] = await db.query(
-      `SELECT r.role_name 
-       FROM users_roles u
-       JOIN role_based r ON r.id = u.role_id
-       WHERE u.id = ?`,
-      [user_id],
-    );
+    const { isAdmin, effectiveUserId, condition, params: scopeParams } =
+      await getCollectorAssignmentScope(db, user_id, queryUserId, "all");
 
-    const role = roleRow[0]?.role_name;
+    const { filterSql, filterParams } = buildInstallmentQueryFilters({
+      area_id,
+      area_ids,
+      batch_id,
+      plan_id,
+      date: targetDate && targetDate !== "all" ? targetDate : null,
+      type: !targetDate || targetDate === "all" ? type : null,
+      search,
+    });
 
-    let condition = "";
-    let params = [];
-
-    // 🔹 Restrict collector data
-    if (role !== "ADMIN") {
-      condition += `
-        AND s.customer_id IN (
-          SELECT customer_id 
-          FROM user_chit_customer_assignments
-          WHERE user_id = ? AND is_active = TRUE
-        )
-      `;
-      params.push(user_id);
-    }
-
-    // 🔹 Date filter (REAL FIX)
-    let dateFilter = "";
-
-    if (type === "today") {
-      dateFilter = `
-        AND i.due_date >= CURDATE()
-        AND i.due_date < CURDATE() + INTERVAL 1 DAY
-      `;
-    } else if (type === "overdue") {
-      dateFilter = `
-        AND i.due_date < CURDATE()
-      `;
-    } else if (type === "upcoming") {
-      dateFilter = `
-        AND i.due_date >= CURDATE() + INTERVAL 1 DAY
-      `;
-    }
-    // else "all" → no filter
-
-    // 🔹 Main query
     const [rows] = await db.query(
       `
       SELECT 
         i.id AS installment_id,
         i.installment_number,
-        i.due_date,
-
-        (i.installment_amount - IFNULL(p.total_paid,0)) AS pending_amount,
+        DATE_FORMAT(i.due_date, '%Y-%m-%d') AS due_date,
+        i.installment_amount,
+        IFNULL(p.total_paid, 0) AS paid_amount,
+        GREATEST(0, (i.installment_amount - IFNULL(p.total_paid, 0))) AS pending_amount,
 
         c.id AS customer_id,
         c.name AS customer_name,
         c.phone,
+        c.place,
+
+        COALESCE(a.id, 0) AS area_id,
+        COALESCE(a.name, 'Unassigned Area') AS area_name,
+        COALESCE(a.code, 'NONE') AS area_code,
 
         b.batch_name,
         p2.plan_name
 
       FROM chit_customer_installments i
-
       JOIN chit_customer_subscriptions s ON s.id = i.subscription_id
       JOIN chit_customers c ON c.id = s.customer_id
+      LEFT JOIN areas a ON a.id = c.area_id
       JOIN batches b ON b.id = s.batch_id
       JOIN plans p2 ON p2.id = s.plan_id
 
@@ -2820,26 +2906,31 @@ export const getCollectorDueListByDate = async (req, res) => {
         GROUP BY installment_id
       ) p ON p.installment_id = i.id
 
-      WHERE (i.installment_amount - IFNULL(p.total_paid,0)) > 0
-      ${dateFilter}
+      WHERE (i.installment_amount - IFNULL(p.total_paid, 0)) > 0
       ${condition}
+      ${filterSql}
 
       ORDER BY i.due_date ASC
       `,
-      params,
+      [...scopeParams, ...filterParams]
     );
 
-    // 🔹 Summary (don’t skip this, it's useful)
     const totalPending = rows.reduce(
       (sum, r) => sum + Number(r.pending_amount),
-      0,
+      0
     );
 
     return res.json({
       success: true,
-      filter: type,
+      filter: targetDate || type,
+      filters_applied: {
+        date: targetDate || null,
+        type,
+        area_id: area_id ? parseInt(area_id, 10) : null,
+        search: search || null,
+      },
       count: rows.length,
-      total_pending_amount: totalPending,
+      total_pending_amount: Number(totalPending.toFixed(2)),
       data: rows,
     });
   } catch (err) {
@@ -2956,86 +3047,60 @@ export const getCollectorDueListByDateandTypeandRange = async (req, res) => {
     const user_id = req.user?.id;
     if (!user_id) throw new Error("Unauthorized");
 
-    let { type = "all", date, from, to } = req.query; // 🔹 PRIORITY BASED
+    let {
+      type = "all",
+      date,
+      from,
+      to,
+      area_id,
+      area_ids,
+      search,
+      user_id: queryUserId,
+      batch_id,
+      plan_id,
+    } = req.query;
 
-    // 🔹 Get role
-    const [roleRow] = await db.query(
-      `SELECT r.role_name 
-       FROM users_roles u
-       JOIN role_based r ON r.id = u.role_id
-       WHERE u.id = ?`,
-      [user_id],
-    );
+    const { isAdmin, effectiveUserId, condition, params: scopeParams } =
+      await getCollectorAssignmentScope(db, user_id, queryUserId, "all");
 
-    const role = roleRow[0]?.role_name;
+    const { filterSql, filterParams } = buildInstallmentQueryFilters({
+      area_id,
+      area_ids,
+      batch_id,
+      plan_id,
+      date,
+      from,
+      to,
+      type,
+      search,
+    });
 
-    let condition = "";
-    let params = [];
-
-    // 🔹 Collector restriction
-    if (role !== "ADMIN") {
-      condition += `
-        AND s.customer_id IN (
-          SELECT customer_id 
-          FROM user_chit_customer_assignments
-          WHERE user_id = ? AND is_active = TRUE
-        )
-      `;
-      params.push(user_id);
-    }
-
-    // 🔹 Date filter logic (PRIORITY BASED)
-    let dateFilter = "";
-
-    if (date) {
-      // exact date
-      dateFilter = `
-        AND i.due_date >= ?
-        AND i.due_date < DATE_ADD(?, INTERVAL 1 DAY)
-      `;
-      params.unshift(date, date);
-    } else if (from && to) {
-      // range
-      dateFilter = `
-        AND i.due_date >= ?
-        AND i.due_date < DATE_ADD(?, INTERVAL 1 DAY)
-      `;
-      params.unshift(from, to);
-    } else {
-      // type-based
-      if (type === "today") {
-        dateFilter = `
-          AND i.due_date >= CURDATE()
-          AND i.due_date < CURDATE() + INTERVAL 1 DAY
-        `;
-      } else if (type === "overdue") {
-        dateFilter = `AND i.due_date < CURDATE()`;
-      } else if (type === "upcoming") {
-        dateFilter = `AND i.due_date >= CURDATE() + INTERVAL 1 DAY`;
-      }
-    }
-
-    // 🔹 Query
     const [rows] = await db.query(
       `
       SELECT 
         i.id AS installment_id,
         i.installment_number,
-        i.due_date,
-
-        (i.installment_amount - IFNULL(p.total_paid,0)) AS pending_amount,
+        DATE_FORMAT(i.due_date, '%Y-%m-%d') AS due_date,
+        i.installment_amount,
+        IFNULL(p.total_paid, 0) AS paid_amount,
+        GREATEST(0, (i.installment_amount - IFNULL(p.total_paid, 0))) AS pending_amount,
 
         c.id AS customer_id,
         c.name AS customer_name,
         c.phone,
+        c.place,
+
+        COALESCE(a.id, 0) AS area_id,
+        COALESCE(a.name, 'Unassigned Area') AS area_name,
+        COALESCE(a.code, 'NONE') AS area_code,
 
         b.batch_name,
         p2.plan_name
 
       FROM chit_customer_installments i
-
       JOIN chit_customer_subscriptions s ON s.id = i.subscription_id
       JOIN chit_customers c ON c.id = s.customer_id
+      LEFT JOIN areas a ON a.id = c.area_id
       JOIN batches b ON b.id = s.batch_id
       JOIN plans p2 ON p2.id = s.plan_id
 
@@ -3045,25 +3110,33 @@ export const getCollectorDueListByDateandTypeandRange = async (req, res) => {
         GROUP BY installment_id
       ) p ON p.installment_id = i.id
 
-      WHERE (i.installment_amount - IFNULL(p.total_paid,0)) > 0
-      ${dateFilter}
+      WHERE (i.installment_amount - IFNULL(p.total_paid, 0)) > 0
       ${condition}
+      ${filterSql}
 
       ORDER BY i.due_date ASC
       `,
-      params,
+      [...scopeParams, ...filterParams]
     );
 
     const totalPending = rows.reduce(
       (sum, r) => sum + Number(r.pending_amount),
-      0,
+      0
     );
 
     return res.json({
       success: true,
       filter: { type, date, from, to },
+      filters_applied: {
+        type,
+        date: date || null,
+        from: from || null,
+        to: to || null,
+        area_id: area_id ? parseInt(area_id, 10) : null,
+        search: search || null,
+      },
       count: rows.length,
-      total_pending_amount: totalPending,
+      total_pending_amount: Number(totalPending.toFixed(2)),
       data: rows,
     });
   } catch (err) {
@@ -3077,66 +3150,81 @@ export const getCollectorDueListByDateandTypeandRange = async (req, res) => {
 export const getCollectionDashboard = async (req, res) => {
   try {
     const user_id = req.user?.id;
-
     if (!user_id) throw new Error("Unauthorized");
 
-    const [roleRow] = await db.query(
-      `SELECT r.role_name 
-       FROM users_roles u
-       JOIN role_based r ON r.id = u.role_id
-       WHERE u.id = ?`,
-      [user_id],
-    );
+    const { area_id, area_ids, user_id: queryUserId } = req.query;
 
-    const role = roleRow[0]?.role_name;
+    const { isAdmin, effectiveUserId, condition, params: scopeParams } =
+      await getCollectorAssignmentScope(db, user_id, queryUserId, "all");
 
-    let condition = "";
-    let params = [];
-
-    if (role !== "ADMIN") {
-      condition = `
-        AND s.customer_id IN (
-          SELECT customer_id 
-          FROM user_chit_customer_assignments
-          WHERE user_id = ? AND is_active = TRUE
-        )
-      `;
-      params.push(user_id);
+    let areaFilter = "";
+    const areaParams = [];
+    if (area_id) {
+      areaFilter = " AND c.area_id = ? ";
+      areaParams.push(parseInt(area_id, 10));
+    } else if (area_ids) {
+      const ids = String(area_ids)
+        .split(",")
+        .map((x) => parseInt(x.trim(), 10))
+        .filter(Boolean);
+      if (ids.length > 0) {
+        areaFilter = ` AND c.area_id IN (${ids.map(() => "?").join(",")}) `;
+        areaParams.push(...ids);
+      }
     }
 
     const [rows] = await db.query(
       `
       SELECT 
-        SUM(CASE 
+        COALESCE(SUM(CASE 
           WHEN DATE(i.due_date) = CURDATE() 
-          THEN (i.installment_amount - IFNULL(p.total_paid,0)) 
-          ELSE 0 END) AS today_due,
+          THEN (i.installment_amount - IFNULL(p.total_paid, 0)) 
+          ELSE 0 END), 0) AS today_due,
 
-        SUM(CASE 
-          WHEN i.due_date < CURDATE() 
-          THEN (i.installment_amount - IFNULL(p.total_paid,0)) 
-          ELSE 0 END) AS overdue_due,
+        COALESCE(SUM(CASE 
+          WHEN DATE(i.due_date) < CURDATE() 
+          THEN (i.installment_amount - IFNULL(p.total_paid, 0)) 
+          ELSE 0 END), 0) AS overdue_due,
 
-        SUM((i.installment_amount - IFNULL(p.total_paid,0))) AS total_pending
+        COALESCE(SUM((i.installment_amount - IFNULL(p.total_paid, 0))), 0) AS total_pending,
+
+        COALESCE(SUM(p.today_collection), 0) AS today_collection,
+        COALESCE(SUM(p.total_paid), 0) AS total_collected
 
       FROM chit_customer_installments i
-
       JOIN chit_customer_subscriptions s ON s.id = i.subscription_id
+      JOIN chit_customers c ON c.id = s.customer_id
+      LEFT JOIN areas a ON a.id = c.area_id
 
       LEFT JOIN (
-        SELECT installment_id, SUM(allocated_amount) AS total_paid
-        FROM chit_payment_allocations
-        GROUP BY installment_id
+        SELECT 
+          pa.installment_id, 
+          SUM(pa.allocated_amount) AS total_paid,
+          SUM(
+            CASE 
+              WHEN DATE(cp.payment_datetime) = CURDATE() 
+              THEN pa.allocated_amount 
+              ELSE 0 
+            END
+          ) AS today_collection
+        FROM chit_payment_allocations pa
+        JOIN chit_collections_payments cp ON cp.id = pa.payment_id
+        GROUP BY pa.installment_id
       ) p ON p.installment_id = i.id
 
-      WHERE (i.installment_amount - IFNULL(p.total_paid,0)) > 0
+      WHERE (i.installment_amount - IFNULL(p.total_paid, 0)) > 0
       ${condition}
+      ${areaFilter}
       `,
-      params,
+      [...scopeParams, ...areaParams]
     );
 
     return res.json({
       success: true,
+      filters_applied: {
+        area_id: area_id ? parseInt(area_id, 10) : null,
+        user_id: effectiveUserId,
+      },
       data: rows[0],
     });
   } catch (err) {
@@ -3150,31 +3238,35 @@ export const getCollectionDashboard = async (req, res) => {
 export const getPriorityDueList = async (req, res) => {
   try {
     const user_id = req.user?.id;
-
     if (!user_id) throw new Error("Unauthorized");
 
-    const [roleRow] = await db.query(
-      `SELECT r.role_name 
-       FROM users_roles u
-       JOIN role_based r ON r.id = u.role_id
-       WHERE u.id = ?`,
-      [user_id],
-    );
+    const { area_id, area_ids, search, user_id: queryUserId } = req.query;
 
-    const role = roleRow[0]?.role_name;
+    const { isAdmin, effectiveUserId, condition, params: scopeParams } =
+      await getCollectorAssignmentScope(db, user_id, queryUserId, "all");
 
-    let condition = "";
-    let params = [];
+    let areaFilter = "";
+    const areaParams = [];
+    if (area_id) {
+      areaFilter = " AND c.area_id = ? ";
+      areaParams.push(parseInt(area_id, 10));
+    } else if (area_ids) {
+      const ids = String(area_ids)
+        .split(",")
+        .map((x) => parseInt(x.trim(), 10))
+        .filter(Boolean);
+      if (ids.length > 0) {
+        areaFilter = ` AND c.area_id IN (${ids.map(() => "?").join(",")}) `;
+        areaParams.push(...ids);
+      }
+    }
 
-    if (role !== "ADMIN") {
-      condition = `
-        AND s.customer_id IN (
-          SELECT customer_id 
-          FROM user_chit_customer_assignments
-          WHERE user_id = ? AND is_active = TRUE
-        )
-      `;
-      params.push(user_id);
+    let searchFilter = "";
+    const searchParams = [];
+    if (search && String(search).trim()) {
+      const term = `%${String(search).trim()}%`;
+      searchFilter = " AND (c.name LIKE ? OR c.phone LIKE ? OR a.name LIKE ?) ";
+      searchParams.push(term, term, term);
     }
 
     const [rows] = await db.query(
@@ -3182,25 +3274,30 @@ export const getPriorityDueList = async (req, res) => {
       SELECT 
         i.id AS installment_id,
         i.installment_number,
-        i.due_date,
+        DATE_FORMAT(i.due_date, '%Y-%m-%d') AS due_date,
 
-        (i.installment_amount - IFNULL(p.total_paid,0)) AS pending_amount,
+        (i.installment_amount - IFNULL(p.total_paid, 0)) AS pending_amount,
 
+        c.id AS customer_id,
         c.name AS customer_name,
         c.phone,
 
+        COALESCE(a.id, 0) AS area_id,
+        COALESCE(a.name, 'Unassigned Area') AS area_name,
+        COALESCE(a.code, 'NONE') AS area_code,
+
         CASE 
           WHEN i.due_date < CURDATE() THEN 1
-          WHEN i.due_date = CURDATE() THEN 2
+          WHEN DATE(i.due_date) = CURDATE() THEN 2
           ELSE 3
         END AS priority,
 
         DATEDIFF(CURDATE(), i.due_date) AS days_overdue
 
       FROM chit_customer_installments i
-
       JOIN chit_customer_subscriptions s ON s.id = i.subscription_id
       JOIN chit_customers c ON c.id = s.customer_id
+      LEFT JOIN areas a ON a.id = c.area_id
 
       LEFT JOIN (
         SELECT installment_id, SUM(allocated_amount) AS total_paid
@@ -3208,16 +3305,24 @@ export const getPriorityDueList = async (req, res) => {
         GROUP BY installment_id
       ) p ON p.installment_id = i.id
 
-      WHERE (i.installment_amount - IFNULL(p.total_paid,0)) > 0
+      WHERE (i.installment_amount - IFNULL(p.total_paid, 0)) > 0
       ${condition}
+      ${areaFilter}
+      ${searchFilter}
 
       ORDER BY priority ASC, i.due_date ASC
       `,
-      params,
+      [...scopeParams, ...areaParams, ...searchParams]
     );
 
     return res.json({
       success: true,
+      filters_applied: {
+        area_id: area_id ? parseInt(area_id, 10) : null,
+        search: search || null,
+        user_id: effectiveUserId,
+      },
+      count: rows.length,
       data: rows,
     });
   } catch (err) {
@@ -3227,5 +3332,4 @@ export const getPriorityDueList = async (req, res) => {
     });
   }
 };
-
 

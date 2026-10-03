@@ -212,7 +212,7 @@ import db from "../../config/db.js";
 
 //     // 🔴 CHECK EXISTING
 //     const [existing] = await connection.query(
-//       `SELECT id, is_active 
+//       `SELECT id, is_active
 //        FROM user_chit_customer_assignments
 //        WHERE user_id = ? AND customer_id = ?`,
 //       [user_id, customer_id],
@@ -289,7 +289,7 @@ export const assignUserToCustomer = async (req, res) => {
     // 🔴 CHECK USER
     const [userRows] = await connection.query(
       `SELECT role_id FROM users_roles WHERE id = ?`,
-      [user_id]
+      [user_id],
     );
 
     if (!userRows.length) throw new Error("User not found");
@@ -300,7 +300,7 @@ export const assignUserToCustomer = async (req, res) => {
     // 🔴 CHECK CUSTOMER
     const [customerRows] = await connection.query(
       `SELECT id FROM chit_customers WHERE id = ?`,
-      [customer_id]
+      [customer_id],
     );
 
     if (!customerRows.length) throw new Error("Customer not found");
@@ -309,7 +309,7 @@ export const assignUserToCustomer = async (req, res) => {
     const [existing] = await connection.query(
       `SELECT id, is_active FROM user_chit_customer_assignments
        WHERE user_id = ? AND customer_id = ?`,
-      [user_id, customer_id]
+      [user_id, customer_id],
     );
 
     if (existing.length) {
@@ -325,7 +325,7 @@ export const assignUserToCustomer = async (req, res) => {
              updated_by = ?,
              updated_at = NOW()
          WHERE id = ?`,
-        [assigned_by, assigned_by, existing[0].id]
+        [assigned_by, assigned_by, existing[0].id],
       );
 
       await connection.commit();
@@ -338,13 +338,12 @@ export const assignUserToCustomer = async (req, res) => {
       `INSERT INTO user_chit_customer_assignments
        (user_id, customer_id, assigned_by)
        VALUES (?, ?, ?)`,
-      [user_id, customer_id, assigned_by]
+      [user_id, customer_id, assigned_by],
     );
 
     await connection.commit();
 
     return res.json({ success: true, message: "Assigned successfully" });
-
   } catch (err) {
     await connection.rollback();
     return res.status(400).json({ success: false, message: err.message });
@@ -589,7 +588,7 @@ export const removeUserFromCustomer = async (req, res) => {
     // 🔴 CHECK EXISTENCE
     const [rows] = await db.query(
       `SELECT user_id FROM user_chit_customer_assignments WHERE id = ?`,
-      [id]
+      [id],
     );
 
     if (!rows.length) throw new Error("Assignment not found");
@@ -597,7 +596,7 @@ export const removeUserFromCustomer = async (req, res) => {
     // 🔴 PREVENT ADMIN DELETE
     const [userRows] = await db.query(
       `SELECT role_id FROM users_roles WHERE id = ?`,
-      [rows[0].user_id]
+      [rows[0].user_id],
     );
 
     if (userRows[0]?.role_id === 1) {
@@ -609,14 +608,13 @@ export const removeUserFromCustomer = async (req, res) => {
       `UPDATE user_chit_customer_assignments
        SET is_active = FALSE
        WHERE id = ?`,
-      [id]
+      [id],
     );
 
     return res.json({
       success: true,
       message: "Assignment removed successfully",
     });
-
   } catch (err) {
     return res.status(400).json({
       success: false,
@@ -641,7 +639,7 @@ export const updateAssignment = async (req, res) => {
     // 🔴 GET EXISTING
     const [rows] = await connection.query(
       `SELECT * FROM user_chit_customer_assignments WHERE id = ?`,
-      [id]
+      [id],
     );
 
     if (!rows.length) throw new Error("Assignment not found");
@@ -655,7 +653,7 @@ export const updateAssignment = async (req, res) => {
     if (user_id !== undefined) {
       const [userRows] = await connection.query(
         `SELECT role_id FROM users_roles WHERE id = ?`,
-        [user_id]
+        [user_id],
       );
 
       if (!userRows.length) throw new Error("New user not found");
@@ -671,7 +669,7 @@ export const updateAssignment = async (req, res) => {
            AND customer_id = ? 
            AND is_active = TRUE 
            AND id != ?`,
-        [user_id, assignment.customer_id, id]
+        [user_id, assignment.customer_id, id],
       );
 
       if (duplicate.length) {
@@ -694,7 +692,7 @@ export const updateAssignment = async (req, res) => {
            updated_by = ?,
            updated_at = NOW()
        WHERE id = ?`,
-      [newUserId, newStatus, updated_by, id]
+      [newUserId, newStatus, updated_by, id],
     );
 
     await connection.commit();
@@ -703,7 +701,6 @@ export const updateAssignment = async (req, res) => {
       success: true,
       message: "Assignment updated successfully",
     });
-
   } catch (err) {
     await connection.rollback();
 
@@ -719,11 +716,7 @@ export const updateAssignment = async (req, res) => {
       success: false,
       message: err.message,
     });
-
   } finally {
     connection.release();
   }
 };
-
-
-

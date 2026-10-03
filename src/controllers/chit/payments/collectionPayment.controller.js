@@ -3694,17 +3694,17 @@ export const collectPaymentBySelectedInstallmentsByCustomer = async (req, res) =
     }
 
     // 🔐 ACCESS CHECK
-    if (role !== "ADMIN") {
-      const [access] = await connection.query(
-        `SELECT id FROM user_chit_customer_assignments
-         WHERE user_id=? AND customer_id=? AND is_active=TRUE`,
-        [collected_by, customer_id]
-      );
+    // if (role !== "ADMIN") {
+    //   const [access] = await connection.query(
+    //     `SELECT id FROM user_chit_customer_assignments
+    //      WHERE user_id=? AND customer_id=? AND is_active=TRUE`,
+    //     [collected_by, customer_id]
+    //   );
 
-      if (!access.length) {
-        throw new Error("You are not assigned to this customer");
-      }
-    }
+    //   if (!access.length) {
+    //     throw new Error("You are not assigned to this customer");
+    //   }
+    // }
 
     // 🔥 DETERMINE subscription_id
     const uniqueSubs = [

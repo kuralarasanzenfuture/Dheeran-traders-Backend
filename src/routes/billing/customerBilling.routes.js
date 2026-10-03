@@ -4,6 +4,7 @@ import {
   customerWiseReport,
   getAllCustomerBillings,
   getAssignedPendingBills,
+  getAssignedAreaPendingBills,
   getCustomerBillingById,
   getCustomerProductFullData,
   getHighestSellingBrand,
@@ -42,6 +43,8 @@ router.get("/brands", brandWiseReport);
 router.get("/customers", customerWiseReport);
 router.get("/pending", getPendingBills);
 router.get("/assigned-pending-bills", getAssignedPendingBills);
+router.get("/assigned-area-pending-bills", getAssignedAreaPendingBills);
+router.get("/area-pending-bills", getAssignedAreaPendingBills);
 router.get("/reports/user-payment-collection", getUserPaymentCollectionReport);
 router.get("/reports/user-date-wise-collection", getUserDateWiseCollection);
 

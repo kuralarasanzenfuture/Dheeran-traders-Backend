@@ -10,21 +10,42 @@ import { createCustomerInstallments } from "../config/database/chit/customerInst
 import { createCollectionPaymentTables } from "../config/database/chit/collectionPayment.tables.js";
 import { createUserAssignedCustomerTable } from "../config/database/chit/userAssignedCustomer.tables.js";
 import { collectionTables } from "../config/database/chit/collection.tables.js";
+import { createInvestmentTables } from "../config/database/chit/investment.tables.js";
+import { monthlyInvestmentTables } from "../config/database/chit/monthly-investment.tables.js";
+import { createPaymentMethodsTable } from "../config/database/chit/paymentMethods.tables.js";
 
-// Ordered from dependent children to root parents for clean cascading operations
+// Ordered from dependent children to root parents for clean cascading drop / truncate / delete operations
 export const CHIT_TABLES_ORDERED = [
+  // Payments & allocations
   "chit_payment_allocations",
   "chit_collections_payments",
   "chit_collections",
+  // Installments & customer subscriptions
   "chit_customer_installments",
   "user_chit_customer_assignments",
   "chit_customer_subscriptions",
+  // Single/Weekly Investment scheme
+  "investment_payments",
+  "investment_interest_schedules",
+  "investment_subscriptions",
+  "investment_plan_amounts",
+  "investment_plans",
+  // Monthly Investment scheme
+  "monthly_investment_payments",
+  "monthly_investment_interest_schedules",
+  "monthly_investment_subscriptions",
+  "monthly_investment_plan_amounts",
+  "monthly_investment_plans",
+  // Batch & plan relations
   "batch_plans",
   "plan_rules",
+  "plan_amounts",
+  // Master records
   "chit_customers",
   "chit_agent_and_staff",
   "batches",
   "plans",
+  "payment_methods",
 ];
 
 // Tables holding transactional and operational data (excludes scheme & batch masters)
@@ -35,6 +56,12 @@ export const CHIT_TRANSACTIONAL_TABLES = [
   "chit_customer_installments",
   "user_chit_customer_assignments",
   "chit_customer_subscriptions",
+  "investment_payments",
+  "investment_interest_schedules",
+  "investment_subscriptions",
+  "monthly_investment_payments",
+  "monthly_investment_interest_schedules",
+  "monthly_investment_subscriptions",
   "chit_customers",
 ];
 
@@ -42,9 +69,73 @@ export const CHIT_TRANSACTIONAL_TABLES = [
 export const CHIT_MASTER_TABLES = [
   "batch_plans",
   "plan_rules",
+  "plan_amounts",
   "chit_agent_and_staff",
   "batches",
   "plans",
+  "payment_methods",
+  "investment_plan_amounts",
+  "investment_plans",
+  "monthly_investment_plan_amounts",
+  "monthly_investment_plans",
+];
+
+// Master list of all table creators in forward dependency order
+export const CHIT_TABLE_CREATORS = [
+  { name: "plans", fn: createPlanTables, tables: ["plans", "plan_amounts"] },
+  { name: "plan_rules", fn: createPlanRulesTables, tables: ["plan_rules"] },
+  { name: "batches", fn: createBatchTables, tables: ["batches"] },
+  { name: "batch_plans", fn: createBatchPlanTables, tables: ["batch_plans"] },
+  { name: "chit_customers", fn: createChitCustomerTable, tables: ["chit_customers"] },
+  { name: "chit_agent_and_staff", fn: createAgentAndStaffTables, tables: ["chit_agent_and_staff"] },
+  { name: "payment_methods", fn: createPaymentMethodsTable, tables: ["payment_methods"] },
+  {
+    name: "investments",
+    fn: createInvestmentTables,
+    tables: [
+      "investment_plans",
+      "investment_plan_amounts",
+      "investment_subscriptions",
+      "investment_interest_schedules",
+      "investment_payments",
+    ],
+  },
+  {
+    name: "monthly_investments",
+    fn: monthlyInvestmentTables,
+    tables: [
+      "monthly_investment_plans",
+      "monthly_investment_plan_amounts",
+      "monthly_investment_subscriptions",
+      "monthly_investment_interest_schedules",
+      "monthly_investment_payments",
+    ],
+  },
+  {
+    name: "chit_customer_subscriptions",
+    fn: createCustomerSubcriptionTables,
+    tables: ["chit_customer_subscriptions"],
+  },
+  {
+    name: "chit_customer_installments",
+    fn: createCustomerInstallments,
+    tables: ["chit_customer_installments"],
+  },
+  {
+    name: "chit_collections_payments",
+    fn: createCollectionPaymentTables,
+    tables: ["chit_collections_payments", "chit_payment_allocations"],
+  },
+  {
+    name: "user_chit_customer_assignments",
+    fn: createUserAssignedCustomerTable,
+    tables: ["user_chit_customer_assignments"],
+  },
+  {
+    name: "chit_collections",
+    fn: collectionTables,
+    tables: ["chit_collections"],
+  },
 ];
 
 // Helper: check confirmation
@@ -247,14 +338,62 @@ export const clearChitCategory = async (req, res, next) => {
       "chit_collections",
       "chit_customer_installments",
       "chit_customer_subscriptions",
+      "investment_payments",
+      "investment_interest_schedules",
+      "investment_subscriptions",
+      "monthly_investment_payments",
+      "monthly_investment_interest_schedules",
+      "monthly_investment_subscriptions",
       "chit_customers",
+    ],
+    investments: [
+      "investment_payments",
+      "investment_interest_schedules",
+      "investment_subscriptions",
+      "investment_plan_amounts",
+      "investment_plans",
+    ],
+    investment_subscriptions: [
+      "investment_payments",
+      "investment_interest_schedules",
+      "investment_subscriptions",
+    ],
+    monthly_investments: [
+      "monthly_investment_payments",
+      "monthly_investment_interest_schedules",
+      "monthly_investment_subscriptions",
+      "monthly_investment_plan_amounts",
+      "monthly_investment_plans",
+    ],
+    monthly_investment_subscriptions: [
+      "monthly_investment_payments",
+      "monthly_investment_interest_schedules",
+      "monthly_investment_subscriptions",
+    ],
+    all_investments: [
+      "investment_payments",
+      "investment_interest_schedules",
+      "investment_subscriptions",
+      "investment_plan_amounts",
+      "investment_plans",
+      "monthly_investment_payments",
+      "monthly_investment_interest_schedules",
+      "monthly_investment_subscriptions",
+      "monthly_investment_plan_amounts",
+      "monthly_investment_plans",
     ],
     masters: [
       "batch_plans",
       "plan_rules",
+      "plan_amounts",
       "chit_agent_and_staff",
       "batches",
       "plans",
+      "payment_methods",
+      "investment_plan_amounts",
+      "investment_plans",
+      "monthly_investment_plan_amounts",
+      "monthly_investment_plans",
     ],
   };
 
@@ -356,27 +495,36 @@ export const dropChitTables = async (req, res, next) => {
 /**
  * 5. POST /database-api/chit/reinit-tables
  * Re-creates all chit database tables from their schema definitions.
+ * Optional body/query parameter 'table': e.g. 'investments', 'monthly_investments', 'plans', etc.
  */
 export const reinitChitTables = async (req, res, next) => {
   const created = [];
   const errors = [];
+  const targetTable = (req.body?.table || req.query?.table || "").toLowerCase().trim();
 
   try {
-    const tableCreators = [
-      { name: "plans", fn: createPlanTables },
-      { name: "plan_rules", fn: createPlanRulesTables },
-      { name: "batches", fn: createBatchTables },
-      { name: "batch_plans", fn: createBatchPlanTables },
-      { name: "chit_customers", fn: createChitCustomerTable },
-      { name: "chit_agent_and_staff", fn: createAgentAndStaffTables },
-      { name: "chit_customer_subscriptions", fn: createCustomerSubcriptionTables },
-      { name: "chit_customer_installments", fn: createCustomerInstallments },
-      { name: "chit_collections_payments", fn: createCollectionPaymentTables },
-      { name: "user_chit_customer_assignments", fn: createUserAssignedCustomerTable },
-      { name: "chit_collections", fn: collectionTables },
-    ];
+    const listToRun = targetTable
+      ? CHIT_TABLE_CREATORS.filter(
+          (c) =>
+            c.name.toLowerCase() === targetTable ||
+            (Array.isArray(c.tables) && c.tables.map((t) => t.toLowerCase()).includes(targetTable))
+        )
+      : CHIT_TABLE_CREATORS;
 
-    for (const { name, fn } of tableCreators) {
+    if (targetTable && listToRun.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Unknown table/creator '${targetTable}'. Available creators: ${CHIT_TABLE_CREATORS.map(
+          (c) => c.name
+        ).join(", ")}`,
+        available_creators: CHIT_TABLE_CREATORS.map((c) => ({
+          name: c.name,
+          tables: c.tables,
+        })),
+      });
+    }
+
+    for (const { name, fn } of listToRun) {
       try {
         await fn(db);
         created.push(name);
@@ -389,7 +537,9 @@ export const reinitChitTables = async (req, res, next) => {
       success: errors.length === 0,
       message:
         errors.length === 0
-          ? "All chit database tables created / verified successfully."
+          ? targetTable
+            ? `Table / module '${targetTable}' created / verified successfully.`
+            : "All chit database tables created / verified successfully."
           : "Some tables failed to initialize.",
       created_tables: created,
       errors: errors.length > 0 ? errors : undefined,
@@ -435,21 +585,8 @@ export const resetChitDatabase = async (req, res, next) => {
   // Step 2: Re-initialize all tables
   const created = [];
   const errors = [];
-  const tableCreators = [
-    { name: "plans", fn: createPlanTables },
-    { name: "plan_rules", fn: createPlanRulesTables },
-    { name: "batches", fn: createBatchTables },
-    { name: "batch_plans", fn: createBatchPlanTables },
-    { name: "chit_customers", fn: createChitCustomerTable },
-    { name: "chit_agent_and_staff", fn: createAgentAndStaffTables },
-    { name: "chit_customer_subscriptions", fn: createCustomerSubcriptionTables },
-    { name: "chit_customer_installments", fn: createCustomerInstallments },
-    { name: "chit_collections_payments", fn: createCollectionPaymentTables },
-    { name: "user_chit_customer_assignments", fn: createUserAssignedCustomerTable },
-    { name: "chit_collections", fn: collectionTables },
-  ];
 
-  for (const { name, fn } of tableCreators) {
+  for (const { name, fn } of CHIT_TABLE_CREATORS) {
     try {
       await fn(db);
       created.push(name);
@@ -464,5 +601,24 @@ export const resetChitDatabase = async (req, res, next) => {
     dropped_tables: droppedTables,
     reinitialized_tables: created,
     errors: errors.length > 0 ? errors : undefined,
+  });
+};
+
+/**
+ * 7. GET /database-api/chit/tables
+ * Returns all configured chit tables and registered schema creators
+ */
+export const getChitTablesList = async (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: "Chit table creators and table list retrieved successfully.",
+    total_tables: CHIT_TABLES_ORDERED.length,
+    ordered_tables_for_drop_and_clear: CHIT_TABLES_ORDERED,
+    transactional_tables: CHIT_TRANSACTIONAL_TABLES,
+    master_tables: CHIT_MASTER_TABLES,
+    table_creators: CHIT_TABLE_CREATORS.map((c) => ({
+      name: c.name,
+      tables: c.tables,
+    })),
   });
 };

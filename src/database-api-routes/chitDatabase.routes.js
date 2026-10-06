@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getChitDatabaseStatus,
+  getChitTablesList,
   clearAllChitData,
   clearChitCategory,
   dropChitTables,
@@ -13,6 +14,10 @@ const router = express.Router();
 // 1. Status / Records count check
 router.get("/status", getChitDatabaseStatus);
 router.get("/chit/status", getChitDatabaseStatus);
+
+// Table creators and metadata schema list
+router.get("/tables", getChitTablesList);
+router.get("/chit/tables", getChitTablesList);
 
 // 2. Clear / Truncate all chit data (resets auto_increment, supports preserve_masters)
 router.post("/clear-all-data", clearAllChitData);

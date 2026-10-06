@@ -1,6 +1,6 @@
 const seedPaymentMethods = async (db) => {
   await db.query(`
-            INSERT INTO chit_payment_methods (name) VALUES
+            INSERT IGNORE INTO payment_methods (name) VALUES
             ('CASH'),
             ('UPI'),
             ('CHEQUE'),

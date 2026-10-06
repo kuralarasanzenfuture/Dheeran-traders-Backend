@@ -169,141 +169,256 @@ export const createInvestmentTables = async (db) => {
 `);
 
   await db.query(`
-        CREATE TABLE IF NOT EXISTS investment_subscriptions (
+  CREATE TABLE IF NOT EXISTS investment_subscriptions (
 
     id INT AUTO_INCREMENT PRIMARY KEY,
 
+    -- =========================================
+    -- SUBSCRIPTION NUMBER
+    -- =========================================
+
+    subscription_no VARCHAR(50) NULL,
+
+    -- =========================================
+    -- CUSTOMER
+    -- =========================================
+
     customer_id INT NOT NULL,
+
+    -- =========================================
+    -- PLAN
+    -- =========================================
 
     plan_id INT NOT NULL,
 
     plan_amount_id INT NOT NULL,
 
     -- =========================================
-    -- ACTUAL INVESTMENT
+    -- QUANTITY
     -- =========================================
 
-    principal_amount DECIMAL(14,2) NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
 
     -- =========================================
-    -- DATES
+    -- PRINCIPAL AMOUNTS
+    -- =========================================
+
+    -- Principal for ONE quantity/unit
+    principal_per_quantity DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    principal_amount_per_quantity DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+
+    -- Total principal for all quantities
+    total_principal_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+
+    -- Base principal_amount maintained for seamless backwards compatibility
+    principal_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+
+    -- =========================================
+    -- INTEREST AMOUNTS
+    -- =========================================
+
+    -- Weekly interest for ONE quantity/unit
+    interest_per_quantity DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    weekly_interest_amount_per_quantity DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+
+    -- Total weekly interest for all quantities
+    total_weekly_interest_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+
+    -- Expected total interest over the lifetime
+    total_expected_interest DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+
+    -- Cumulative interest calculation
+    total_interest_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    total_interest_paid DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    total_interest_pending DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+
+    -- =========================================
+    -- ACTUAL INVESTMENT / RECEIVED AMOUNTS
+    -- =========================================
+
+    principal_received_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    interest_received_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    total_received_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+
+    -- =========================================
+    -- DATES & SCHEDULES
     -- =========================================
 
     investment_date DATE NOT NULL,
-
     lock_in_end_date DATE NOT NULL,
-
     interest_start_date DATE NOT NULL,
-
     interest_end_date DATE NULL,
+
+    first_interest_due_date DATE NULL,
+    next_interest_due_date DATE NULL,
+
+    -- =========================================
+    -- INSTALLMENT COUNTS
+    -- =========================================
+
+    total_installments INT NOT NULL DEFAULT 52,
+    completed_installments INT NOT NULL DEFAULT 0,
+    pending_installments INT NOT NULL DEFAULT 52,
 
     -- =========================================
     -- STATUS
     -- =========================================
 
     status ENUM(
-        'ACTIVE',
-        'INTEREST_STARTED',
-        'COMPLETED',
-        'PRECLOSED',
-        'CANCELLED'
+      'ACTIVE',
+      'INTEREST_STARTED',
+      'MATURED',
+      'COMPLETED',
+      'PRECLOSED',
+      'CANCELLED'
     ) NOT NULL DEFAULT 'ACTIVE',
 
     -- =========================================
-    -- PRINCIPAL
+    -- PRINCIPAL SETTLEMENT
     -- =========================================
 
     principal_paid BOOLEAN NOT NULL DEFAULT FALSE,
-
     principal_paid_date DATE NULL,
-
-    principal_paid_amount DECIMAL(14,2)
-        NOT NULL DEFAULT 0.00,
+    principal_paid_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    principal_pending_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
 
     -- =========================================
-    -- COMPLETION
+    -- INTEREST SETTLEMENT
+    -- =========================================
+
+    interest_paid BOOLEAN NOT NULL DEFAULT FALSE,
+    interest_paid_date DATE NULL,
+    interest_paid_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+
+    -- =========================================
+    -- FINAL SETTLEMENT / MATURITY
+    -- =========================================
+
+    final_settlement_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    final_settlement_date DATE NULL,
+
+    maturity_principal_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    maturity_interest_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    maturity_total_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    maturity_date DATE NULL,
+
+    -- =========================================
+    -- COMPLETION / TERMINATION
     -- =========================================
 
     completed_date DATE NULL,
 
     -- =========================================
-    -- AUDIT
+    -- PRECLOSURE
+    -- =========================================
+
+    preclosure_date DATE NULL,
+    preclosure_principal_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    preclosure_interest_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    preclosure_total_amount DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    preclosure_reason TEXT NULL,
+
+    -- =========================================
+    -- CANCELLATION
+    -- =========================================
+
+    cancelled_date DATE NULL,
+    cancellation_date DATE NULL,
+    cancellation_reason TEXT NULL,
+
+    -- =========================================
+    -- NOTES / REMARKS
+    -- =========================================
+
+    remarks TEXT NULL,
+
+    -- =========================================
+    -- AUDIT & TIMESTAMPS
     -- =========================================
 
     created_by INT NULL,
     updated_by INT NULL,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ON UPDATE CURRENT_TIMESTAMP,
+      ON UPDATE CURRENT_TIMESTAMP,
+
+    -- =========================================
+    -- FOREIGN KEYS
+    -- =========================================
 
     CONSTRAINT fk_investment_subscription_customer
-
-        FOREIGN KEY (customer_id)
-        REFERENCES chit_customers(id)
-
-        ON DELETE RESTRICT
-        ON UPDATE CASCADE,
+      FOREIGN KEY (customer_id)
+      REFERENCES chit_customers(id)
+      ON DELETE RESTRICT
+      ON UPDATE CASCADE,
 
     CONSTRAINT fk_investment_subscription_plan
-
-        FOREIGN KEY (plan_id)
-        REFERENCES investment_plans(id)
-
-        ON DELETE RESTRICT
-        ON UPDATE CASCADE,
+      FOREIGN KEY (plan_id)
+      REFERENCES investment_plans(id)
+      ON DELETE RESTRICT
+      ON UPDATE CASCADE,
 
     CONSTRAINT fk_investment_subscription_amount
+      FOREIGN KEY (plan_amount_id)
+      REFERENCES investment_plan_amounts(id)
+      ON DELETE RESTRICT
+      ON UPDATE CASCADE,
 
-        FOREIGN KEY (plan_amount_id)
-        REFERENCES investment_plan_amounts(id)
+    -- =========================================
+    -- UNIQUE
+    -- =========================================
 
-        ON DELETE RESTRICT
-        ON UPDATE CASCADE,
+    UNIQUE KEY uq_is_subscription_no (subscription_no),
 
-    INDEX idx_is_customer (
-        customer_id
-    ),
+    -- =========================================
+    -- INDEXES
+    -- =========================================
 
-    INDEX idx_is_plan (
-        plan_id
-    ),
+    INDEX idx_is_customer (customer_id),
+    INDEX idx_is_plan (plan_id),
+    INDEX idx_is_plan_amount (plan_amount_id),
+    INDEX idx_is_investment_date (investment_date),
+    INDEX idx_is_lock_in_end (lock_in_end_date),
+    INDEX idx_is_interest_start (interest_start_date),
+    INDEX idx_is_interest_end (interest_end_date),
+    INDEX idx_is_next_interest (next_interest_due_date),
+    INDEX idx_is_status (status),
+    INDEX idx_is_principal_paid (principal_paid),
+    INDEX idx_is_interest_paid (interest_paid),
 
-    INDEX idx_is_plan_amount (
-        plan_amount_id
-    ),
+    -- =========================================
+    -- VALIDATION
+    -- =========================================
 
-    INDEX idx_is_investment_date (
-        investment_date
-    ),
-
-    INDEX idx_is_lock_in_end (
-        lock_in_end_date
-    ),
-
-    INDEX idx_is_interest_start (
-        interest_start_date
-    ),
-
-    INDEX idx_is_status (
-        status
-    ),
-
-    INDEX idx_is_principal_paid (
-        principal_paid
-    ),
-
-    CHECK (principal_amount > 0),
-
+    CHECK (quantity > 0),
+    CHECK (principal_amount_per_quantity >= 0),
+    CHECK (total_principal_amount >= 0),
+    CHECK (principal_amount >= 0),
+    CHECK (weekly_interest_amount_per_quantity >= 0),
+    CHECK (total_weekly_interest_amount >= 0),
+    CHECK (total_interest_amount >= 0),
+    CHECK (total_interest_paid >= 0),
+    CHECK (total_interest_pending >= 0),
+    CHECK (principal_received_amount >= 0),
+    CHECK (interest_received_amount >= 0),
+    CHECK (total_received_amount >= 0),
     CHECK (lock_in_end_date >= investment_date),
+    CHECK (principal_paid_amount >= 0),
+    CHECK (principal_pending_amount >= 0),
+    CHECK (interest_paid_amount >= 0),
+    CHECK (final_settlement_amount >= 0),
+    CHECK (maturity_principal_amount >= 0),
+    CHECK (maturity_interest_amount >= 0),
+    CHECK (maturity_total_amount >= 0),
+    CHECK (preclosure_principal_amount >= 0),
+    CHECK (preclosure_interest_amount >= 0),
+    CHECK (preclosure_total_amount >= 0)
 
-    CHECK (interest_start_date >= lock_in_end_date),
+  ) ENGINE=InnoDB;
+`);
 
-    CHECK (principal_paid_amount >= 0)
 
-) ENGINE=InnoDB;
-    `);
 
   await db.query(`
    CREATE TABLE IF NOT EXISTS investment_interest_schedules (
@@ -518,4 +633,65 @@ export const createInvestmentTables = async (db) => {
 
 ) ENGINE=InnoDB;
     `);
+
+  // Safe migration checks for pre-existing investment_subscriptions tables
+  const requiredSubscriptionColumns = [
+    { name: "subscription_no", def: "VARCHAR(50) NULL" },
+    { name: "quantity", def: "INT NOT NULL DEFAULT 1" },
+    { name: "principal_per_quantity", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "principal_amount_per_quantity", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "total_principal_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "principal_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "interest_per_quantity", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "weekly_interest_amount_per_quantity", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "total_weekly_interest_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "total_expected_interest", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "total_interest_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "total_interest_paid", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "total_interest_pending", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "principal_received_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "interest_received_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "total_received_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "first_interest_due_date", def: "DATE NULL" },
+    { name: "next_interest_due_date", def: "DATE NULL" },
+    { name: "total_installments", def: "INT NOT NULL DEFAULT 52" },
+    { name: "completed_installments", def: "INT NOT NULL DEFAULT 0" },
+    { name: "pending_installments", def: "INT NOT NULL DEFAULT 52" },
+    { name: "principal_pending_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "interest_paid", def: "BOOLEAN NOT NULL DEFAULT FALSE" },
+    { name: "interest_paid_date", def: "DATE NULL" },
+    { name: "interest_paid_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "final_settlement_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "final_settlement_date", def: "DATE NULL" },
+    { name: "maturity_principal_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "maturity_interest_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "maturity_total_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "maturity_date", def: "DATE NULL" },
+    { name: "preclosure_date", def: "DATE NULL" },
+    { name: "preclosure_principal_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "preclosure_interest_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "preclosure_total_amount", def: "DECIMAL(14,2) NOT NULL DEFAULT 0.00" },
+    { name: "preclosure_reason", def: "TEXT NULL" },
+    { name: "cancelled_date", def: "DATE NULL" },
+    { name: "cancellation_date", def: "DATE NULL" },
+    { name: "cancellation_reason", def: "TEXT NULL" },
+    { name: "remarks", def: "TEXT NULL" },
+  ];
+
+  for (const col of requiredSubscriptionColumns) {
+    try {
+      const [colExists] = await db.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() 
+           AND TABLE_NAME = 'investment_subscriptions' 
+           AND COLUMN_NAME = ?`,
+        [col.name]
+      );
+      if (!colExists.length) {
+        await db.query(`ALTER TABLE investment_subscriptions ADD COLUMN ${col.name} ${col.def}`);
+      }
+    } catch (err) {
+      console.error(`Migration notice for investment_subscriptions.${col.name}:`, err.message);
+    }
+  }
 };

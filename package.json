@@ -28,6 +28,7 @@
     "node-cron": "^4.2.1",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
+    "twilio": "^6.1.2",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

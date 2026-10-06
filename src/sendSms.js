@@ -1,12 +1,7 @@
 import axios from "axios";
 
-export const sendSMS = async ({
-  phone,
-  message,
-}) => {
-
+export const sendSMS = async ({ phone, message }) => {
   try {
-
     const response = await axios.post(
       "https://www.fast2sms.com/dev/bulkV2",
       {
@@ -22,18 +17,14 @@ export const sendSMS = async ({
       },
       {
         headers: {
-          authorization:
-            process.env.FAST2SMS_API_KEY,
-          "Content-Type":
-            "application/json",
+          authorization: process.env.FAST2SMS_API_KEY,
+          "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     console.log(response.data);
-
   } catch (error) {
-
     console.log(error.response?.data);
   }
 };

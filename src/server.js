@@ -88,9 +88,6 @@ const startServer = async () => {
 
   const HOST = "0.0.0.0";
 
-  // server.listen(PORT, HOST, () => {
-  //   console.log(`Server running on http://192.168.1.4:${PORT}`);
-  // });
 
   const localIP = getLocalIP();
 

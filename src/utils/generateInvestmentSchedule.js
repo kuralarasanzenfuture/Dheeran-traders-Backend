@@ -116,6 +116,62 @@ export const addDaysToDateStr = (dateStr, days) => {
 };
 
 /**
+ * Calculates interest start date from the investment plan:
+ * 1. Derives lock_in_end_date = investment_date + plan.lock_in_days.
+ * 2. Reads plan.payout_day (e.g. 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'). Default: 'SATURDAY'.
+ * 3. If custom interest_start_date is provided and is on or after lock_in_end_date, aligns it to plan.payout_day.
+ * 4. If interest_start_date is omitted, empty, null, or before lock_in_end_date:
+ *    Automatically defaults to the first occurrence of plan.payout_day on or after lock_in_end_date.
+ * 5. Ensures the first interest payout date is strictly after investment_date (cannot be on same day investment is made).
+ * 
+ * @param {string|Date} investmentDate - Starting investment date (any day of the week)
+ * @param {object} plan - Plan object containing lock_in_days, payout_day
+ * @param {string|Date|null} [customInterestStartDate=null] - Optional interest start date ("Defaults to lock-in end")
+ * @returns {{ investmentDate: string, lockInEndDate: string, interestStartDate: string, payoutDay: string }}
+ */
+export const calculateInterestStartDateFromPlan = (
+  investmentDate,
+  plan = {},
+  customInterestStartDate = null
+) => {
+  const cleanInvestmentDate = formatDateOnly(investmentDate || new Date()) || formatDateOnly(new Date());
+  const lockInDays = Math.max(0, Number(plan?.lock_in_days || 0));
+  const lockInEndDate = addDaysToDateStr(cleanInvestmentDate, lockInDays);
+  const payoutDay = String(plan?.payout_day || plan?.day || "SATURDAY").toUpperCase().trim();
+
+  let interestStartDate;
+
+  // Check if a valid custom interest_start_date was provided on or after lock_in_end_date
+  let cleanCustom = null;
+  if (customInterestStartDate && typeof customInterestStartDate === "string" && customInterestStartDate.trim()) {
+    cleanCustom = formatDateOnly(customInterestStartDate);
+  } else if (customInterestStartDate instanceof Date && !isNaN(customInterestStartDate.getTime())) {
+    cleanCustom = formatDateOnly(customInterestStartDate);
+  }
+
+  if (cleanCustom && cleanCustom >= lockInEndDate) {
+    interestStartDate = getNextOrSameDayDate(cleanCustom, payoutDay);
+  } else {
+    // "Optional: Defaults to lock-in end" aligned to plan's payout_day
+    interestStartDate = getNextOrSameDayDate(lockInEndDate, payoutDay);
+  }
+
+  // Guarantee: First interest payout date must always be AFTER investment_date
+  // (A customer cannot receive an interest payout on the same day the investment is made)
+  if (interestStartDate <= cleanInvestmentDate) {
+    interestStartDate = addDaysToDateStr(interestStartDate, 7);
+  }
+
+  return {
+    investmentDate: cleanInvestmentDate,
+    lockInEndDate,
+    interestStartDate,
+    payoutDay,
+  };
+};
+
+
+/**
  * Generates the full 52-week interest schedule upfront for an investment subscription.
  * Aligns installment dates strictly to the plan's payout_day (e.g. SATURDAY).
  * 
@@ -181,4 +237,35 @@ export const generateFullInterestSchedule = ({
     interestStartDate: start,
     interestEndDate,
   };
+};
+
+/**
+ * Auto-generates a unique investment subscription number: INV-YYYYMM-XXXX
+ * @param {Object} connection - MySQL db connection or pool
+ * @returns {Promise<string>}
+ */
+export const generateInvestmentSubscriptionNo = async (connection) => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const prefix = `INV-${year}${month}`;
+
+  const [rows] = await connection.query(
+    `SELECT subscription_no 
+     FROM investment_subscriptions 
+     WHERE subscription_no LIKE ? 
+     ORDER BY id DESC LIMIT 1`,
+    [`${prefix}-%`]
+  );
+
+  let nextSequence = 1;
+  if (rows.length > 0 && rows[0].subscription_no) {
+    const parts = rows[0].subscription_no.split("-");
+    const lastNum = parseInt(parts[parts.length - 1], 10);
+    if (!isNaN(lastNum)) {
+      nextSequence = lastNum + 1;
+    }
+  }
+
+  return `${prefix}-${String(nextSequence).padStart(4, "0")}`;
 };

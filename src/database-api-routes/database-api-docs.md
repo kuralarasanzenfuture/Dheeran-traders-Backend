@@ -27,7 +27,7 @@ GET http://localhost:5000/database-api/status
   "message": "Chit database status fetched successfully",
   "database": "deeran_traders",
   "total_chit_records": 1254,
-  "total_tables": 12,
+  "total_tables": 24,
   "tables": [
     { "table": "chit_payment_allocations", "exists": true, "records": 450 },
     { "table": "chit_collections_payments", "exists": true, "records": 450 },
@@ -35,12 +35,24 @@ GET http://localhost:5000/database-api/status
     { "table": "chit_customer_installments", "exists": true, "records": 300 },
     { "table": "user_chit_customer_assignments", "exists": true, "records": 24 },
     { "table": "chit_customer_subscriptions", "exists": true, "records": 20 },
+    { "table": "investment_payments", "exists": true, "records": 15 },
+    { "table": "investment_interest_schedules", "exists": true, "records": 40 },
+    { "table": "investment_subscriptions", "exists": true, "records": 10 },
+    { "table": "investment_plan_amounts", "exists": true, "records": 8 },
+    { "table": "investment_plans", "exists": true, "records": 2 },
+    { "table": "monthly_investment_payments", "exists": true, "records": 12 },
+    { "table": "monthly_investment_interest_schedules", "exists": true, "records": 36 },
+    { "table": "monthly_investment_subscriptions", "exists": true, "records": 8 },
+    { "table": "monthly_investment_plan_amounts", "exists": true, "records": 6 },
+    { "table": "monthly_investment_plans", "exists": true, "records": 2 },
     { "table": "batch_plans", "exists": true, "records": 4 },
     { "table": "plan_rules", "exists": true, "records": 0 },
+    { "table": "plan_amounts", "exists": true, "records": 12 },
     { "table": "chit_customers", "exists": true, "records": 15 },
     { "table": "chit_agent_and_staff", "exists": true, "records": 5 },
     { "table": "batches", "exists": true, "records": 3 },
-    { "table": "plans", "exists": true, "records": 4 }
+    { "table": "plans", "exists": true, "records": 4 },
+    { "table": "payment_methods", "exists": true, "records": 6 }
   ]
 }
 ```
@@ -162,12 +174,17 @@ DELETE http://localhost:5000/database-api/chit/clear-category?confirm=true&categ
 ### Supported Categories
 | Category Value | Tables Cleared | Description |
 | :--- | :--- | :--- |
-| `payments` | `chit_payment_allocations`, `chit_collections_payments`, `chit_collections` | Clears all payment receipts & allocations |
+| `payments` | `chit_payment_allocations`, `chit_collections_payments`, `chit_collections` | Clears all chit payment receipts & allocations |
 | `installments` | `chit_payment_allocations`, `chit_customer_installments` | Clears installment ledger & allocations |
 | `subscriptions` | `chit_payment_allocations`, `chit_collections_payments`, `chit_collections`, `chit_customer_installments`, `chit_customer_subscriptions` | Clears all subscriptions & related transactions |
-| `customers` | `user_chit_customer_assignments`, allocations, payments, installments, subscriptions, `chit_customers` | Clears all chit customers and transactions |
+| `customers` | `user_chit_customer_assignments`, allocations, payments, installments, subscriptions, investment subscriptions & payments, `chit_customers` | Clears all chit customers and transactions |
 | `assignments` | `user_chit_customer_assignments` | Clears collector-customer assignments |
-| `masters` | `batch_plans`, `plan_rules`, `chit_agent_and_staff`, `batches`, `plans` | Clears master schemes, batches, and staff |
+| `investments` | `investment_payments`, `investment_interest_schedules`, `investment_subscriptions`, `investment_plan_amounts`, `investment_plans` | Clears single/weekly investment scheme |
+| `investment_subscriptions` | `investment_payments`, `investment_interest_schedules`, `investment_subscriptions` | Clears single/weekly investment customer subscriptions and payouts |
+| `monthly_investments` | `monthly_investment_payments`, `monthly_investment_interest_schedules`, `monthly_investment_subscriptions`, `monthly_investment_plan_amounts`, `monthly_investment_plans` | Clears monthly investment scheme |
+| `monthly_investment_subscriptions` | `monthly_investment_payments`, `monthly_investment_interest_schedules`, `monthly_investment_subscriptions` | Clears monthly investment customer subscriptions and payouts |
+| `all_investments` | Both single/weekly and monthly investment schemes | Clears all investment data |
+| `masters` | `batch_plans`, `plan_rules`, `plan_amounts`, `chit_agent_and_staff`, `batches`, `plans`, `payment_methods`, `investment_plan_amounts`, `investment_plans`, `monthly_investment_plan_amounts`, `monthly_investment_plans` | Clears master schemes, batches, and staff |
 
 ### Sample Response
 ```json
@@ -217,7 +234,7 @@ POST http://localhost:5000/database-api/drop-chit-tables?confirm=true
 {
   "success": true,
   "message": "All chit tables dropped successfully.",
-  "dropped_count": 12,
+  "dropped_count": 24,
   "tables": [
     "chit_payment_allocations",
     "chit_collections_payments",
@@ -225,12 +242,24 @@ POST http://localhost:5000/database-api/drop-chit-tables?confirm=true
     "chit_customer_installments",
     "user_chit_customer_assignments",
     "chit_customer_subscriptions",
+    "investment_payments",
+    "investment_interest_schedules",
+    "investment_subscriptions",
+    "investment_plan_amounts",
+    "investment_plans",
+    "monthly_investment_payments",
+    "monthly_investment_interest_schedules",
+    "monthly_investment_subscriptions",
+    "monthly_investment_plan_amounts",
+    "monthly_investment_plans",
     "batch_plans",
     "plan_rules",
+    "plan_amounts",
     "chit_customers",
     "chit_agent_and_staff",
     "batches",
-    "plans"
+    "plans",
+    "payment_methods"
   ]
 }
 ```
@@ -264,6 +293,9 @@ POST http://localhost:5000/database-api/reinit-tables
     "batch_plans",
     "chit_customers",
     "chit_agent_and_staff",
+    "payment_methods",
+    "investments",
+    "monthly_investments",
     "chit_customer_subscriptions",
     "chit_customer_installments",
     "chit_collections_payments",
@@ -314,12 +346,24 @@ POST http://localhost:5000/database-api/reset-database?confirm=true
     "chit_customer_installments",
     "user_chit_customer_assignments",
     "chit_customer_subscriptions",
+    "investment_payments",
+    "investment_interest_schedules",
+    "investment_subscriptions",
+    "investment_plan_amounts",
+    "investment_plans",
+    "monthly_investment_payments",
+    "monthly_investment_interest_schedules",
+    "monthly_investment_subscriptions",
+    "monthly_investment_plan_amounts",
+    "monthly_investment_plans",
     "batch_plans",
     "plan_rules",
+    "plan_amounts",
     "chit_customers",
     "chit_agent_and_staff",
     "batches",
-    "plans"
+    "plans",
+    "payment_methods"
   ],
   "reinitialized_tables": [
     "plans",
@@ -328,6 +372,9 @@ POST http://localhost:5000/database-api/reset-database?confirm=true
     "batch_plans",
     "chit_customers",
     "chit_agent_and_staff",
+    "payment_methods",
+    "investments",
+    "monthly_investments",
     "chit_customer_subscriptions",
     "chit_customer_installments",
     "chit_collections_payments",

@@ -8,6 +8,7 @@
     "start": "node src/server.js",
     "debug": "ndb src/server.js",
     "test-location": "node test/test-socket.js",
+    "test-sms": "node test/sms/run-test.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

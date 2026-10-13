@@ -104,6 +104,13 @@ export const getCustomerSubscriptions = async (req, res) => {
         c.name AS customer_name,
         c.phone,
         c.place,
+        c.aadhar,
+        c.pan_number,
+        c.address,
+        c.state,
+        c.district,
+        c.pincode,
+        c.door_no,
 
         b.id AS batch_id,
         b.batch_name,

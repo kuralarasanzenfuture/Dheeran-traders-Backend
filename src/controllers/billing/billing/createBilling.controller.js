@@ -1,5 +1,5 @@
 import db from "../../../config/db.js";
-// import { sendSMS } from "../../../sendSms.js";
+import { smsService } from "../../../sms/sms.service.js";
 import { AuditLog } from "../../../services/audit.service.js";
 import { applyStockChange } from "../../../services/billing/inventory.service.js";
 
@@ -1159,11 +1159,25 @@ export const createCustomerBilling = async (req, res) => {
 
     await connection.commit();
 
-//     await sendSMS({
-//   phone: phone_number,
-//   message:
-//     `Invoice ${invoice_number} generated. Amount ₹${grand_total}`
-// });
+    // ======================================================
+    // SMS NOTIFICATION
+    // ======================================================
+
+    // if (phone_number) {
+    //   try {
+    //     const smsResult = await smsService.sendBillCreated(phone_number, {
+    //       customerName: customer_name,
+    //       invoiceNumber: invoice_number,
+    //       amount: Number(grand_total).toFixed(2),
+    //       balance: Number(balance_due || 0).toFixed(2),
+    //       dueDate: new Date().toISOString().split("T")[0],
+    //     });
+
+    //     console.log("[Billing SMS] Result:", smsResult);
+    //   } catch (smsError) {
+    //     console.error("[Billing SMS] Error:", smsError.message);
+    //   }
+    // }
 
     // ======================================================
     // ✅ RESPONSE

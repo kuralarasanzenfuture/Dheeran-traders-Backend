@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import { attachDb } from "./middlewares/dbMiddleware.js";
 import routes from "./routes/indexRoutes.js";
 import databaseApiRoutes from "./database-api-routes/index.js";
+import testSmsRoutes from "../test/sms/testSMS.routes.js";
 
 // Middlewares
 import {
@@ -22,6 +23,19 @@ import { verifyToken } from "./middlewares/auth.middleware.js";
 // App & dirname setup (IMPORTANT for ES Modules)
 // ------------------------------------------------------------------
 const app = express();
+
+// Request and response logger
+app.use((req, res, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.originalUrl}`);
+
+  res.on("finish", () => {
+    console.log(
+      `[RESPONSE] ${req.method} ${req.originalUrl} ${res.statusCode}`,
+    );
+  });
+
+  next();
+});
 
 app.set("trust proxy", true);
 
@@ -81,7 +95,17 @@ app.use(attachDb);
 // app.use(requestLogger);
 
 app.use("/api", routes);
+app.use("/api/test-sms", testSmsRoutes);
+app.use("/api/test/sms", testSmsRoutes);
 app.use("/database-api", databaseApiRoutes);
+
+app.post("/api/msg91/webhook", (req, res) => {
+  console.log("MSG91:", req.body);
+
+  res.status(200).json({
+    success: true,
+  });
+});
 
 // ------------------------------------------------------------------
 // Health Check (optional but recommended)
